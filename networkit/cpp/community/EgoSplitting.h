@@ -41,8 +41,8 @@ public:
      * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
      */
     EgoSplitting(const Graph &G,
-                 const std::function<Partition(Graph & )> &localClusterAlgo,
-                 const std::function<Partition(Graph & )> &globalClusterAlgo);
+                 std::function<Partition(Graph & )> localClusterAlgo,
+                 std::function<Partition(Graph & )> globalClusterAlgo);
 
     /**
      * Detect communities.
