@@ -31,6 +31,15 @@ public:
      * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
      * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
      */
+    explicit EgoSplitting(const Graph &G);
+
+    /**
+     * Construct an instance of this algorithm for the input graph.
+     *
+     * @param[in]	G   input graph
+     * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
+     * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+     */
     EgoSplitting(const Graph &G,
                  const std::function<Partition(Graph & )> &localClusterAlgo,
                  const std::function<Partition(Graph & )> &globalClusterAlgo);
@@ -56,8 +65,8 @@ public:
 private:
 
     const Graph &G;
-    const std::function<Partition(Graph & )> &localClusterAlgo;
-    const std::function<Partition(Graph & )> &globalClusterAlgo;
+    std::function<Partition(Graph & )> localClusterAlgo;
+    std::function<Partition(Graph & )> globalClusterAlgo;
     std::vector<std::unordered_map<node, index>> egoNets; // for each node: <global node ID, set ID in ego-net>
     std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
     Graph personaGraph; // graph with the split personas

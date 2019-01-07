@@ -14,8 +14,22 @@
 #include "../structures/Partition.h"
 #include "../structures/AdjacencyArray.h"
 #include "../components/ConnectedComponents.h"
+#include "PLP.h"
 
 namespace NetworKit {
+
+EgoSplitting::EgoSplitting(const Graph &G)
+        : G(G) {
+    std::function<Partition(Graph&)> clusterAlgo = [](Graph &G){
+        PLP algo(G);
+        algo.run();
+        return algo.getPartition();
+    };
+    localClusterAlgo = clusterAlgo;
+    globalClusterAlgo = clusterAlgo;
+    egoNets.resize(G.upperNodeIdBound());
+    personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
+}
 
 EgoSplitting::EgoSplitting(const Graph &G,
                            const std::function<Partition(Graph &)> &localClusterAlgo,

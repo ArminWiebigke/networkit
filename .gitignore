@@ -26,6 +26,8 @@ EnsembleClustering-O
 *.eps
 doxygen
 dist/
+.idea/
+cmake-build*
 
 ### NetworKit specific
 include/NetworKit
