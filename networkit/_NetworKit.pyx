@@ -4859,29 +4859,53 @@ cdef cppclass ClusteringFunctionWrapper:
 
 cdef extern from "cpp/community/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
+		_EgoSplitting(_Graph G) except +
+		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
 
 cdef class EgoSplitting(Algorithm):
 	"""
-	Nice docstring (+ constructor arguments)
+	Constructor to the Ego-Splitting community detection algorithm.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		The graph on which the algorithm has to run.
+	localClusteringCallback: lambda
+    	(optional) The local clustering algorithm. Takes a Graph and returns a Partition. If not specified, a
+    	default algorithm is used.
+	globalClusteringCallback: lambda
+		(optional) The global clustering algorithm. Takes a Graph and returns a Partition. If not specified,
+		the local clustering algorithm is used.
 	"""
+
 	cdef Graph _G
 	cdef object _localClusteringCallback
 	cdef object _globalClusteringCallback
 	cdef ClusteringFunctionWrapper localCallback
 	cdef ClusteringFunctionWrapper globalCallback
 
-	def __cinit__(self, Graph G not None, object localClusteringCallback not None, object globalClusteringCallback not None):
+	def __cinit__(self, Graph G not None, object localClusteringCallback = None,
+			object globalClusteringCallback = None):
 		self._G = G
-		self._localClusteringCallback = localClusteringCallback
-		self._globalClusteringCallback = globalClusteringCallback
-		self.localCallback.setCallback(localClusteringCallback)
-		self.globalCallback.setCallback(globalClusteringCallback)
-		self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
+		if localClusteringCallback is None and globalClusteringCallback is not None:
+			raise TypeError("Error, no local clustering algorithm was given.")
+		if localClusteringCallback is not None:
+			self._localClusteringCallback = localClusteringCallback
+			self.localCallback.setCallback(localClusteringCallback)
+		if globalClusteringCallback is not None:
+			self._globalClusteringCallback = globalClusteringCallback
+			self.globalCallback.setCallback(globalClusteringCallback)
+		if localClusteringCallback is not None and globalClusteringCallback is not None:
+			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
+		elif localClusteringCallback is not None:
+			self._this = new _EgoSplitting(G._this, self.localCallback)
+		else:
+			self._this = new _EgoSplitting(G._this)
 
 	"""
-	Docstring
+	Get the result of the algorithm.
 	"""
 	def getCover(self):
 		return Cover().setThis((<_EgoSplitting*>(self._this)).getCover())

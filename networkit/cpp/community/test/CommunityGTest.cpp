@@ -731,7 +731,7 @@ TEST_F(CommunityGTest, testEgoSplitting) {
         clustAlgo.run();
         return clustAlgo.getPartition();
     };
-    EgoSplitting algo(G, clusterAlgo, clusterAlgo);
+    EgoSplitting algo(G, clusterAlgo);
     algo.run();
     Cover cover = algo.getCover();
 

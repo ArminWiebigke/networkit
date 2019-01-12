@@ -20,7 +20,7 @@ namespace NetworKit {
 
 EgoSplitting::EgoSplitting(const Graph &G)
         : G(G) {
-    std::function<Partition(Graph&)> clusterAlgo = [](Graph &G){
+    std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
         PLP algo(G);
         algo.run();
         return algo.getPartition();
@@ -34,7 +34,16 @@ EgoSplitting::EgoSplitting(const Graph &G)
 EgoSplitting::EgoSplitting(const Graph &G,
                            std::function<Partition(Graph &)> localClusterAlgo,
                            std::function<Partition(Graph &)> globalClusterAlgo)
-        : G(G), localClusterAlgo(localClusterAlgo), globalClusterAlgo(globalClusterAlgo) {
+        : G(G), localClusterAlgo(std::move(localClusterAlgo)),
+          globalClusterAlgo(std::move(globalClusterAlgo)) {
+    egoNets.resize(G.upperNodeIdBound());
+    personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
+}
+
+EgoSplitting::EgoSplitting(const Graph &G,
+                           std::function<Partition(Graph &)> clusterAlgo)
+        : G(G), localClusterAlgo(clusterAlgo),
+          globalClusterAlgo(std::move(clusterAlgo)) {
     egoNets.resize(G.upperNodeIdBound());
     personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 }
@@ -54,8 +63,7 @@ std::string EgoSplitting::toString() const {
 void EgoSplitting::createEgoNets() {
     AdjacencyArray directedEdges(G); // store each undirected edge as one directed edge
     // Assign IDs to the neighbours
-    std::vector<std::vector<count> > nodeToId(omp_get_max_threads(),
-                                              std::vector<count>(G.upperNodeIdBound(), none));
+    std::vector<count> nodeToId(G.upperNodeIdBound(), none);
 
     // Store number of partitions of the ego-net
     for (std::size_t i = 0; i < G.upperNodeIdBound(); ++i) {
@@ -63,15 +71,13 @@ void EgoSplitting::createEgoNets() {
     }
 
     G.forNodes([&](node u) {
-        auto tid = omp_get_thread_num();
-
         // Assign IDs from 0 to degree-1 to neighbors
         std::vector<node> idToNode(G.degree(u));
         {
             index i = 0;
             G.forEdgesOf(u, [&](node, node v) {
                 idToNode[i] = v;
-                nodeToId[tid][v] = i++;
+                nodeToId[v] = i++;
             });
         }
 
@@ -79,9 +85,9 @@ void EgoSplitting::createEgoNets() {
         Graph egoGraph(G.degree(u));
         G.forEdgesOf(u, [&](node, node v) {
             directedEdges.forEdgesOf(v, [&](node, node w) {
-                if (nodeToId[tid][w] != none) {
+                if (nodeToId[w] != none) {
                     // we have found a triangle u-v-w
-                    egoGraph.addEdge(nodeToId[tid][v], nodeToId[tid][w]);
+                    egoGraph.addEdge(nodeToId[v], nodeToId[w]);
                 }
             });
         });
@@ -98,7 +104,7 @@ void EgoSplitting::createEgoNets() {
 
         // Reset IDs
         for (node v : idToNode) {
-            nodeToId[tid][v] = none;
+            nodeToId[v] = none;
         }
     });
 }
@@ -158,7 +164,9 @@ void EgoSplitting::createPersonaClustering() {
 }
 
 void EgoSplitting::createCover() {
+    // Create cover from persona partition
     cover = Cover(G.upperNodeIdBound());
+    personaPartition.compact();
     cover.setUpperBound(personaPartition.upperBound());
     G.forNodes([&](node u) {
         for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
@@ -175,11 +183,19 @@ void EgoSplitting::createCover() {
 #endif
 
     // Discard communities of size 4 or less
-    for (auto s : cover.subsetSizeMap()) {
-        index set = s.first;
-        count size = s.second;
-        if (size <= 4) {
-            cover.removeSubset(set);
+    count min_size = 5;
+    std::vector<std::vector<node>> communities(cover.upperBound());
+    std::cout << communities.size() << std::endl;
+    G.forNodes([&](node u) {
+        for (index c : cover.subsetsOf(u)) {
+            if (communities[c].size() < min_size)
+                communities[c].push_back(u);
+        }
+    });
+    for (index c = 0; c < communities.size(); ++c) {
+        if (communities[c].size() < min_size) {
+            for (node u : communities[c])
+                cover.removeFromSubset(c, u);
         }
     }
 

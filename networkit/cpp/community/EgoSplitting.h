@@ -41,6 +41,16 @@ public:
      * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
      */
     EgoSplitting(const Graph &G,
+                 std::function<Partition(Graph & )> clusterAlgo);
+
+    /**
+     * Construct an instance of this algorithm for the input graph.
+     *
+     * @param[in]	G   input graph
+     * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
+     * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+     */
+    EgoSplitting(const Graph &G,
                  std::function<Partition(Graph & )> localClusterAlgo,
                  std::function<Partition(Graph & )> globalClusterAlgo);
 
