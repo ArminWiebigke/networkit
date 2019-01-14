@@ -28,6 +28,7 @@ doxygen
 dist/
 .idea/
 cmake-build*
+venv/
 
 ### NetworKit specific
 include/NetworKit

@@ -185,7 +185,6 @@ void EgoSplitting::createCover() {
     // Discard communities of size 4 or less
     count min_size = 5;
     std::vector<std::vector<node>> communities(cover.upperBound());
-    std::cout << communities.size() << std::endl;
     G.forNodes([&](node u) {
         for (index c : cover.subsetsOf(u)) {
             if (communities[c].size() < min_size)
