@@ -42,6 +42,7 @@
 #include "../EgoSplitting.h"
 #include "../../structures/Cover.h"
 #include "../Coverage.h"
+#include "../LPPotts.h"
 
 namespace NetworKit {
 
@@ -723,11 +724,12 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-    ClusteredRandomGraphGenerator gen(100, 2, 0.4, 0.02);
+    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
     Graph G = gen.generate();
 
     std::function<Partition(Graph&)> clusterAlgo = [](Graph &G){
-        PLP clustAlgo(G);
+        LPPotts clustAlgo(G, 0.01, 5);
+//	    PLP clustAlgo(G);
         clustAlgo.run();
         return clustAlgo.getPartition();
     };
@@ -742,6 +744,25 @@ TEST_F(CommunityGTest, testEgoSplitting) {
         return true;
     };
     EXPECT_TRUE(isProperCover(G, cover));
+}
+
+
+TEST_F(CommunityGTest, testLPPotts) {
+	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
+	Graph G = gen.generate();
+
+	LPPotts algo(G);
+
+	algo.run();
+
+	Partition partition = algo.getPartition();
+
+	for (const auto &size : partition.subsetSizes()) {
+		std::cout << size << std::endl;
+	}
+//	std::cout << partition.subsetSizes() << std::endl;
+//	partition.subsetSizes();
+
 }
 
 } /* namespace NetworKit */
