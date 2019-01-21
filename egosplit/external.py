@@ -11,6 +11,7 @@ import random
 
 home_path = os.path.expanduser("~")
 code_path = home_path + "/Code"
+dev_null = open(os.devnull, 'w')
 
 def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
 	with tempfile.TemporaryDirectory() as tempdir:
@@ -50,8 +51,17 @@ def clusterOSLOM(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, "network.dat")
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		subprocess.call([code_path + "/OSLOM2/oslom_undir", "-r", "4", "-hr", "0", "-uw", "-f", graph_filename])
+		subprocess.call([code_path + "/OSLOM2/oslom_undir", "-r", "4", "-hr", "0", "-uw", "-f", graph_filename], stdout=dev_null)
 		result = graphio.CoverReader().read(os.path.join(graph_filename + "_oslo_files", "tp"), G)
+		return result
+
+def clusterMOSES(G):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graph_filename = os.path.join(tempdir, "network.dat")
+		output_filename = os.path.join(tempdir, "output.dat")
+		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+		subprocess.call([code_path + "/MOSES/moses-binary-linux-x86-64", graph_filename, output_filename])
+		result = graphio.CoverReader().read(output_filename, G)
 		return result
 
 def clusterGCE(G, alpha = 1.5):
@@ -60,12 +70,12 @@ def clusterGCE(G, alpha = 1.5):
 		cover_filename = os.path.join(tempdir, "cover.txt")
 		cover_file = open(cover_filename, 'x')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + "/GCECommunityFinder/build/GCECommunityFinder", graph_filename, "4", "0.6", str(alpha), ".75"], stdout=cover_file)
+		subprocess.call([code_path + "/GCECommunityFinder/GCECommunityFinderUbuntu910", graph_filename, "4", "0.6", str(alpha), ".75"], stdout=cover_file)
 		cover_file.close()
 		C = graphio.CoverReader().read(cover_filename, G)
-		for u in G.nodes():
-			if not C.contains(u):
-				C.toSingleton(u)
+		# for u in G.nodes():
+		# 	if not C.contains(u):
+		# 		C.toSingleton(u)
 		return C
 
 def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500, om=3, C=None):
@@ -81,7 +91,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 			os.chdir(tempdir)
 			with open("time_seed.dat", "w") as f:
 				f.write(str(random.randint(0, 2**31)))
-			subprocess.call(map(str, args))
+			subprocess.call(map(str, args), stdout=dev_null)
 		finally:
 			os.chdir(old_dir)
 
@@ -120,3 +130,9 @@ def getFacebookData(name, attribute):
 
 def getFacebookGraph(name):
 	return graphio.readMat(home_path + "/graphs/facebook100/{0}.mat".format(name), key="A")
+
+def getAmazonGraph():
+	g = graphio.readGraph(code_path + "/graphs/com-amazon.ungraph.txt", fileformat=graphio.Format.SNAP)
+	c = graphio.EdgeListCoverReader(1).read(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", g)
+	# c = community.readCommunities(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", format='edgelist-t1')
+	return g, c

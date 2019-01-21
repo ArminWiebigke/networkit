@@ -5,9 +5,10 @@
  *      Author: Christian Staudt (christian.staudt@kit.edu)
  */
 
-#include "LPPotts.h"
-
 #include <omp.h>
+#include <algorithm>
+
+#include "LPPotts.h"
 #include "../Globals.h"
 #include "../auxiliary/Log.h"
 #include "../auxiliary/Timer.h"
@@ -48,7 +49,7 @@ void LPPotts::run() {
     nIterations = 0; // number of iterations
     std::vector<bool> activeNodes(z, true); // record if node must be processed
     std::vector<count> globalLabelCounts(z, 1); // record the number of nodes for each label
-
+    std::mt19937 gen(1337);
     Aux::Timer runtime;
 
     // propagate labels
@@ -60,9 +61,11 @@ void LPPotts::run() {
         // reset updated
         nUpdated = 0;
 
-        // TODO: random permumation of nodes
+        // get a random permutation of the nodes
+        auto nodes = G.nodes();
+        std::shuffle(nodes.begin(), nodes.end(), gen);
 
-        G.forNodes([&](node v) {
+        for (node v : nodes) {
             if ((activeNodes[v]) && (G.degree(v) > 0)) {
                 using label = index; // a label is the same as a cluster id
                 std::map<label, count> neighborLabelCounts; // neighborLabelCounts maps label -> frequency in the neighbors
@@ -108,7 +111,7 @@ void LPPotts::run() {
             } else {
                 // node is isolated
             }
-        });
+        }
 
         // for each while loop iteration...
 
