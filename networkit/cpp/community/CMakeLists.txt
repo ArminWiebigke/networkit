@@ -25,6 +25,7 @@ networkit_add_module(community
     Modularity.cpp
     NMIDistance.cpp
     NodeStructuralRandMeasure.cpp
+    OLP.cpp
     PLM.cpp
     PLP.cpp
     ParallelAgglomerativeClusterer.cpp

@@ -43,6 +43,8 @@
 #include "../../structures/Cover.h"
 #include "../Coverage.h"
 #include "../LPPotts.h"
+#include "../../io/EdgeListReader.h"
+#include "../OLP.h"
 
 namespace NetworKit {
 
@@ -724,12 +726,14 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
-    Graph G = gen.generate();
+//    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+//    Graph G = gen.generate();
 
+	EdgeListReader reader('\t', 0, "#", false);
+	Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
     std::function<Partition(Graph&)> clusterAlgo = [](Graph &G){
-        LPPotts clustAlgo(G, 0.01, 5);
-//	    PLP clustAlgo(G);
+//        LPPotts clustAlgo(G, 0.1, 1, 20);
+	    PLP clustAlgo(G);
         clustAlgo.run();
         return clustAlgo.getPartition();
     };
@@ -762,7 +766,31 @@ TEST_F(CommunityGTest, testLPPotts) {
 	}
 //	std::cout << partition.subsetSizes() << std::endl;
 //	partition.subsetSizes();
+}
 
+
+TEST_F(CommunityGTest, testOLP) {
+//	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
+//	Graph G = gen.generate();
+
+    EdgeListReader reader('\t', 0, "#", false);
+    Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
+	OLP algo(G);
+
+	algo.run();
+
+	Cover cover = algo.getCover();
+
+	for (const auto &size : cover.subsetSizes()) {
+		std::cout << size << std::endl;
+	}
+    auto isProperCover = [](const Graph &G, const Cover &cover) {
+        for (auto size : cover.subsetSizes()) {
+            EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
+        }
+        return true;
+    };
+    EXPECT_TRUE(isProperCover(G, cover));
 }
 
 } /* namespace NetworKit */

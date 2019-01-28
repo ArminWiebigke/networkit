@@ -13,12 +13,14 @@
 #include "../auxiliary/Log.h"
 #include "../auxiliary/Timer.h"
 #include "../auxiliary/Random.h"
+#include "../auxiliary/UniformRandomSelector.h"
 
 namespace NetworKit {
 
-LPPotts::LPPotts(const Graph &G, double alpha, count theta, count maxIterations)
+LPPotts::LPPotts(const Graph &G, double alpha, count theta, count maxIterations,
+                 bool parallelPropagation)
         : CommunityDetectionAlgorithm(G), alpha(alpha), updateThreshold(theta),
-          maxIterations(maxIterations) {
+          maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
 }
 
 //LPPotts::LPPotts(const Graph &G, const Partition baseClustering, count theta)
@@ -48,8 +50,19 @@ void LPPotts::run() {
     nUpdated = n; // all nodes have new labels -> first loop iteration runs
     nIterations = 0; // number of iterations
     std::vector<bool> activeNodes(z, true); // record if node must be processed
-    std::vector<count> globalLabelCounts(z, 1); // record the number of nodes for each label
+
+    Partition secondPartition = result;
+    Partition* nextResult = &result;
+    if (parallelPropagation)
+        nextResult = &secondPartition;
+
+    std::vector<count> globalLabelCounts(z, 1), glc_2(z, 1); // record the number of nodes for each label
+    std::vector<count>* nextGlobalLabelCounts = &globalLabelCounts;
+    if (parallelPropagation)
+        nextGlobalLabelCounts = &glc_2;
+
     std::mt19937 gen(1337);
+    UniformRandomSelector selector;
     Aux::Timer runtime;
 
     // propagate labels
@@ -86,20 +99,26 @@ void LPPotts::run() {
                 }
 
                 // Get best label
-                auto labelComparator = [](
-                        const std::pair<label, double> &p1,
-                        const std::pair<label, double> &p2) {
-                    return p1.second < p2.second;
-                };
-                label best = std::max_element(labelWeights.begin(),
-                                              labelWeights.end(),
-                                              labelComparator
-                )->first;
+                selector.reset();
+                label bestLabel = none;
+                double bestWeight = -std::numeric_limits<double>::max();
+                for (auto current : labelWeights) {
+                    if (current.second > bestWeight) {
+                        bestWeight = current.second;
+                        bestLabel = current.first;
+                        selector.reset();
+                    } else if (current.second == bestWeight) {
+                        if (selector.addElement())
+                            bestLabel = current.first;
+                    }
+                }
+                assert(bestLabel != none);
 
-                if (result.subsetOf(v) != best) { // UPDATE
-                    --globalLabelCounts[result.subsetOf(v)];
-                    result.moveToSubset(best, v);
-                    ++globalLabelCounts[best];
+                label curLabel = result.subsetOf(v);
+                if (curLabel != bestLabel) { // UPDATE
+                    --(*nextGlobalLabelCounts)[curLabel];
+                    ++(*nextGlobalLabelCounts)[bestLabel];
+                    nextResult->moveToSubset(bestLabel, v);
                     ++nUpdated;
                     G.forNeighborsOf(v, [&](node u) {
                         activeNodes[u] = true;
@@ -111,6 +130,11 @@ void LPPotts::run() {
             } else {
                 // node is isolated
             }
+        }
+
+        if (parallelPropagation) {
+            result = *nextResult;
+            globalLabelCounts = *nextGlobalLabelCounts;
         }
 
         // for each while loop iteration...

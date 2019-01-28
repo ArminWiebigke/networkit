@@ -13,6 +13,7 @@ home_path = os.path.expanduser("~")
 code_path = home_path + "/Code"
 dev_null = open(os.devnull, 'w')
 
+
 def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graphPath = os.path.join(tempdir, "graph.edgelist.txt")
@@ -20,6 +21,7 @@ def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
 		graphio.writeGraph(graph, graphPath, graphio.Format.EdgeListTabOne)
 		subprocess.call([code_path + "/snap/examples/bigclam/bigclam", "-o:" + tempdir + "/", "-i:" + graphPath, "-c:" + str(numClus), "-mc:" + str(minCom), "-xc:" + str(maxCom)])
 		return graphio.SNAPEdgeListPartitionReader().read(outPath, [(i + 1, i) for i in range(graph.upperNodeIdBound())], graph)
+
 
 def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
@@ -31,6 +33,7 @@ def clusterInfomap(G):
 			result.toSingleton(result.extend())
 
 		return result
+
 
 def clusterLouvain(G):
 	with tempfile.TemporaryDirectory() as tempdir:
@@ -47,6 +50,7 @@ def clusterLouvain(G):
 			result.toSingleton(result.extend())
 		return result
 
+
 def clusterOSLOM(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, "network.dat")
@@ -54,6 +58,7 @@ def clusterOSLOM(G):
 		subprocess.call([code_path + "/OSLOM2/oslom_undir", "-r", "4", "-hr", "0", "-uw", "-f", graph_filename], stdout=dev_null)
 		result = graphio.CoverReader().read(os.path.join(graph_filename + "_oslo_files", "tp"), G)
 		return result
+
 
 def clusterMOSES(G):
 	with tempfile.TemporaryDirectory() as tempdir:
@@ -63,6 +68,7 @@ def clusterMOSES(G):
 		subprocess.call([code_path + "/MOSES/moses-binary-linux-x86-64", graph_filename, output_filename])
 		result = graphio.CoverReader().read(output_filename, G)
 		return result
+
 
 def clusterGCE(G, alpha = 1.5):
 	with tempfile.TemporaryDirectory() as tempdir:
@@ -77,6 +83,7 @@ def clusterGCE(G, alpha = 1.5):
 		# 	if not C.contains(u):
 		# 		C.toSingleton(u)
 		return C
+
 
 def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500, om=3, C=None):
 	args = [code_path + "/lfr_graph_generator/benchmark", "-N", N, "-k", k, "-maxk", maxk, "-mu", mu, "-t1", t1, "-t2", t2, "-minc", minc, "-maxc", maxc]
@@ -101,6 +108,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 		else:
 			C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, "community.dat"), G)
 		return (G, C)
+
 
 def getFacebookData(name, attribute):
 	attribute_dict = {
@@ -128,11 +136,34 @@ def getFacebookData(name, attribute):
 		P.addToSubset(a, u)
 	return P
 
+
 def getFacebookGraph(name):
 	return graphio.readMat(home_path + "/graphs/facebook100/{0}.mat".format(name), key="A")
 
+
 def getAmazonGraph():
-	g = graphio.readGraph(code_path + "/graphs/com-amazon.ungraph.txt", fileformat=graphio.Format.SNAP)
-	c = graphio.EdgeListCoverReader(1).read(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", g)
-	# c = community.readCommunities(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", format='edgelist-t1')
+	g = graphio.readGraph(code_path + "/graphs/com-amazon.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
+	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader(1).read(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", g)
+	return g, c
+
+
+def getDBLPGraph():
+	g = graphio.readGraph(code_path + "/graphs/com-dblp.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
+	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader(1).read(code_path + "/graphs/com-dblp.all.cmty.txt", g)
+	return g, c
+
+
+def getLiveJournalGraph():
+	g = graphio.readGraph(code_path + "/graphs/com-lj.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
+	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader(1).read(code_path + "/graphs/com-lj.all.cmty.txt", g)
+	return g, c
+
+
+def getOrkutGraph():
+	g = graphio.readGraph(code_path + "/graphs/com-orkut.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
+	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader(1).read(code_path + "/graphs/com-orkut.all.cmty.txt", g)
 	return g, c

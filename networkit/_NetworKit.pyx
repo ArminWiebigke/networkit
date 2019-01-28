@@ -4859,14 +4859,37 @@ cdef cppclass ClusteringFunctionWrapper:
 
 cdef extern from "cpp/community/LPPotts.h":
 	cdef cppclass _LPPotts "NetworKit::LPPotts"(_CommunityDetectionAlgorithm):
-		_LPPotts(_Graph G, double alpha, count theta, count maxIterations) except +
+		_LPPotts(_Graph G, double alpha, count theta, count maxIterations, bool_t para) except +
 
 cdef class LPPotts(CommunityDetector):
 	"""
 	"""
-	def __cinit__(self, Graph G not None, double alpha = 0.3, theta = none, maxIterations = none):
+	def __cinit__(self, Graph G not None, double alpha = 0.3, theta = none, maxIterations = none,
+	    para = False):
 		self._G = G
-		self._this = new _LPPotts(G._this, alpha, theta, maxIterations)
+		self._this = new _LPPotts(G._this, alpha, theta, maxIterations, para)
+
+
+cdef extern from "cpp/community/OLP.h":
+	cdef cppclass _OLP "NetworKit::OLP"(_Algorithm):
+		_OLP(_Graph G, count k, count theta, count maxIterations) except +
+		_Cover getCover() except +
+
+cdef class OLP(Algorithm):
+	"""
+	"""
+
+	cdef Graph _G
+
+	def __cinit__(self, Graph G not None, count k = 3, theta = none, maxIterations = 20):
+		self._G = G
+		self._this = new _OLP(G._this, k, theta, maxIterations)
+
+	"""
+	Get the result of the algorithm.
+	"""
+	def getCover(self):
+		return Cover().setThis((<_OLP*>(self._this)).getCover())
 
 cdef extern from "cpp/community/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):

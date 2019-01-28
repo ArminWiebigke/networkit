@@ -1,33 +1,41 @@
 /*
- * LPPotts.h
+ * OLP.h
  *
- *  Created on: 2019-01-14
- *      Author: Armin Wiebigke
+ *  Created on: 07.12.2012
+ *      Author: Christian Staudt (christian.staudt@kit.edu)
  */
 
-#ifndef LPPOTTS_H_
-#define LPPOTTS_H_
+#ifndef OLP_H_
+#define OLP_H_
 
 #include "CommunityDetectionAlgorithm.h"
 #include "../structures/Partition.h"
+#include "../structures/Cover.h"
+#include "../graph/Graph.h"
 
 namespace NetworKit {
 
 /**
  * @ingroup community
- * Label propagation algorithm using the Absolute Potts Model technique.
+ * As described in Ovelgoenne et al: An Ensemble Learning Strategy for Graph Clustering
+ * Raghavan et al. proposed a label propagation algorithm for graph clustering.
+ * This algorithm initializes every vertex of a graph with a unique label. Then, in iterative
+ * sweeps over the set of vertices the vertex labels are updated. A vertex gets the label
+ * that the maximum number of its neighbors have. The procedure is stopped when every vertex
+ * has the label that at least half of its neighbors have.
  *
  */
-class LPPotts : public CommunityDetectionAlgorithm {
+class OLP : public Algorithm {
 
 protected:
 
-    double alpha;
+    Graph G;
+    count maxLabels;
     count updateThreshold = 0;
     count maxIterations;
     count nIterations = 0; //!< number of iterations in last run
     std::vector<count> timing;    //!< running times for each iteration
-    bool parallelPropagation;
+    Cover result;
 
 
 public:
@@ -38,17 +46,7 @@ public:
      * @param[in]	G	input graph
      * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
      */
-    explicit LPPotts(const Graph &G, double alpha = 0.3, count theta = none,
-                     count maxIterations = 20, bool parallelPropagation = false);
-
-//	/**
-//	 * Constructor to the label propagation community detection algorithm.
-//	 *
-//	 * @param[in]	G	input graph
-//	 * @param[in]	baseClustering optional; the algorithm will start from the given clustering.
-//	 * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
-//	 */
-//	LPPotts(const Graph& G, const Partition baseClustering, count theta = none);
+    OLP(const Graph &G, count k = 3, count theta = none, count maxIterations = 20);
 
     /**
      * Run the label propagation clustering algorithm.
@@ -84,8 +82,10 @@ public:
     */
     virtual std::vector<count> getTiming();
 
+    Cover getCover();
+
 
 };
 
 } /* namespace NetworKit */
-#endif /* LPPOTTS_H_ */
+#endif /* OLP_H_ */

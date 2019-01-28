@@ -9,11 +9,12 @@
 #include <iostream>
 #include <cmath>
 
-#include "EgoSplitting.h"
 #include "../structures/UnionFind.h"
 #include "../structures/Partition.h"
 #include "../structures/AdjacencyArray.h"
 #include "../components/ConnectedComponents.h"
+#include "../auxiliary/Log.h"
+#include "EgoSplitting.h"
 #include "PLP.h"
 
 namespace NetworKit {
@@ -49,10 +50,15 @@ EgoSplitting::EgoSplitting(const Graph &G,
 }
 
 void EgoSplitting::run() {
+    INFO("createEgoNets");
     createEgoNets();
+    INFO("splitIntoPersonas");
     splitIntoPersonas();
+    INFO("connectPersonas");
     connectPersonas();
+    INFO("createPersonaClustering");
     createPersonaClustering();
+    INFO("createCover");
     createCover();
 }
 
@@ -71,6 +77,7 @@ void EgoSplitting::createEgoNets() {
     }
 
     G.forNodes([&](node u) {
+        std::cout << "Node " << u << "/" << G.upperNodeIdBound() << std::endl;
         // Assign IDs from 0 to degree-1 to neighbors
         std::vector<node> idToNode(G.degree(u));
         {
