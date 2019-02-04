@@ -9,26 +9,26 @@ import subprocess
 import scipy
 import random
 
-home_path = os.path.expanduser("~")
-code_path = home_path + "/Code"
+home_path = os.path.expanduser('~')
+code_path = home_path + '/Code'
 dev_null = open(os.devnull, 'w')
 
 
 def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graphPath = os.path.join(tempdir, "graph.edgelist.txt")
-		outPath = os.path.join(tempdir, "cmtyvv.txt")
+		graphPath = os.path.join(tempdir, 'graph.edgelist.txt')
+		outPath = os.path.join(tempdir, 'cmtyvv.txt')
 		graphio.writeGraph(graph, graphPath, graphio.Format.EdgeListTabOne)
-		subprocess.call([code_path + "/snap/examples/bigclam/bigclam", "-o:" + tempdir + "/", "-i:" + graphPath, "-c:" + str(numClus), "-mc:" + str(minCom), "-xc:" + str(maxCom)])
+		subprocess.call([code_path + '/snap/examples/bigclam/bigclam', '-o:' + tempdir + '/', '-i:' + graphPath, '-c:' + str(numClus), '-mc:' + str(minCom), '-xc:' + str(maxCom)])
 		return graphio.SNAPEdgeListPartitionReader().read(outPath, [(i + 1, i) for i in range(graph.upperNodeIdBound())], graph)
 
 
 def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, "network.txt")
+		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + "/infomap/Infomap", "-s", str(random.randint(-2**31, 2**31)), "-2", "-z", ("-d" if G.isDirected() else "-u"), "--clu", graph_filename, tempdir])
-		result = community.readCommunities(os.path.join(tempdir, "network.clu"), format="edgelist-s0")
+		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
+		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
 			result.toSingleton(result.extend())
 
@@ -37,13 +37,13 @@ def clusterInfomap(G):
 
 def clusterLouvain(G):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, "network.txt")
-		bin_filename = os.path.join(tempdir, "network.bin")
-		partition_filename = os.path.join(tempdir, "partition.txt")
+		graph_filename = os.path.join(tempdir, 'network.txt')
+		bin_filename = os.path.join(tempdir, 'network.bin')
+		partition_filename = os.path.join(tempdir, 'partition.txt')
 		partition_file = open(partition_filename, 'x')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + "/louvain/convert", "-i", graph_filename, "-o", bin_filename])
-		subprocess.call([code_path + "/louvain/community", bin_filename, "-l", "-1"], stdout=partition_file)
+		subprocess.call([code_path + '/louvain/convert', '-i', graph_filename, '-o', bin_filename])
+		subprocess.call([code_path + '/louvain/community', bin_filename, '-l', '-1'], stdout=partition_file)
 		partition_file.close()
 		result = community.LouvainPartitionReader().read(partition_filename)
 		while result.numberOfElements() < G.upperNodeIdBound():
@@ -53,30 +53,30 @@ def clusterLouvain(G):
 
 def clusterOSLOM(G):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, "network.dat")
+		graph_filename = os.path.join(tempdir, 'network.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		subprocess.call([code_path + "/OSLOM2/oslom_undir", "-r", "4", "-hr", "0", "-uw", "-f", graph_filename], stdout=dev_null)
-		result = graphio.CoverReader().read(os.path.join(graph_filename + "_oslo_files", "tp"), G)
+		subprocess.call([code_path + '/OSLOM2/oslom_undir', '-r', '4', '-hr', '0', '-uw', '-f', graph_filename], stdout=dev_null)
+		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
 		return result
 
 
 def clusterMOSES(G):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, "network.dat")
-		output_filename = os.path.join(tempdir, "output.dat")
+		graph_filename = os.path.join(tempdir, 'network.dat')
+		output_filename = os.path.join(tempdir, 'output.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		subprocess.call([code_path + "/MOSES/moses-binary-linux-x86-64", graph_filename, output_filename])
+		subprocess.call([code_path + '/MOSES/moses-binary-linux-x86-64', graph_filename, output_filename])
 		result = graphio.CoverReader().read(output_filename, G)
 		return result
 
 
 def clusterGCE(G, alpha = 1.5):
 	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, "network.edgelist")
-		cover_filename = os.path.join(tempdir, "cover.txt")
+		graph_filename = os.path.join(tempdir, 'network.edgelist')
+		cover_filename = os.path.join(tempdir, 'cover.txt')
 		cover_file = open(cover_filename, 'x')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + "/GCECommunityFinder/GCECommunityFinderUbuntu910", graph_filename, "4", "0.6", str(alpha), ".75"], stdout=cover_file)
+		subprocess.call([code_path + '/GCECommunityFinder/GCECommunityFinderUbuntu910', graph_filename, '4', '0.6', str(alpha), '.75'], stdout=cover_file)
 		cover_file.close()
 		C = graphio.CoverReader().read(cover_filename, G)
 		# for u in G.nodes():
@@ -86,45 +86,102 @@ def clusterGCE(G, alpha = 1.5):
 
 
 def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500, om=3, C=None):
-	args = [code_path + "/lfr_graph_generator/benchmark", "-N", N, "-k", k, "-maxk", maxk, "-mu", mu, "-t1", t1, "-t2", t2, "-minc", minc, "-maxc", maxc]
+	args = [code_path + '/lfr_graph_generator/benchmark', '-N', N, '-k', k, '-maxk', maxk, '-mu', mu, '-t1', t1, '-t2', t2, '-minc', minc, '-maxc', maxc]
 	if on > 0:
-		args.extend(["-on", on, "-om", om])
+		args.extend(['-on', on, '-om', om])
 	if C is not None:
-		args.extend(["-C", C])
+		args.extend(['-C', C])
 
 	with tempfile.TemporaryDirectory() as tempdir:
 		old_dir = os.getcwd()
 		try:
 			os.chdir(tempdir)
-			with open("time_seed.dat", "w") as f:
+			with open('time_seed.dat', 'w') as f:
 				f.write(str(random.randint(0, 2**31)))
 			subprocess.call(map(str, args), stdout=dev_null)
 		finally:
 			os.chdir(old_dir)
 
-		G = graphio.readGraph(os.path.join(tempdir, "network.dat"), fileformat=graphio.Format.LFR)
+		G = graphio.readGraph(os.path.join(tempdir, 'network.dat'), fileformat=graphio.Format.LFR)
 		if on == 0:
-			C = community.readCommunities(os.path.join(tempdir, "community.dat"), format='edgelist-s1')
+			C = community.readCommunities(os.path.join(tempdir, 'community.dat'), format='edgelist-s1')
 		else:
-			C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, "community.dat"), G)
+			C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, 'community.dat'), G)
 		return (G, C)
+
+
+def calcNMI(graph, cover, ref_cover):
+	with tempfile.TemporaryDirectory() as tempdir:
+		# https://github.com/aaronmcdaid/Overlapping-NMI
+		old_dir = os.getcwd()
+		try:
+			os.chdir(tempdir)
+			with open('cover.dat', 'w') as f:
+				communities = cover.upperBound() * ['']
+				for u in graph.nodes():
+					for s in cover.subsetsOf(u):
+						communities[s] += str(u) + ' '
+				for com in communities:
+					if com is not '':
+						f.write(com + '\n')
+			with open('ref_cover.dat', 'w') as f:
+				communities = ref_cover.upperBound() * ['']
+				for u in graph.nodes():
+					for s in ref_cover.subsetsOf(u):
+						communities[s] += str(u) + ' '
+				for com in communities:
+					if com is not '':
+						f.write(com + '\n')
+			out = subprocess.check_output([code_path + '/Overlapping-NMI/onmi', 'cover.dat', 'ref_cover.dat'])
+			out_lines = out.splitlines()
+			nmi_line = out_lines[0]
+			nmi_val = float(nmi_line.split()[1])
+		finally:
+			os.chdir(old_dir)
+	with tempfile.TemporaryDirectory() as tempdir:
+		# https://bitbucket.org/dsign/gecmi
+		old_dir = os.getcwd()
+		try:
+			os.chdir(tempdir)
+			with open("cover.dat", "w") as f:
+				f.write("vertex: modules\n")
+				for u in graph.nodes():
+					line_str = str(u) + ":"
+					for s in cover.subsetsOf(u):
+						line_str += " " + str(s)
+					f.write(line_str + "\n")
+			with open("ref_cover.dat", "w") as f:
+				f.write("vertex: modules\n")
+				for u in graph.nodes():
+					line_str = str(u) + ":"
+					for s in ref_cover.subsetsOf(u):
+						line_str += " " + str(s)
+					f.write(line_str + "\n")
+			out = subprocess.check_output(["gecmi", "cover.dat", "ref_cover.dat"])
+			nmi_val_2 = float(out[5:-1])
+		except subprocess.CalledProcessError as e:
+			print(e)
+			nmi_val_2 = 0
+		finally:
+			os.chdir(old_dir)
+	return nmi_val, nmi_val_2
 
 
 def getFacebookData(name, attribute):
 	attribute_dict = {
-		"student_fac" : 0,
-		"gender" : 1,
-		"major_index" : 2,
-		"second_major" : 3,
-		"dorm" : 4,
-		"year" : 5,
-		"high_school" : 6,
+		'student_fac' : 0,
+		'gender' : 1,
+		'major_index' : 2,
+		'second_major' : 3,
+		'dorm' : 4,
+		'year' : 5,
+		'high_school' : 6,
 		}
 
 	if attribute not in attribute_dict:
-		raise Exception("Attribute {0} not found".format(attribute))
+		raise Exception('Attribute {0} not found'.format(attribute))
 
-	fileName = home_path + "/graphs/facebook100/{0}.mat".format(name)
+	fileName = home_path + '/graphs/facebook100/{0}.mat'.format(name)
 	matlabObject = scipy.io.loadmat(fileName)
 	col = attribute_dict[attribute]
 	n = matlabObject['local_info'].shape[0]
@@ -138,32 +195,32 @@ def getFacebookData(name, attribute):
 
 
 def getFacebookGraph(name):
-	return graphio.readMat(home_path + "/graphs/facebook100/{0}.mat".format(name), key="A")
+	return graphio.readMat(home_path + '/graphs/facebook100/{0}.mat'.format(name), key='A')
 
 
 def getAmazonGraph():
-	g = graphio.readGraph(code_path + "/graphs/com-amazon.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
-	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader(1).read(code_path + "/graphs/com-amazon.all.dedup.cmty.txt", g)
+	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader().read(code_path + '/graphs/com-amazon.all.dedup.cmty.txt', g)
 	return g, c
 
 
 def getDBLPGraph():
-	g = graphio.readGraph(code_path + "/graphs/com-dblp.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
-	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader(1).read(code_path + "/graphs/com-dblp.all.cmty.txt", g)
+	g = graphio.readGraph(code_path + '/graphs/com-dblp.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader().read(code_path + '/graphs/com-dblp.all.cmty.txt', g)
 	return g, c
 
 
 def getLiveJournalGraph():
-	g = graphio.readGraph(code_path + "/graphs/com-lj.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
-	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader(1).read(code_path + "/graphs/com-lj.all.cmty.txt", g)
+	g = graphio.readGraph(code_path + '/graphs/com-lj.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader().read(code_path + '/graphs/com-lj.all.cmty.txt', g)
 	return g, c
 
 
 def getOrkutGraph():
-	g = graphio.readGraph(code_path + "/graphs/com-orkut.ungraph.txt", fileformat=graphio.Format.EdgeListTabZero)
-	[g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader(1).read(code_path + "/graphs/com-orkut.all.cmty.txt", g)
+	g = graphio.readGraph(code_path + '/graphs/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
+	c = graphio.CoverReader().read(code_path + '/graphs/com-orkut.all.cmty.txt', g)
 	return g, c
