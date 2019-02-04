@@ -12,7 +12,7 @@
 
 #include "../Globals.h"
 
-namespace NetworKit {
+namespace Aux {
 
 class UniformRandomSelector {
 public:
@@ -23,8 +23,7 @@ public:
     void reset();
 
 private:
-    count counter;
-    std::mt19937 gen;
+    NetworKit::count counter;
 };
 
 }

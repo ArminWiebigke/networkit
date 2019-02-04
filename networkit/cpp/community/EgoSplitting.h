@@ -24,75 +24,78 @@ namespace NetworKit {
 class EgoSplitting : public Algorithm {
 
 public:
-    /**
-     * Construct an instance of this algorithm for the input graph.
-     *
-     * @param[in]	G   input graph
-     * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-     * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
-     */
-    explicit EgoSplitting(const Graph &G);
+	/**
+	 * Construct an instance of this algorithm for the input graph.
+	 *
+	 * @param[in]	G   input graph
+	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
+	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+	 */
+	explicit EgoSplitting(const Graph &G);
 
-    /**
-     * Construct an instance of this algorithm for the input graph.
-     *
-     * @param[in]	G   input graph
-     * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-     * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
-     */
-    EgoSplitting(const Graph &G,
-                 std::function<Partition(Graph & )> clusterAlgo);
+	/**
+	 * Construct an instance of this algorithm for the input graph.
+	 *
+	 * @param[in]	G   input graph
+	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
+	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+	 */
+	EgoSplitting(const Graph &G,
+				 std::function<Partition(Graph &)> clusterAlgo);
 
-    /**
-     * Construct an instance of this algorithm for the input graph.
-     *
-     * @param[in]	G   input graph
-     * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-     * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
-     */
-    EgoSplitting(const Graph &G,
-                 std::function<Partition(Graph & )> localClusterAlgo,
-                 std::function<Partition(Graph & )> globalClusterAlgo);
+	/**
+	 * Construct an instance of this algorithm for the input graph.
+	 *
+	 * @param[in]	G   input graph
+	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
+	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+	 */
+	EgoSplitting(const Graph &G,
+				 std::function<Partition(Graph &)> localClusterAlgo,
+				 std::function<Partition(Graph &)> globalClusterAlgo);
 
-    /**
-     * Detect communities.
-     */
-    void run() override;
+	/**
+	 * Detect communities.
+	 */
+	void run() override;
 
-    /**
-     * Returns the result of the run method or throws an error, if the algorithm hasn't run yet.
-     * @return partition of the node set
-     */
-    Cover getCover();
+	/**
+	 * Returns the result of the run method or throws an error, if the algorithm hasn't run yet.
+	 * @return partition of the node set
+	 */
+	Cover getCover();
 
-    /**
-     * Get a string representation of the algorithm.
-     *
-     * @return string representation of algorithm and parameters.
-     */
-    std::string toString() const override;
+	/**
+	 * Get a string representation of the algorithm.
+	 *
+	 * @return string representation of algorithm and parameters.
+	 */
+	std::string toString() const override;
+
+	std::map<std::string, double> getTimings();
 
 private:
 
-    const Graph &G;
-    std::function<Partition(Graph & )> localClusterAlgo;
-    std::function<Partition(Graph & )> globalClusterAlgo;
-    std::vector<std::unordered_map<node, index>> egoNets; // for each node: <global node ID, set ID in ego-net>
-    std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
-    Graph personaGraph; // graph with the split personas
-    Partition personaPartition;
-    Cover cover; // the result of the algorithm
+	const Graph &G;
+	std::function<Partition(Graph &)> localClusterAlgo;
+	std::function<Partition(Graph &)> globalClusterAlgo;
+	std::vector<std::unordered_map<node, index>> egoNets; // for each node: <global node ID, set ID in ego-net>
+	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
+	Graph personaGraph; // graph with the split personas
+	Partition personaPartition;
+	Cover cover; // the result of the algorithm
+	std::map<std::string, double> timings;
 
 
-    void createEgoNets();
+	void createEgoNets();
 
-    void splitIntoPersonas();
+	void splitIntoPersonas();
 
-    void connectPersonas();
+	void connectPersonas();
 
-    void createPersonaClustering();
+	void createPersonaClustering();
 
-    void createCover();
+	void createCover();
 };
 
 } /* namespace NetworKit */

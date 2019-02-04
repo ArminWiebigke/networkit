@@ -29,60 +29,60 @@ class OLP : public Algorithm {
 
 protected:
 
-    Graph G;
-    count maxLabels;
-    count updateThreshold = 0;
-    count maxIterations;
-    count nIterations = 0; //!< number of iterations in last run
-    std::vector<count> timing;    //!< running times for each iteration
-    Cover result;
+	Graph G;
+	count maxLabels;
+	count updateThreshold = 0;
+	count maxIterations;
+	count nIterations = 0; //!< number of iterations in last run
+	std::vector<count> timing;    //!< running times for each iteration
+	Cover result;
 
 
 public:
 
-    /**
-     * Constructor to the label propagation community detection algorithm.
-     *
-     * @param[in]	G	input graph
-     * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
-     */
-    OLP(const Graph &G, count k = 3, count theta = none, count maxIterations = 20);
+	/**
+	 * Constructor to the label propagation community detection algorithm.
+	 *
+	 * @param[in]	G	input graph
+	 * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
+	 */
+	OLP(const Graph &G, count k = 3, count theta = none, count maxIterations = 20);
 
-    /**
-     * Run the label propagation clustering algorithm.
-     */
-    void run() override;
+	/**
+	 * Run the label propagation clustering algorithm.
+	 */
+	void run() override;
 
-    /**
-     * @return String representation of algorithm and parameters.
-     */
-    std::string toString() const override;
-
-
-    /**
-     * The algorithm runs until a number of nodes less than
-     * the threshold is updated.
-     *
-     * @param th The threshold.
-    */
-    virtual void setUpdateThreshold(count th);
-
-    /**
-    * Get number of iterations in last run.
-    *
-    * @return The number of iterations.
-    */
-    virtual count numberOfIterations();
+	/**
+	 * @return String representation of algorithm and parameters.
+	 */
+	std::string toString() const override;
 
 
-    /**
-    * Get list of running times for each iteration.
-    *
-    * @return The list of running times in milliseconds
-    */
-    virtual std::vector<count> getTiming();
+	/**
+	 * The algorithm runs until a number of nodes less than
+	 * the threshold is updated.
+	 *
+	 * @param th The threshold.
+	*/
+	virtual void setUpdateThreshold(count th);
 
-    Cover getCover();
+	/**
+	* Get number of iterations in last run.
+	*
+	* @return The number of iterations.
+	*/
+	virtual count numberOfIterations();
+
+
+	/**
+	* Get list of running times for each iteration.
+	*
+	* @return The list of running times in milliseconds
+	*/
+	virtual std::vector<count> getTiming();
+
+	Cover getCover();
 
 
 };

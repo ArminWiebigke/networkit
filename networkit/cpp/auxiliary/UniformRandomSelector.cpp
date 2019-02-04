@@ -9,21 +9,21 @@
 #include <ctime>
 
 #include "UniformRandomSelector.h"
+#include "Random.h"
 
-namespace NetworKit {
+namespace Aux {
 
-UniformRandomSelector::UniformRandomSelector() : counter(1) {
-    gen.seed(3249029);
+UniformRandomSelector::UniformRandomSelector() : counter(0) {
 }
 
 bool UniformRandomSelector::addElement() {
     ++counter;
-    std::uniform_int_distribution<count> dist(0, counter - 1);
-    return (dist(gen) == 0);
+    std::uniform_int_distribution<NetworKit::count> dist(0, counter - 1);
+    return (dist(Random::getURNG()) == 0);
 }
 
 void UniformRandomSelector::reset() {
-    counter = 1;
+    counter = 0;
 }
 
 }

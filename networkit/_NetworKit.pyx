@@ -4897,6 +4897,7 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
+		map[string, double] getTimings() except +
 
 cdef class EgoSplitting(Algorithm):
 	"""
@@ -4943,6 +4944,12 @@ cdef class EgoSplitting(Algorithm):
 	"""
 	def getCover(self):
 		return Cover().setThis((<_EgoSplitting*>(self._this)).getCover())
+
+	"""
+	Get the timings.
+	"""
+	def getTimings(self):
+		return (<_EgoSplitting*>(self._this)).getTimings()
 
 
 cdef class DissimilarityMeasure:
