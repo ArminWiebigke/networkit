@@ -110,7 +110,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 		return (G, C)
 
 
-def calcNMI(graph, cover, ref_cover):
+def calc_NMI(graph, cover, ref_cover):
 	with tempfile.TemporaryDirectory() as tempdir:
 		# https://github.com/aaronmcdaid/Overlapping-NMI
 		old_dir = os.getcwd()
@@ -138,33 +138,7 @@ def calcNMI(graph, cover, ref_cover):
 			nmi_val = float(nmi_line.split()[1])
 		finally:
 			os.chdir(old_dir)
-	with tempfile.TemporaryDirectory() as tempdir:
-		# https://bitbucket.org/dsign/gecmi
-		old_dir = os.getcwd()
-		try:
-			os.chdir(tempdir)
-			with open("cover.dat", "w") as f:
-				f.write("vertex: modules\n")
-				for u in graph.nodes():
-					line_str = str(u) + ":"
-					for s in cover.subsetsOf(u):
-						line_str += " " + str(s)
-					f.write(line_str + "\n")
-			with open("ref_cover.dat", "w") as f:
-				f.write("vertex: modules\n")
-				for u in graph.nodes():
-					line_str = str(u) + ":"
-					for s in ref_cover.subsetsOf(u):
-						line_str += " " + str(s)
-					f.write(line_str + "\n")
-			out = subprocess.check_output(["gecmi", "cover.dat", "ref_cover.dat"])
-			nmi_val_2 = float(out[5:-1])
-		except subprocess.CalledProcessError as e:
-			print(e)
-			nmi_val_2 = 0
-		finally:
-			os.chdir(old_dir)
-	return nmi_val, nmi_val_2
+	return nmi_val
 
 
 def getFacebookData(name, attribute):
@@ -200,27 +174,23 @@ def getFacebookGraph(name):
 
 def getAmazonGraph():
 	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader().read(code_path + '/graphs/com-amazon.all.dedup.cmty.txt', g)
+	c = graphio.CoverReader().read(code_path + '/graphs/com-amazon.top5000.cmty.txt', g)
 	return g, c
 
 
 def getDBLPGraph():
 	g = graphio.readGraph(code_path + '/graphs/com-dblp.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader().read(code_path + '/graphs/com-dblp.all.cmty.txt', g)
+	c = graphio.CoverReader().read(code_path + '/graphs/com-dblp.top5000.cmty.txt', g)
 	return g, c
 
 
 def getLiveJournalGraph():
 	g = graphio.readGraph(code_path + '/graphs/com-lj.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader().read(code_path + '/graphs/com-lj.all.cmty.txt', g)
+	c = graphio.CoverReader().read(code_path + '/graphs/com-lj.top5000.cmty.txt', g)
 	return g, c
 
 
 def getOrkutGraph():
 	g = graphio.readGraph(code_path + '/graphs/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	# [g.removeNode(u) for u in g.nodes() if g.degree(u) == 0]
-	c = graphio.CoverReader().read(code_path + '/graphs/com-orkut.all.cmty.txt', g)
+	c = graphio.CoverReader().read(code_path + '/graphs/com-orkut.top5000.cmty.txt', g)
 	return g, c

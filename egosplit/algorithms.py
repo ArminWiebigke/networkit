@@ -27,10 +27,11 @@ class CoverAlgorithm:
 		raise NotImplementedError("Run method not implemented")
 
 class EgoSplitAlgorithm(CoverAlgorithm):
-	def __init__(self, name, localPartitionAlgorithm, globalPartitionAlgorithm = None):
+	def __init__(self, out_file, name, localPartitionAlgorithm, globalPartitionAlgorithm = None):
+		self.out_file = out_file
 		self.algorithm = lambda g: EgoSplitting(g, localPartitionAlgorithm,
 												globalPartitionAlgorithm)
-		self.name = 'EgoSplitting (' + name + ')'
+		self.name = 'EgoSplitting_(' + name + ')'
 
 	def run(self, graph):
 		a = self.algorithm(graph)
@@ -42,6 +43,11 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		timings = a.getTimings()
 		for name in sorted(timings.keys()):
 			print(name.decode('ASCII') + ": " + str(timings[name]/1000))
+		timings_str = ""
+		for name in sorted(timings.keys()):
+			timings_str += str(timings[name]/1000000).ljust(21)
+		self.out_file.write(timings_str + '\n')
+		print(timings_str)
 
 
 class OLPAlgorithm(CoverAlgorithm):
