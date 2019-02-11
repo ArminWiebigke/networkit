@@ -104,7 +104,7 @@ void PLP::run() {
 			} else {
 				// node is isolated
 			}
-		});
+		}, n > (1 << 20));
 
 		// for each while loop iteration...
 

@@ -56,39 +56,39 @@ void EgoSplitting::run() {
 	Aux::Timer timer;
 	timings.clear();
 
-	INFO("createEgoNets");
+	INFO("create EgoNets");
 	timer.start();
 	createEgoNets();
 	timer.stop();
-	timings["1) createEgoNets"] = timer.elapsedMicroseconds();
+	timings["1) create EgoNets"] = timer.elapsedMicroseconds();
 	handler.assureRunning();
 
-	INFO("splitIntoPersonas");
+	INFO("split into Personas");
 	timer.start();
 	splitIntoPersonas();
 	timer.stop();
-	timings["2) splitIntoPersonas"] = timer.elapsedMicroseconds();
+	timings["2) split Personas"] = timer.elapsedMicroseconds();
 	handler.assureRunning();
 
-	INFO("connectPersonas");
+	INFO("connect Personas");
 	timer.start();
 	connectPersonas();
 	timer.stop();
-	timings["3) connectPersonas"] = timer.elapsedMicroseconds();
+	timings["3) connect Personas"] = timer.elapsedMicroseconds();
 	handler.assureRunning();
 
-	INFO("createPersonaClustering");
+	INFO("create Persona Clustering");
 	timer.start();
 	createPersonaClustering();
 	timer.stop();
-	timings["4) createPersonaClustering"] = timer.elapsedMicroseconds();
+	timings["4) Persona Clustering"] = timer.elapsedMicroseconds();
 	handler.assureRunning();
 
-	INFO("createCover");
+	INFO("create Cover");
 	timer.start();
 	createCover();
 	timer.stop();
-	timings["5) createCover"] = timer.elapsedMicroseconds();
+	timings["5) create Cover"] = timer.elapsedMicroseconds();
 }
 
 std::string EgoSplitting::toString() const {
@@ -112,24 +112,25 @@ void EgoSplitting::createEgoNets() {
 		handler.assureRunning();
 		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
 		timer.start();
+		count degree = G.degree(u);
 		// Assign IDs from 0 to degree-1 to neighbors
-		std::vector<node> idToNode(G.degree(u));
+		std::vector<node> idToNode(degree);
 		{
 			index i = 0;
 			G.forEdgesOf(u, [&](node, node v) {
 				idToNode[i] = v;
 				nodeToId[v] = i++;
 			});
-			assert(i == G.degree(u));
+			assert(i == degree);
 		}
 		timer.stop();
-		timings["1a) Assign IDs"] += timer.elapsedMicroseconds();
+		timings["1a)    Assign IDs    "] += timer.elapsedMicroseconds();
 
 
 		DEBUG("Find triangles");
 		timer.start();
 		// Find all triangles and add the edges to the egoGraph
-		Graph egoGraph(G.degree(u));
+		Graph egoGraph(degree);
 		G.forEdgesOf(u, [&](node, node v) {
 			directedEdges.forEdgesOf(v, [&](node, node w) {
 				if (nodeToId[w] != none) {
@@ -139,26 +140,34 @@ void EgoSplitting::createEgoNets() {
 			});
 		});
 		timer.stop();
-		timings["1b) Find triangles"] += timer.elapsedMicroseconds();
+		timings["1b)    Find triangles"] += timer.elapsedMicroseconds();
 
 		DEBUG("Cluster EgoNet");
 		timer.start();
 		// Cluster ego-net with the local cluster algorithm
 		auto egoPartition = localClusterAlgo(egoGraph);
+		timer.stop();
+		timings["1c)    Cluster EgoNet"] += timer.elapsedMicroseconds();
+
+		timer.start();
 		egoPartition.compact();
 		timer.stop();
-		timings["1c) Cluster EgoNet"] += timer.elapsedMicroseconds();
+		timings["1d)    Compact EgoNet"] += timer.elapsedMicroseconds();
 
 
 		DEBUG("Build EgoNet");
 		timer.start();
 		// Insert nodes into ego-net data structure
-		for (index i = 0; i < G.degree(u); ++i) {
+		for (index i = 0; i < degree; ++i) {
 			egoNets[u].emplace(idToNode[i], egoPartition.subsetOf(i));
 		}
+		timer.stop();
+		timings["1e)    EgoNet subsets"] += timer.elapsedMicroseconds();
+
+		timer.start();
 		egoNets[u][none] = egoPartition.numberOfSubsets();
 		timer.stop();
-		timings["1d) Build EgoNet"] += timer.elapsedMicroseconds();
+		timings["1f)    EgoNet subsetCnt"] += timer.elapsedMicroseconds();
 
 		DEBUG("Clean up");
 		timer.start();
@@ -167,7 +176,7 @@ void EgoSplitting::createEgoNets() {
 			nodeToId[v] = none;
 		}
 		timer.stop();
-		timings["1e) Clean up"] += timer.elapsedMicroseconds();
+		timings["1g)    Clean up       "] += timer.elapsedMicroseconds();
 	});
 }
 
@@ -236,14 +245,6 @@ void EgoSplitting::createCover() {
 		}
 	});
 
-#ifndef NDEBUG
-	std::cout << "Detected Community Sizes:\n";
-	for (auto s : cover.subsetSizeMap()) {
-		std::cout << s.second << ", ";
-	}
-	std::cout << std::endl;
-#endif
-
 	// Discard communities of size 4 or less
 	count min_size = 5;
 	std::vector<std::vector<node>> communities(cover.upperBound());
@@ -259,14 +260,6 @@ void EgoSplitting::createCover() {
 				cover.removeFromSubset(c, u);
 		}
 	}
-
-#ifndef NDEBUG
-	std::cout << "Result:\n";
-	for (auto s : cover.subsetSizeMap()) {
-		std::cout << s.second << ", ";
-	}
-	std::cout << std::endl;
-#endif
 }
 
 Cover EgoSplitting::getCover() {

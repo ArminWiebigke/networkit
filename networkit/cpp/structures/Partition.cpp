@@ -36,7 +36,7 @@ void Partition::allToSingletons() {
 	setUpperBound(numberOfElements());
 	parallelForEntries([&](index e, index s) {
 		data[e] = e;
-	});
+	}, upperBound() > (1 << 20));
 }
 
 index Partition::mergeSubsets(index s, index t) {
@@ -72,14 +72,15 @@ bool Partition::isOnePartition(Graph& G) { //FIXME what for is elements needed? 
 
 count Partition::numberOfSubsets() const {
 	auto n = upperBound();
+	bool useParallel = upperBound() > (1 << 20);
 	std::unique_ptr<std::atomic<bool>[]> exists(new std::atomic<bool>[n]{}); // a boolean vector would not be thread-safe
 	this->parallelForEntries([&](index e, index s) {
 		if (s != none) {
 			exists[s] = true;
 		}
-	});
+	}, useParallel);
 	count k = 0; // number of actually existing clusters
-	#pragma omp parallel for reduction(+:k)
+	#pragma omp parallel for reduction(+:k) if (useParallel)
 	for (omp_index i = 0; i < static_cast<omp_index>(n); ++i) {
 		if (exists[i]) {
 			k++;
@@ -90,6 +91,7 @@ count Partition::numberOfSubsets() const {
 
 void Partition::compact(bool useTurbo) {
 	index i = 0;
+	bool useParallel = upperBound() > (1 << 20);
 	if (!useTurbo) {
 		std::vector<index> usedIds(data);
 		Aux::Parallel::sort(usedIds.begin(), usedIds.end());
@@ -101,7 +103,7 @@ void Partition::compact(bool useTurbo) {
 			if (s != none) {
 				data[e] = std::distance(usedIds.begin(), std::lower_bound(usedIds.begin(), usedIds.end(), s));
 			}
-		});
+		}, useParallel);
 	} else {
 		std::vector<index> compactingMap(this->upperBound(), none);
 		this->forEntries([&](index e, index s){
@@ -113,7 +115,7 @@ void Partition::compact(bool useTurbo) {
 			if (s != none) {
 				data[e] = compactingMap[s];
 			}
-		});
+		}, useParallel);
 	}
 	this->setUpperBound(i);
 }
@@ -163,7 +165,7 @@ std::set<std::set<index> > Partition::getSubsets() const {
 	});
 
 	std::set<std::set<index> > subsets;
-	for (auto set : table) {
+	for (auto const &set : table) {
 		if (set.size() > 0) {
 			subsets.insert(set);
 		}
@@ -175,7 +177,7 @@ void Partition::allToOnePartition() {
 	omega = 0;
 	this->parallelForEntries([&](index e, index s) {
 		this->data[e] = 0;
-	});
+	}, upperBound() > (1 << 20));
 }
 
 std::set<index> Partition::getSubsetIds() const {

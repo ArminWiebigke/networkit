@@ -732,19 +732,20 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 
 	EdgeListReader reader('\t', 0);
 	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.top5000.cmty.txt",
 								 G);
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
 		PLP clustAlgo(G, 1, 20);
+//		PLM clustAlgo(G, false, 1.0, "none");
 		clustAlgo.run();
 		return clustAlgo.getPartition();
 	};
 
-//    EgoSplitting algo(G, clusterAlgo);
-	EgoSplitting algo(G);
+    EgoSplitting algo(G, clusterAlgo);
 	algo.run();
 	Cover cover = algo.getCover();
+	
 
 	CoverF1Similarity sim(G, cover, C);
 	sim.run();

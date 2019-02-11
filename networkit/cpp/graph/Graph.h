@@ -1089,7 +1089,7 @@ public:
 	 *
 	 * @param handle Takes parameter <code>(node)</code>.
 	 */
-	template <typename L> void parallelForNodes(L handle) const;
+	template <typename L> void parallelForNodes(L handle, bool parallel = true) const;
 
 	/** Iterate over all nodes of the graph and call @a handle (lambda closure) as
 	 * long as @a condition remains true. This allows for breaking from a node
@@ -1116,7 +1116,7 @@ public:
 	 *
 	 * @param handle Takes parameter <code>(node)</code>.
 	 */
-	template <typename L> void balancedParallelForNodes(L handle) const;
+	template <typename L> void balancedParallelForNodes(L handle, bool parallel = true) const;
 
 	/**
 	 * Iterate over all undirected pairs of nodes and call @a handle (lambda
@@ -1154,7 +1154,7 @@ public:
 	 * node, edgweight)</code>, <code>(node, node, edgeid)</code> or <code>(node,
 	 * node, edgeweight, edgeid)</code>.
 	 */
-	template <typename L> void parallelForEdges(L handle) const;
+	template <typename L> void parallelForEdges(L handle, bool parallel = true) const;
 
 	/* NEIGHBORHOOD ITERATORS */
 
@@ -1251,8 +1251,10 @@ template <typename L> void Graph::forNodes(L handle) const {
 	}
 }
 
-template <typename L> void Graph::parallelForNodes(L handle) const {
-#pragma omp parallel for
+template <typename L> void Graph::parallelForNodes(L handle, bool parallel) const {
+	if (parallel)
+		std::cout << "parallelForNodes" << std::endl;
+#pragma omp parallel for if (parallel)
 	for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
 		if (exists[v]) {
 			handle(v);
@@ -1280,9 +1282,8 @@ template <typename L> void Graph::forNodesInRandomOrder(L handle) const {
 	}
 }
 
-template <typename L> void Graph::balancedParallelForNodes(L handle) const {
-#pragma omp parallel for schedule(                                             \
-    guided) // TODO: define min block size (and test it!)
+template <typename L> void Graph::balancedParallelForNodes(L handle, bool parallel) const {
+#pragma omp parallel for schedule(guided) if (parallel) // TODO: define min block size (and test it!)
 	for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
 		if (exists[v]) {
 			handle(v);
@@ -1483,7 +1484,9 @@ template <typename L> void Graph::forEdges(L handle) const {
 	}
 }
 
-template <typename L> void Graph::parallelForEdges(L handle) const {
+template <typename L> void Graph::parallelForEdges(L handle, bool parallel) const {
+	if (!parallel)
+		return forEdges(handle);
 	switch (weighted + 2 * directed + 4 * edgesIndexed) {
 	case 0: // unweighted, undirected, no edgeIds
 		parallelForEdgesImpl<false, false, false, L>(handle);

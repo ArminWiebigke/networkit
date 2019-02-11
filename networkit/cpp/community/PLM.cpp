@@ -32,7 +32,6 @@ void PLM::run() {
 
 	count z = G.upperNodeIdBound();
 
-
 	// init communities to singletons
 	Partition zeta(z);
 	zeta.allToSingletons();
@@ -49,14 +48,14 @@ void PLM::run() {
 		volNode[u] += G.weightedDegree(u);
 		volNode[u] += G.weight(u, u); // consider self-loop twice
 		// TRACE("init volNode[" , u , "] to " , volNode[u]);
-	});
+	}, z > (1 << 20));
 
 	// init community-dependent temporaries
 	std::vector<double> volCommunity(o, 0.0);
 	zeta.parallelForEntries([&](node u, index C) { 	// set volume for all communities
 		if (C != none)
 			volCommunity[C] = volNode[u];
-	});
+	}, o > (1 << 20));
 
 	// first move phase
 	bool moved = false; // indicates whether any node has been moved in the last pass
@@ -284,7 +283,7 @@ void PLM::run() {
 					#pragma omp atomic
 					volCommunity[C] += volN;
 				}
-			});
+			}, o > (1 << 20));
 			// second move phase
 			timer.start();
 			//

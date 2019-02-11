@@ -19,13 +19,14 @@ namespace NetworKit {
  */
 class ParallelPartitionCoarsening: public GraphCoarsening {
 public:
-	ParallelPartitionCoarsening(const Graph& G, const Partition& zeta, bool useGraphBuilder = true);
+	ParallelPartitionCoarsening(const Graph& G, const Partition& zeta, bool useGraphBuilder = true, bool parallel = true);
 
-	virtual void run();
+	void run() override;
 
 private:
 	const Partition& zeta;
 	bool useGraphBuilder;
+	bool parallel;
 };
 
 } /* namespace NetworKit */

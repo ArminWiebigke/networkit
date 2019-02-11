@@ -309,7 +309,7 @@ public:
 	 *
 	 * @param handle Takes parameters <code>(node, index)</code>
 	 */
-	template<typename Callback> void parallelForEntries(Callback handle) const;
+	template<typename Callback> void parallelForEntries(Callback handle, bool parallel = true) const;
 
 
 private:
@@ -335,8 +335,8 @@ inline void Partition::forEntries(Callback handle) const {
 }
 
 template<typename Callback>
-inline void Partition::parallelForEntries(Callback handle) const {
-	#pragma omp parallel for
+inline void Partition::parallelForEntries(Callback handle, bool parallel) const {
+	#pragma omp parallel for if (parallel)
 	for (omp_index e = 0; e < static_cast<omp_index>(this->z); e++) {
 		handle(e, this->data[e]);
 	}

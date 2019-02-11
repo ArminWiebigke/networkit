@@ -15,7 +15,10 @@
 
 namespace NetworKit {
 
-ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G, const Partition& zeta, bool useGraphBuilder) : GraphCoarsening(G), zeta(zeta),	useGraphBuilder(useGraphBuilder) {
+ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
+		const Partition& zeta, bool useGraphBuilder, bool parallel)
+		: GraphCoarsening(G), zeta(zeta), useGraphBuilder(useGraphBuilder),
+		  parallel(parallel) {
 
 }
 
@@ -45,7 +48,7 @@ void ParallelPartitionCoarsening::run() {
 			node sv = nodeToSuperNode[v];
 			localGraphs.at(t).increaseWeight(su, sv, ew);
 
-		});
+		}, G.numberOfEdges() > (1 << 20));
 
 
 		Aux::Timer timer2;
@@ -59,7 +62,6 @@ void ParallelPartitionCoarsening::run() {
 
 		// access internals of Graph to write adjacencies
 		auto threadSafeIncreaseWeight = [&](node u, node v, edgeweight ew) {
-
 			index vi = Gcombined.indexInOutEdgeArray(u, v);
 			if (vi == none) {
 				index t = omp_get_thread_num();
@@ -74,7 +76,6 @@ void ParallelPartitionCoarsening::run() {
 			} else {
 				Gcombined.outEdgeWeights[u][vi] += ew;
 			}
-
 		};
 
 		DEBUG("combining graphs");
@@ -85,7 +86,7 @@ void ParallelPartitionCoarsening::run() {
 					threadSafeIncreaseWeight(u, v, w);
 				});
 			}
-		});
+		}, Gcombined.numberOfNodes() > (1 << 20));
 
 
 		// ensure consistency of data structure
@@ -109,7 +110,7 @@ void ParallelPartitionCoarsening::run() {
 		// iterate over edges of G and create edges in coarse graph or update edge and node weights in Gcon
 		DEBUG("create edges in coarse graphs");
 		GraphBuilder b(nextNodeId, true, false);
-		#pragma omp parallel for schedule(guided)
+		#pragma omp parallel for schedule(guided) if (nextNodeId > (1 << 20))
 		for (omp_index su = 0; su < static_cast<omp_index>(nextNodeId); su++) {
 			std::map<index, edgeweight> outEdges;
 			for (node u : nodesPerSuperNode[su]) {
