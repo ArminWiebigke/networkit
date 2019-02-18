@@ -168,13 +168,37 @@ def getFacebookData(name, attribute):
 	return P
 
 
+def remove_small_communities(filename):
+	original_file = open(filename, 'r')
+	cleaned_filename = filename + '.cleaned'
+	cleaned_file = open(cleaned_filename, 'w')
+	for line in original_file:
+		if len(str.split(line)) > 4:
+			cleaned_file.write(line)
+	return cleaned_filename
+
+
 def getFacebookGraph(name):
 	return graphio.readMat(home_path + '/graphs/facebook100/{0}.mat'.format(name), key='A')
 
 
-def getAmazonGraph():
+def get_filename(filename, clean):
+	if clean:
+		filename = remove_small_communities(filename)
+	return filename
+
+
+def getAmazonGraph5000(clean=False):
 	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(code_path + '/graphs/com-amazon.top5000.cmty.txt', g)
+	filename = code_path + '/graphs/com-amazon.top5000.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
+	return g, c
+
+
+def getAmazonGraphAll(clean=False):
+	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	filename = code_path + '/graphs/com-amazon.all.dedup.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 

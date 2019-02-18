@@ -1,9 +1,10 @@
-from networkit.community import EgoSplitting, OLP
-from networkit.stopwatch import Timer
-from networkit import graphio
 import tempfile
 import os
 import subprocess
+from networkit.community import EgoSplitting, OLP
+from networkit.stopwatch import Timer
+from networkit import graphio
+from egosplit.external import remove_small_communities
 
 home_path = os.path.expanduser("~")
 code_path = home_path + "/Code"
@@ -26,7 +27,12 @@ class CoverAlgorithm:
 	def run(self, graph):
 		raise NotImplementedError("Run method not implemented")
 
+	def hasPartitionCounts(self):
+		return False
+
 class EgoSplitAlgorithm(CoverAlgorithm):
+	partitionCounts = None
+
 	def __init__(self, out_file, name, localPartitionAlgorithm, globalPartitionAlgorithm = None):
 		self.out_file = out_file
 		self.algorithm = lambda g: EgoSplitting(g, localPartitionAlgorithm,
@@ -40,6 +46,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		t.stop()
 		self.time = t.elapsed
 		self.cover = a.getCover()
+		# Output timings
 		timings = a.getTimings()
 		for name in sorted(timings.keys()):
 			print(name.decode('ASCII') + ": " + str(timings[name]/1000))
@@ -48,6 +55,14 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 			timings_str += str(timings[name]/1000000).ljust(21)
 		self.out_file.write(timings_str + '\n')
 		print(timings_str)
+		# Output partition counts
+		self.partitionCounts = a.getPartitionCounts()
+
+	def hasPartitionCounts(self):
+		return True
+
+	def getPartitionCounts(self):
+		return self.partitionCounts
 
 
 class OLPAlgorithm(CoverAlgorithm):
@@ -76,7 +91,9 @@ class MOSESAlgorithm(CoverAlgorithm):
 			subprocess.call([code_path + "/MOSES/moses-binary-linux-x86-64", graph_filename, output_filename], stdout=dev_null)
 			t.stop()
 			self.time = t.elapsed
-			self.cover = graphio.CoverReader().read(output_filename, graph)
+			output_filename = remove_small_communities(output_filename)
+			cover = graphio.CoverReader().read(output_filename, graph)
+			self.cover = cover
 
 
 class GCEAlgorithm(CoverAlgorithm):

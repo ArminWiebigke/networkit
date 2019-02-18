@@ -108,6 +108,10 @@ void EgoSplitting::createEgoNets() {
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 
+	count allPartitions = 0;
+	count partitions = 0;
+	count allComponents = 0;
+	count components = 0;
 	G.forNodes([&](node u) {
 		handler.assureRunning();
 		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
@@ -128,6 +132,7 @@ void EgoSplitting::createEgoNets() {
 
 
 		DEBUG("Find triangles");
+		UnionFind unionFind(degree);
 		timer.start();
 		// Find all triangles and add the edges to the egoGraph
 		Graph egoGraph(degree);
@@ -136,11 +141,13 @@ void EgoSplitting::createEgoNets() {
 				if (nodeToId[w] != none) {
 					// we have found a triangle u-v-w
 					egoGraph.addEdge(nodeToId[v], nodeToId[w]);
+					unionFind.merge(nodeToId[v], nodeToId[w]);
 				}
 			});
 		});
 		timer.stop();
 		timings["1b)    Find triangles"] += timer.elapsedMicroseconds();
+
 
 		DEBUG("Cluster EgoNet");
 		timer.start();
@@ -153,6 +160,26 @@ void EgoSplitting::createEgoNets() {
 		egoPartition.compact();
 		timer.stop();
 		timings["1d)    Compact EgoNet"] += timer.elapsedMicroseconds();
+
+
+		// Count partitions of EgoNet
+		auto print = [](count s){
+			std::cout << s << std::endl;
+		};
+		for (count size : egoPartition.subsetSizes()) {
+			if (size > 1)
+				++partitions;
+			++allPartitions;
+		}
+//		ConnectedComponents componentsAlgo(egoGraph);
+//		componentsAlgo.run();
+//		auto comp = componentsAlgo.getPartition();
+		auto comp = unionFind.toPartition();
+		for (count size : comp.subsetSizes()) {
+			if (size > 1)
+				++components;
+			++allComponents;
+		}
 
 
 		DEBUG("Build EgoNet");
@@ -169,6 +196,7 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1f)    EgoNet subsetCnt"] += timer.elapsedMicroseconds();
 
+
 		DEBUG("Clean up");
 		timer.start();
 		// Reset IDs
@@ -178,6 +206,11 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1g)    Clean up       "] += timer.elapsedMicroseconds();
 	});
+
+	partitionCounts["allPartitions"] = allPartitions / (double) G.numberOfNodes();
+	partitionCounts["twoPlusPartitions"] = partitions / (double) G.numberOfNodes();
+	partitionCounts["allComponents"] = allComponents / (double) G.numberOfNodes();
+	partitionCounts["twoPlusComponents"] = components / (double) G.numberOfNodes();
 }
 
 void EgoSplitting::splitIntoPersonas() {
@@ -268,6 +301,10 @@ Cover EgoSplitting::getCover() {
 
 std::map<std::string, double> EgoSplitting::getTimings() {
 	return timings;
+}
+
+std::map<std::string, double> EgoSplitting::getPartitionCounts() {
+	return partitionCounts;
 }
 
 } /* namespace NetworKit */

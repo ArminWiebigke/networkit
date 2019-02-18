@@ -161,3 +161,22 @@ GCE                         DBLP    0.1611   0.6857   0.0528   8.9265
 EgoSplitting_(PLP)          LiveJournal  0.0278   0.5271   0.0256   180.2438
 EgoSplitting_(PLM)          LiveJournal  0.0459   0.5221   0.0210   509.7759
 EgoSplitting_(LPPotts_par)  LiveJournal  0.0102   0.6844   0.0113   654.3852
+
+
+1) create EgoNets: 11320.45
+1a)    Assign IDs    : 0.397
+1b)    Find triangles: 838.039
+1c)    Cluster EgoNet: 8054.41
+1d)    Compact EgoNet: 204.525
+1e)    EgoNet subsets: 51.397
+1f)    EgoNet subsetCnt: 31.52
+1g)    Clean up       : 0.054
+2) split Personas: 19.419
+3) connect Personas: 607.582
+4) Persona Clustering: 3292.164
+5) create Cover: 363.417
+
+731367, 308166, 719218, 296794
+731367, 308166, 719218, 296794
+
+731367, 308166, 0, 0

@@ -729,11 +729,11 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 TEST_F(CommunityGTest, testEgoSplitting) {
 //    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
 //    Graph G = gen.generate();
-
 	EdgeListReader reader('\t', 0);
 	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.top5000.cmty.txt",
 								 G);
+
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
 		PLP clustAlgo(G, 1, 20);
@@ -747,9 +747,9 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 	Cover cover = algo.getCover();
 	
 
-	CoverF1Similarity sim(G, cover, C);
-	sim.run();
-	std::cout << sim.getUnweightedAverage() << std::endl;
+//	CoverF1Similarity sim(G, cover, C);
+//	sim.run();
+//	std::cout << sim.getUnweightedAverage() << std::endl;
 
 	auto isProperCover = [](const Graph &G, const Cover &cover) {
 		for (auto size : cover.subsetSizes()) {
