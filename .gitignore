@@ -5,6 +5,7 @@ CMG_101014
 instances
 .settings*
 plots
+!egosplit/plots
 *~
 *.dot$
 tracelog*

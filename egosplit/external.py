@@ -27,7 +27,7 @@ def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
+		subprocess.call([code_path + '/Infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
 		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
 			result.toSingleton(result.extend())
@@ -132,12 +132,17 @@ def calc_NMI(graph, cover, ref_cover):
 				for com in communities:
 					if com is not '':
 						f.write(com + '\n')
-			out = subprocess.check_output([code_path + '/Overlapping-NMI/onmi', 'cover.dat', 'ref_cover.dat'])
-			out_lines = out.splitlines()
-			nmi_line = out_lines[0]
-			nmi_val = float(nmi_line.split()[1])
+			try:
+				out = subprocess.check_output([code_path + '/Overlapping-NMI/onmi', 'cover.dat', 'ref_cover.dat'])
+				out_lines = out.splitlines()
+				nmi_line = out_lines[0]
+				nmi_val = float(nmi_line.split()[1])
+			except subprocess.CalledProcessError:
+				nmi_val = 0.0
 		finally:
 			os.chdir(old_dir)
+	if nmi_val > 1.0 or nmi_val < 0.0:
+		nmi_val = -1.0
 	return nmi_val
 
 

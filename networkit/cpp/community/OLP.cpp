@@ -65,19 +65,14 @@ void OLP::run() {
 		G.forNodesInRandomOrder([&](node u) {
 			if ((activeNodes[u]) && (G.degree(u) > 0)) {
 				using label = index; // a label is the same as a cluster id
-				std::map<label, count> neighborLabelCounts; // neighborLabelCounts maps label -> frequency in the neighbors
+				std::map<label, double> neighborLabelCounts; // neighborLabelCounts maps label -> (weighted) frequency in the neighbors
 
 				// Count the labels of the neighbors
-				G.forNeighborsOf(u, [&](node w) {
+				G.forNeighborsOf(u, [&](node w, edgeweight weight) {
 					auto labels = result.subsetsOf(w);
 					for (label l : labels)
-						++neighborLabelCounts[l];
+						neighborLabelCounts[l] += weight;
 				});
-
-				for (auto label_pair : neighborLabelCounts) {
-//                    std::cout << label_pair.first << ", " << label_pair.second << std::endl;
-					assert(label_pair.first < labelBound);
-				}
 
 				std::set<label> bestLabels;
 

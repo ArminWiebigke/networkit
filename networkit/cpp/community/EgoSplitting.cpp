@@ -8,6 +8,7 @@
 #include <omp.h>
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 #include "../structures/UnionFind.h"
 #include "../structures/Partition.h"
@@ -137,10 +138,10 @@ void EgoSplitting::createEgoNets() {
 		// Find all triangles and add the edges to the egoGraph
 		Graph egoGraph(degree);
 		G.forEdgesOf(u, [&](node, node v) {
-			directedEdges.forEdgesOf(v, [&](node, node w) {
+			directedEdges.forEdgesOf(v, [&](node, node w, edgeweight weight) {
 				if (nodeToId[w] != none) {
 					// we have found a triangle u-v-w
-					egoGraph.addEdge(nodeToId[v], nodeToId[w]);
+					egoGraph.addEdge(nodeToId[v], nodeToId[w], weight);
 					unionFind.merge(nodeToId[v], nodeToId[w]);
 				}
 			});
@@ -152,7 +153,12 @@ void EgoSplitting::createEgoNets() {
 		DEBUG("Cluster EgoNet");
 		timer.start();
 		// Cluster ego-net with the local cluster algorithm
-		auto egoPartition = localClusterAlgo(egoGraph);
+		Partition egoPartition;
+		if (egoGraph.numberOfEdges() > 0)
+			egoPartition = localClusterAlgo(egoGraph);
+		else
+			egoPartition = unionFind.toPartition();
+
 		timer.stop();
 		timings["1c)    Cluster EgoNet"] += timer.elapsedMicroseconds();
 
@@ -163,9 +169,6 @@ void EgoSplitting::createEgoNets() {
 
 
 		// Count partitions of EgoNet
-		auto print = [](count s){
-			std::cout << s << std::endl;
-		};
 		for (count size : egoPartition.subsetSizes()) {
 			if (size > 1)
 				++partitions;
@@ -229,11 +232,11 @@ void EgoSplitting::connectPersonas() {
 		return personaOffsets[u] + i;
 	};
 
-	G.forEdges([&](node u, node v) {
+	G.forEdges([&](node u, node v, edgeweight weight) {
 		auto idx_u = egoNets[u].find(v);
 		auto idx_v = egoNets[v].find(u);
 		assert(idx_u != egoNets[u].end() && idx_v != egoNets[v].end());
-		personaGraph.addEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second));
+		personaGraph.addEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second), weight);
 	});
 
 	egoNets.clear();

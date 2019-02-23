@@ -17,9 +17,10 @@ class AdjacencyArray {
 private:
     std::vector <index> edgesBegin;
     std::vector <node> edges;
+    std::vector <edgeweight> edgeWeights;
 
 public:
-    AdjacencyArray(const Graph &G);
+    explicit AdjacencyArray(const Graph &G);
 
     template <typename L> void forEdgesOf(node u, L handle) const;
 
@@ -29,7 +30,7 @@ public:
 template<typename L>
 void AdjacencyArray::forEdgesOf(node u, L handle) const {
     for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
-        handle(u, edges[i]);
+        handle(u, edges[i], edgeWeights[i]);
     }
 }
 

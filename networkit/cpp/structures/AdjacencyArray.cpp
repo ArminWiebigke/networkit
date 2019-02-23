@@ -12,6 +12,7 @@ namespace NetworKit {
 AdjacencyArray::AdjacencyArray(const NetworKit::Graph &G) {
     edgesBegin.resize(G.numberOfNodes() + 1);
     edges.resize(G.numberOfEdges());
+    edgeWeights.resize(G.numberOfEdges());
 
     // direct edge from low to high-degree nodes
     auto isOutEdge = [&](node u, node v) {
@@ -22,8 +23,9 @@ AdjacencyArray::AdjacencyArray(const NetworKit::Graph &G) {
     for (index u = 0; u < G.upperNodeIdBound(); ++u) {
         edgesBegin[u] = pos;
         if (G.hasNode(u)) {
-            G.forEdgesOf(u, [&](node, node v) {
+            G.forEdgesOf(u, [&](node, node v, edgeweight ew) {
                 if (isOutEdge(u, v)) {
+                    edgeWeights[pos] = ew;
                     edges[pos++] = v;
                 }
             });

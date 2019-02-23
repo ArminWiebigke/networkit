@@ -73,6 +73,7 @@ metric_names = {
 		"file_name": "time"
 	},
 }
+sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
 
 
 def filter_data(data, conditions):
@@ -93,58 +94,17 @@ def get_value(base_data, x_name, x_val, y_name):
 	return val
 
 
-# def plots_metrics(graph_names, file_append):
-# 	graph_cnt = len(graph_names)
-# 	algo_cnt = len(all_algo_names)
-# 	bars_per_block = algo_cnt
-# 	x_value_cnt = graph_cnt
-#
-# 	bar_width = 1 / (bars_per_block + 1.6)
-# 	index = np.arange(x_value_cnt)
-#
-# 	for metric in metrics:
-# 		fig, ax = plt.subplots()
-# 		for i in range(algo_cnt):
-# 			algo_name = all_algo_names[i]
-# 			filtered_data = filter_data(data["metrics"], [("algo", algo_name)])
-# 			y_val = []
-# 			for graph_name in graph_names:
-# 				y = get_value(filtered_data, "graph", graph_name, metric)
-# 				y_val.append(y)
-#
-# 			ax.bar(index + i * bar_width,
-# 				   y_val,
-# 				   bar_width,
-# 				   color=colors[algo_name],
-# 				   label=algo_name,
-# 				   error_kw=error_config,
-# 				   alpha=opacity
-# 				   )
-#
-# 		# Axes
-# 		ax.set(ylabel=metric_names[metric]["y_val"],
-# 			   title=metric_names[metric]["description"],
-# 			   ylim=0,
-# 			   xticks=index + bar_width * (bars_per_block - 1) / 2,
-# 			   xticklabels=graph_names)
-# 		ax.legend(loc="best")
-#
-# 		# Save plot
-# 		fig.savefig(file_prefix + metric_names[metric]["file_name"] + "_" + file_append + ".pdf")
-
-
 def metrics_real():
 	file_append = 'real'
 	filtered_data = data["metrics"].query("graph.str.contains('real')")
 	for metric in metrics:
-		sns.set(style="whitegrid", context="notebook", font_scale=0.8)
 		fig, ax = plt.subplots()
 		sns.barplot(x="graph",
 					y=metric,
 					hue="algo",
 					data=filtered_data,
 					ax=ax)
-		sns.despine(left=True)
+		sns.despine(left=True, ax=ax)
 		ax.set(
 			ylabel=metric_names[metric]["y_val"],
 			xticklabels=[label.get_text()[5:] for label in ax.get_xticklabels()]
@@ -158,14 +118,13 @@ def metrics_real():
 
 
 def metrics_lfr():
-	metrics_filter('LFR_om')
-	metrics_filter('LFR_mu')
+	metrics_filter('LFR_om', 'om')
+	metrics_filter('LFR_mu', 'mu')
 
 
-def metrics_filter(graphs):
+def metrics_filter(graphs, xlabel):
 	filtered_data = data["metrics"].query("graph.str.contains(@graphs)")
 	for metric in metrics:
-		sns.set(style="whitegrid", context="notebook", font_scale=0.8)
 		fig, ax = plt.subplots()
 		sns.lineplot(x="graph",
 					 y=metric,
@@ -178,10 +137,9 @@ def metrics_filter(graphs):
 					 markersize=8,
 					 data=filtered_data,
 					 ax=ax)
-		# sns.despine(left=True)
-		# print(ax.get_xticks())
-		# print([label.get_text() for label in ax.get_xticklabels()])
+		sns.despine(ax=ax)
 		ax.set(
+			xlabel=xlabel,
 			ylabel=metric_names[metric]["y_val"],
 			ylim=(-0.01, 1),
 			# xticklabels=[label.get_text() for label in ax.get_xticklabels()]
@@ -194,25 +152,7 @@ def metrics_filter(graphs):
 
 
 def num_comms_real():
-	filtered_data = data["num_comms"].query("graph.str.contains('real')")
-	if len(filtered_data) == 0:
-		return
-	sns.set(style="whitegrid", context="notebook", font_scale=0.8)
-	fig, ax = plt.subplots()
-	sns.set(style="whitegrid", color_codes=True)
-	sns.barplot(
-		x="graph",
-		y="num_comms",
-		hue="algo",
-		data=filtered_data,
-		ax=ax,
-		# xticklabels=[label.get_text()[5:] for label in ax.get_xticklabels()]
-	)
-	# sns.despine(left=True)
-	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
-	fig.suptitle("Number of communities, real graphs")
-	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'num_comms.pdf')
+	num_comms_filter('real')
 
 
 def num_comms_lfr():
@@ -223,110 +163,104 @@ def num_comms_lfr():
 def num_comms_filter(graphs):
 	filtered_data = data["num_comms"].query("graph.str.contains(@graphs)")
 	fig, ax = plt.subplots()
-	sns.set(style="whitegrid")
 	sns.lineplot(x="graph",
 				 y="num_comms",
 				 hue="algo",
 				 style="algo",
 				 markers=True,
 				 dashes=False,
-				 # markersize=10,
 				 linewidth=2,
 				 data=filtered_data,
 				 ax=ax)
-	# sns.despine(left=True)
-	ax.set(title='Number of communities',
-		   ylim=(0,200),
-		   # yscale='log'
-		   )
-	fig.savefig(file_prefix + 'num_comms.pdf')
+	sns.despine(ax=ax)
+	ax.set(ylim=(0, 300))
+	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+	fig.suptitle("Number of communities")
+	plt.tight_layout(rect=(0, 0, 1, 0.96))
+	fig.savefig(file_prefix + 'num_comms_' + graphs + '.pdf')
+	plt.close(fig)
 
 
-def comm_sizes():
-	fig, ax = plt.subplots()
-	graph = "Amazon_5000_no_small"
-	markers = {
-		"ground_truth": "x",
-		"EgoSplitting_(PLM)": "o"
-	}
-	algo_names = data["comm_sizes"].groupby("algo").mean().index.values
-
-	for algo_name in algo_names:
-		filtered_data = filter_data(data["comm_sizes"], [("algo", algo_name), ("graph", graph)])
-		grouped = filtered_data.groupby("comm_size").mean()
-		x_val = grouped.index.values
-		y_val = grouped["cnt"]
-
-		ax.plot(x_val,
-				y_val,
-				# color=colors[algo_name],
-				marker='x',#markers[algo_name],
-				markersize=4,
-				linestyle="None",
-				label=algo_name,
-				alpha=opacity
-				)
-
-	# Axes
-	ax.set(xlabel="size",
-		   ylabel="count",
-		   title=graph + ", community sizes",
-		   xlim=4,
-		   ylim=0.5,
-		   xscale='log',
-		   yscale='log',
-		   )
-	ax.legend(loc="best")
-
-	# Save plot
-	fig.savefig(file_prefix + "comm_sizes.pdf")
-
-
-def comm_sizes_sea(graphs):
-	filtered_data = data["comm_sizes"].query("graph.str.contains(@graphs)")
-	# for num_comms in range(5, 86, 10):
-	# graph_name = "LFR_mu_" + str(num_comms).rjust(2, '0')
-	fig, ax = plt.subplots()
-	sns.set(style="whitegrid", color_codes=True)
-	sns.violinplot(x="graph",
-				   y="comm_size",
-				   hue="algo",
-				   scale="count",
-				   data=filtered_data,
-				   ax=ax)
-	sns.despine(left=True)
-	ax.set(title='Size of communities')
-	fig.savefig(file_prefix + 'comm_sizes' + '.pdf')
+# def comm_sizes():
+# 	fig, ax = plt.subplots()
+# 	graph = "Amazon_5000_no_small"
+# 	markers = {
+# 		"ground_truth": "x",
+# 		"EgoSplitting_(PLM)": "o"
+# 	}
+# 	algo_names = data["comm_sizes"].groupby("algo").mean().index.values
+#
+# 	for algo_name in algo_names:
+# 		filtered_data = filter_data(data["comm_sizes"], [("algo", algo_name), ("graph", graph)])
+# 		grouped = filtered_data.groupby("comm_size").mean()
+# 		x_val = grouped.index.values
+# 		y_val = grouped["cnt"]
+#
+# 		ax.plot(x_val,
+# 				y_val,
+# 				# color=colors[algo_name],
+# 				marker='x',#markers[algo_name],
+# 				markersize=4,
+# 				linestyle="None",
+# 				label=algo_name,
+# 				alpha=opacity
+# 				)
+#
+# 	# Axes
+# 	ax.set(xlabel="size",
+# 		   ylabel="count",
+# 		   title=graph + ", community sizes",
+# 		   xlim=4,
+# 		   ylim=0.5,
+# 		   xscale='log',
+# 		   yscale='log',
+# 		   )
+# 	ax.legend(loc="best")
+#
+# 	# Save plot
+# 	fig.savefig(file_prefix + "comm_sizes.pdf")
 
 
-def node_comms_sea():
-	for num_comms in range(1, 6):
-		graph_name = "LFR_GCE_" + str(num_comms)
-		filtered_data = filter_data(data["node_comms"], [("graph", graph_name)])
-		fig, ax = plt.subplots()
-		sns.set(style="whitegrid", color_codes=True)
-		sns.violinplot(x="graph",
-					   y="num_comms",
-					   hue="algo",
-					   scale="count",
-					   data=filtered_data,
-					   ax=ax)
-		sns.despine(left=True)
-		ax.set(title='Number of communities per node')
-		fig.savefig(file_prefix + 'node_comms' + str(num_comms) + '.pdf')
+def comm_sizes_real():
+	comm_sizes_filter('real_')
 
 
-def comm_sizes_ego():
+def comm_sizes_lfr():
 	comm_sizes_filter('LFR_om')
 	comm_sizes_filter('LFR_mu')
 
 
 def comm_sizes_filter(graphs):
+	graph_names = sorted(list(set(data["comm_sizes"].query("graph.str.contains(@graphs)")["graph"])))
+	for graph_name in graph_names:
+		filtered_data = data["comm_sizes"].query(("graph == @graph_name"))
+		fig, ax = plt.subplots()
+		sns.violinplot(x="graph",
+					   y="comm_size",
+					   hue="algo",
+					   scale="count",
+					   data=filtered_data,
+					   ax=ax,
+					   palette="bright")
+		sns.despine(ax=ax)
+		ax.set(ylabel="size")
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+		fig.suptitle("Size of communities")
+		plt.tight_layout(rect=(0, 0, 1, 0.96))
+		fig.savefig(file_prefix + 'comm_sizes_' + graph_name + '.pdf')
+		plt.close(fig)
+
+
+def comm_sizes_ego():
+	comm_sizes_ego_filter('LFR_om')
+	comm_sizes_ego_filter('LFR_mu')
+
+
+def comm_sizes_ego_filter(graphs):
 	filtered_data = data["comm_sizes"].query(
-		"(algo == 'EgoSplitting_(PLM)' or algo == 'ground_truth') and graph.str.contains(@graphs)")
-	sns.set(style="whitegrid", context="notebook", font_scale=0.8)
+		"(algo == 'EgoSplitting_(PLM)' or algo == 'ground_truth')"
+		" and graph.str.contains(@graphs)")
 	fig, ax = plt.subplots()
-	sns.set(style="whitegrid", color_codes=True)
 	sns.violinplot(x="graph",
 				   y="comm_size",
 				   hue="algo",
@@ -334,14 +268,41 @@ def comm_sizes_filter(graphs):
 				   scale="count",
 				   data=filtered_data,
 				   ax=ax)
-	sns.despine(left=True)
+	sns.despine(ax=ax)
 	ax.set(
-		ylabel="comm_size (log2)"
+		ylabel="size (log2)",
+		xticklabels=[label.get_text()[4:] for label in ax.get_xticklabels()],
 	)
 	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
 	fig.suptitle("Size of coummunities, LFR graphs")
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'comm_sizes_' + graphs + '.pdf')
+	fig.savefig(file_prefix + 'comm_sizes_' + graphs + '_ego.pdf')
+	plt.close(fig)
+
+
+def node_comms_lfr():
+	node_comms("LFR_om")
+	node_comms("LFR_mu")
+
+
+def node_comms(graphs):
+	graph_names = sorted(list(set(data["node_comms"].query("graph.str.contains(@graphs)")["graph"])))
+	for graph_name in graph_names:
+		filtered_data = data["node_comms"].query(("graph == @graph_name"))
+		fig, ax = plt.subplots()
+		sns.violinplot(x="graph",
+					   y="num_comms",
+					   hue="algo",
+					   scale="count",
+					   data=filtered_data,
+					   ax=ax)
+		sns.despine(ax=ax)
+		ax.set(ylabel="#communities")
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+		fig.suptitle("Number of communities per node")
+		plt.tight_layout(rect=(0, 0, 1, 0.96))
+		fig.savefig(file_prefix + 'node_comms_' + graph_name + '.pdf')
+		plt.close(fig)
 
 
 def node_comms_ego():
@@ -352,9 +313,7 @@ def node_comms_ego():
 def node_comms_ego_filter(graphs):
 	filtered_data = data["node_comms"].query(
 		"(algo == 'EgoSplitting_(PLM)' or algo == 'ground_truth') and graph.str.contains(@graphs)")
-	sns.set(style="whitegrid", context="notebook", font_scale=0.8)
 	fig, ax = plt.subplots()
-	sns.set(style="whitegrid", color_codes=True)
 	sns.violinplot(x="graph",
 				   y="num_comms",
 				   hue="algo",
@@ -362,21 +321,26 @@ def node_comms_ego_filter(graphs):
 				   scale="count",
 				   data=filtered_data,
 				   ax=ax)
-	sns.despine(left=True)
+	sns.despine(ax=ax)
+	ax.set(
+		ylabel="#communities (log2)",
+		xticklabels=[label.get_text()[4:] for label in ax.get_xticklabels()],
+	)
 	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
 	fig.suptitle("Number of communities per node, LFR graphs")
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
 	fig.savefig(file_prefix + 'node_comms_' + graphs + '.pdf')
+	plt.close(fig)
 
 
 def partition_counts():
-	# partition_counts_filter('LFR_om')
+	partition_counts_filter('LFR_om')
 	partition_counts_filter('LFR_mu')
 
 
 def partition_counts_filter(graphs):
-	filtered_data = data["partition_counts"].query("graph.str.contains(@graphs)")
-	sns.set(style="whitegrid", context="notebook", font_scale=0.8)
+	filtered_data = data["partition_counts"].query("graph.str.contains(@graphs)"
+												   " and partition_name.str.contains('twoPlus')")
 	fig, ax = plt.subplots()
 	sns.lineplot(x="graph",
 				 y="count",
@@ -388,25 +352,26 @@ def partition_counts_filter(graphs):
 				 markersize=8,
 				 data=filtered_data,
 				 ax=ax)
-	sns.despine(left=True)
+	sns.despine(left=True, ax=ax)
 	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
 	fig.suptitle("Partition counts per node (avg)")
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'partition_counts' + '.pdf')
+	fig.savefig(file_prefix + 'partition_counts_' + graphs + '.pdf')
+	plt.close(fig)
 
-
-# comm_sizes_sea('LFR_mu')
-# node_comms_sea()
-
-comm_sizes_ego()
-node_comms_ego()
 
 # metrics_real()
-# metrics_lfr()
+metrics_lfr()
 
-num_comms_real()
+# num_comms_real()
 num_comms_lfr()
 
 partition_counts()
+
+comm_sizes_lfr()
+comm_sizes_ego()
+
+node_comms_lfr()
+node_comms_ego()
 
 # plt.show()
