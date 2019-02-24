@@ -19,6 +19,7 @@
 #include "../auxiliary/Timer.h"
 #include "EgoSplitting.h"
 #include "PLP.h"
+#include "CoverF1Similarity.h"
 
 namespace NetworKit {
 
@@ -31,23 +32,35 @@ EgoSplitting::EgoSplitting(const Graph &G)
 	};
 	localClusterAlgo = clusterAlgo;
 	globalClusterAlgo = clusterAlgo;
-	egoNets.resize(G.upperNodeIdBound());
-	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
+	init();
+}
+
+EgoSplitting::EgoSplitting(const Graph &G,
+						   std::function<Partition(Graph &)> clusterAlgo)
+		: EgoSplitting(G, clusterAlgo, clusterAlgo) {
 }
 
 EgoSplitting::EgoSplitting(const Graph &G,
 						   std::function<Partition(Graph &)> localClusterAlgo,
 						   std::function<Partition(Graph &)> globalClusterAlgo)
-		: G(G), localClusterAlgo(std::move(localClusterAlgo)),
+		: G(G),
+		  localClusterAlgo(std::move(localClusterAlgo)),
 		  globalClusterAlgo(std::move(globalClusterAlgo)) {
-	egoNets.resize(G.upperNodeIdBound());
-	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
+	init();
 }
 
 EgoSplitting::EgoSplitting(const Graph &G,
-						   std::function<Partition(Graph &)> clusterAlgo)
-		: G(G), localClusterAlgo(clusterAlgo),
-		  globalClusterAlgo(std::move(clusterAlgo)) {
+						   std::function<Partition(Graph &)> localClusterAlgo,
+						   std::function<Partition(Graph &)> globalClusterAlgo,
+						   const Cover &groundTruth)
+		: G(G),
+		  localClusterAlgo(std::move(localClusterAlgo)),
+		  globalClusterAlgo(std::move(globalClusterAlgo)),
+		  groundTruth(groundTruth) {
+	init();
+}
+
+void EgoSplitting::init() {
 	egoNets.resize(G.upperNodeIdBound());
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 }
@@ -113,6 +126,7 @@ void EgoSplitting::createEgoNets() {
 	count partitions = 0;
 	count allComponents = 0;
 	count components = 0;
+	std::pair<count, double> f1Score(0, 0.0);
 	G.forNodes([&](node u) {
 		handler.assureRunning();
 		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
@@ -167,7 +181,6 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1d)    Compact EgoNet"] += timer.elapsedMicroseconds();
 
-
 		// Count partitions of EgoNet
 		for (count size : egoPartition.subsetSizes()) {
 			if (size > 1)
@@ -184,6 +197,45 @@ void EgoSplitting::createEgoNets() {
 			++allComponents;
 		}
 
+		// Compare partitions with ground truth
+		// For each partition in the EgoNet, check if a community exists in the ground truth
+		if (groundTruth.upperBound() > 1 && egoGraph.numberOfNodes() > 1) {
+			Cover egoGroundTruth(degree);
+			egoGroundTruth.setUpperBound(groundTruth.upperBound());
+			egoGraph.forNodes([&](node u) {
+				auto globalNode = idToNode[u];
+				auto communites = groundTruth.subsetsOf(globalNode);
+				for (index c : communites) {
+					egoGroundTruth.addToSubset(c, u);
+				}
+			});
+			Cover egoCover = Cover(egoPartition);
+			auto printCommunities = [&egoGraph](Cover const &cover) {
+				std::vector<std::vector<index>> communites(cover.upperBound());
+				egoGraph.forNodes([&](node v) {
+					for (index c : cover[v]) {
+						communites[c].push_back(v);
+					}
+				});
+				std::stringstream outString;
+				for (auto const &c : communites) {
+					if (c.empty())
+						continue;
+					outString << "(";
+					for (node v : c)
+						outString << v << ", ";
+					outString << ")";
+				}
+				std::cout << outString.str() << std::endl;
+			};
+//			printCommunities(egoCover);
+//			printCommunities(egoGroundTruth);
+			CoverF1Similarity f1Similarity(egoGraph, egoCover, egoGroundTruth);
+			f1Similarity.run();
+			double f1 = f1Similarity.getUnweightedAverage();
+			f1Score.second += (f1 - f1Score.second) / ++f1Score.first;
+			std::cout << f1Score.second << std::endl;
+		}
 
 		DEBUG("Build EgoNet");
 		timer.start();
@@ -209,11 +261,11 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1g)    Clean up       "] += timer.elapsedMicroseconds();
 	});
-
-	partitionCounts["allPartitions"] = allPartitions / (double) G.numberOfNodes();
-	partitionCounts["twoPlusPartitions"] = partitions / (double) G.numberOfNodes();
-	partitionCounts["allComponents"] = allComponents / (double) G.numberOfNodes();
-	partitionCounts["twoPlusComponents"] = components / (double) G.numberOfNodes();
+	executionInfo["egoF1Score"] = f1Score.second;
+	executionInfo["allPartitions"] = allPartitions / (double) G.numberOfNodes();
+	executionInfo["twoPlusPartitions"] = partitions / (double) G.numberOfNodes();
+	executionInfo["allComponents"] = allComponents / (double) G.numberOfNodes();
+	executionInfo["twoPlusComponents"] = components / (double) G.numberOfNodes();
 }
 
 void EgoSplitting::splitIntoPersonas() {
@@ -306,8 +358,8 @@ std::map<std::string, double> EgoSplitting::getTimings() {
 	return timings;
 }
 
-std::map<std::string, double> EgoSplitting::getPartitionCounts() {
-	return partitionCounts;
+std::map<std::string, double> EgoSplitting::getExecutionInfo() {
+	return executionInfo;
 }
 
 } /* namespace NetworKit */

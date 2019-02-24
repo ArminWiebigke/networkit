@@ -9,7 +9,7 @@ from egosplit.benchmarks.execution import *
 
 def start_benchmarks():
 	# setNumberOfThreads(1)
-	iterations = 1
+	iterations = 5
 	graphs = []
 	LFR_graph_args = OrderedDict()
 	algos = []
@@ -43,7 +43,7 @@ def start_benchmarks():
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
-	for mu_factor in range(5, 86, 10):
+	for mu_factor in range(0, 56, 5):
 		LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
 			'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
 			't1': 2, 't2': 1, 'mu': 0.01 * mu_factor, 'on': 1000, 'om': 2}
@@ -52,21 +52,21 @@ def start_benchmarks():
 	# ************************************************************************************
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
-	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	# partition_algos['PLP_Infomap'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
 	# 								  lambda g: clusterInfomap(g)]
 	# partition_algos['PLM_Infomap'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition(),
 	# 								  lambda g: clusterInfomap(g)]
 	for partition_algo in partition_algos:
 		algos.append(EgoSplitAlgorithm(ego_file, partition_algo, *partition_algos[partition_algo]))
-	algos.append(OLPAlgorithm())
-	algos.append(GCEAlgorithm())
-	algos.append(MOSESAlgorithm())
+	# algos.append(OLPAlgorithm())
+	# algos.append(GCEAlgorithm())
+	# algos.append(MOSESAlgorithm())
 	# algos.append(OSLOMAlgorithm())
 
 	# ************************************************************************************

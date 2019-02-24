@@ -4896,9 +4896,10 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		_EgoSplitting(_Graph G) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
+		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper, _Cover groundTruth) except +
 		_Cover getCover() except +
 		map[string, double] getTimings() except +
-		map[string, double] getPartitionCounts() except +
+		map[string, double] getExecutionInfo() except +
 
 cdef class EgoSplitting(Algorithm):
 	"""
@@ -4921,24 +4922,31 @@ cdef class EgoSplitting(Algorithm):
 	cdef object _globalClusteringCallback
 	cdef ClusteringFunctionWrapper localCallback
 	cdef ClusteringFunctionWrapper globalCallback
+	cdef Cover _groundTruth
 
 	def __cinit__(self, Graph G not None, object localClusteringCallback = None,
-			object globalClusteringCallback = None):
+			object globalClusteringCallback = None, Cover groundTruth = None):
 		self._G = G
 		if localClusteringCallback is None and globalClusteringCallback is not None:
 			raise TypeError("Error, no local clustering algorithm was given.")
+
 		if localClusteringCallback is not None:
 			self._localClusteringCallback = localClusteringCallback
 			self.localCallback.setCallback(localClusteringCallback)
-		if globalClusteringCallback is not None:
-			self._globalClusteringCallback = globalClusteringCallback
-			self.globalCallback.setCallback(globalClusteringCallback)
-		if localClusteringCallback is not None and globalClusteringCallback is not None:
-			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
-		elif localClusteringCallback is not None:
-			self._this = new _EgoSplitting(G._this, self.localCallback)
-		else:
+			if globalClusteringCallback is not None:
+				self._globalClusteringCallback = globalClusteringCallback
+				self.globalCallback.setCallback(globalClusteringCallback)
+			else:
+				self._globalClusteringCallback = localClusteringCallback
+				self.globalCallback.setCallback(localClusteringCallback)
+
+		if localClusteringCallback is None:
 			self._this = new _EgoSplitting(G._this)
+		elif groundTruth is None:
+			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
+		else:
+			self._groundTruth = groundTruth
+			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback, groundTruth._this)
 
 	"""
 	Get the result of the algorithm.
@@ -4955,8 +4963,8 @@ cdef class EgoSplitting(Algorithm):
 	"""
 	Get the partition counts.
 	"""
-	def getPartitionCounts(self):
-		return (<_EgoSplitting*>(self._this)).getPartitionCounts()
+	def getExecutionInfo(self):
+		return (<_EgoSplitting*>(self._this)).getExecutionInfo()
 
 
 cdef class DissimilarityMeasure:

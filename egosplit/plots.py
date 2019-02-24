@@ -102,6 +102,7 @@ def metrics_real():
 		sns.barplot(x="graph",
 					y=metric,
 					hue="algo",
+					palette="bright",
 					data=filtered_data,
 					ax=ax)
 		sns.despine(left=True, ax=ax)
@@ -135,6 +136,7 @@ def metrics_filter(graphs, xlabel):
 					 # markersize=10,
 					 linewidth=2,
 					 markersize=8,
+					 palette="bright",
 					 data=filtered_data,
 					 ax=ax)
 		sns.despine(ax=ax)
@@ -170,6 +172,7 @@ def num_comms_filter(graphs):
 				 markers=True,
 				 dashes=False,
 				 linewidth=2,
+				 palette="bright",
 				 data=filtered_data,
 				 ax=ax)
 	sns.despine(ax=ax)
@@ -239,11 +242,15 @@ def comm_sizes_filter(graphs):
 					   y="comm_size",
 					   hue="algo",
 					   scale="count",
+					   linewidth=0.5,
+					   inner=None,
+					   palette="bright",
 					   data=filtered_data,
 					   ax=ax,
-					   palette="bright")
+					   )
 		sns.despine(ax=ax)
-		ax.set(ylabel="size")
+		ax.set(ylabel="size (log2)",
+			   ylim=(0,10))
 		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
 		fig.suptitle("Size of communities")
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
@@ -266,6 +273,9 @@ def comm_sizes_ego_filter(graphs):
 				   hue="algo",
 				   split=True,
 				   scale="count",
+				   linewidth=1,
+				   inner=None,
+				   palette="bright",
 				   data=filtered_data,
 				   ax=ax)
 	sns.despine(ax=ax)
@@ -294,6 +304,9 @@ def node_comms(graphs):
 					   y="num_comms",
 					   hue="algo",
 					   scale="count",
+					   linewidth=1,
+					   inner=None,
+					   palette="bright",
 					   data=filtered_data,
 					   ax=ax)
 		sns.despine(ax=ax)
@@ -319,6 +332,9 @@ def node_comms_ego_filter(graphs):
 				   hue="algo",
 				   split=True,
 				   scale="count",
+				   linewidth=1,
+				   inner=None,
+				   palette="bright",
 				   data=filtered_data,
 				   ax=ax)
 	sns.despine(ax=ax)
@@ -350,6 +366,7 @@ def partition_counts_filter(graphs):
 				 dashes=False,
 				 linewidth=2,
 				 markersize=8,
+				 palette="bright",
 				 data=filtered_data,
 				 ax=ax)
 	sns.despine(left=True, ax=ax)

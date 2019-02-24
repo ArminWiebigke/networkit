@@ -27,8 +27,8 @@ def print_headers():
 	node_comms_file = open('cover_node_comms.txt', 'w')
 	node_comms_file.write('algo graph num_comms\n')
 	node_comms_file.close()
-	partition_counts_file = open('partition_counts.txt', 'w')
-	partition_counts_file.write('algo graph partition_name count\n')
+	partition_counts_file = open('execution_info.txt', 'w')
+	partition_counts_file.write('algo graph info_name value\n')
 	partition_counts_file.close()
 
 
@@ -161,15 +161,15 @@ def count_communities(algo_name, graph_name, graph, cover):
 								  + str(log2(num_comms)) + '\n')
 
 
-def print_partition_counts(algo_name, graph_name, partition_counts):
-	out_file = open('partition_counts.txt', 'a')
-	for count in sorted(partition_counts.keys()):
-		if "Components" in count.decode('ASCII'):
+def print_execution_info(algo_name, graph_name, partition_counts):
+	out_file = open('execution_info.txt', 'a')
+	for info_name in sorted(partition_counts.keys()):
+		if "Components" in info_name.decode('ASCII'):
 			out_algo_name = "components"
 		else:
 			out_algo_name = algo_name
-		out_file.write(out_algo_name + " " + graph_name + " " + count.decode('ASCII') + " "
-					   + str(partition_counts[count]) + '\n')
+		out_file.write(out_algo_name + " " + graph_name + " " + info_name.decode('ASCII') + " "
+					   + str(partition_counts[info_name]) + '\n')
 
 
 def run_benchmarks(algos, graphs):
@@ -192,8 +192,8 @@ def run_benchmarks(algos, graphs):
 				raise RuntimeError
 			t = algo.getTime()
 			count_communities(algo_name, graph_name, graph, cover)
-			if algo.hasPartitionCounts():
-				print_partition_counts(algo_name, graph_name, algo.getPartitionCounts())
+			if algo.hasExecutionInfo():
+				print_execution_info(algo_name, graph_name, algo.getExecutionInfo())
 			print("\t\t\tF1:" + str(f1) + ", F1_rev:" + str(f1_rev)
 				  + ", NMI:" + str(nmi) + ", t:" + str(t))
 			if not graph_name in results[algo_name]:
