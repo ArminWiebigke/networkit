@@ -24,7 +24,7 @@ class CoverAlgorithm:
 	def getName(self):
 		return self.name
 
-	def run(self, graph):
+	def run(self, graph, ground_truth):
 		raise NotImplementedError("Run method not implemented")
 
 	def hasExecutionInfo(self):
@@ -36,12 +36,13 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	def __init__(self, out_file, name, localPartitionAlgorithm, globalPartitionAlgorithm = None,
 				 groundTruth = None):
 		self.out_file = out_file
-		self.algorithm = lambda g: EgoSplitting(g, localPartitionAlgorithm,
-												globalPartitionAlgorithm)
+		self.ground_truth = None
+		self.algorithm = lambda g, ground_truth: EgoSplitting(g, localPartitionAlgorithm,
+												globalPartitionAlgorithm, ground_truth)
 		self.name = 'EgoSplitting_(' + name + ')'
 
-	def run(self, graph):
-		a = self.algorithm(graph)
+	def run(self, graph, ground_truth):
+		a = self.algorithm(graph, ground_truth)
 		t = Timer()
 		a.run()
 		t.stop()
@@ -70,7 +71,7 @@ class OLPAlgorithm(CoverAlgorithm):
 	def __init__(self):
 		self.name = 'OLP'
 
-	def run(self, graph):
+	def run(self, graph, ground_truth):
 		a = OLP(graph)
 		t = Timer()
 		a.run()
@@ -83,7 +84,7 @@ class MOSESAlgorithm(CoverAlgorithm):
 	def __init__(self):
 		self.name = 'MOSES'
 
-	def run(self, graph):
+	def run(self, graph, ground_truth):
 		with tempfile.TemporaryDirectory() as tempdir:
 			graph_filename = os.path.join(tempdir, "network.dat")
 			output_filename = os.path.join(tempdir, "output.dat")
@@ -102,7 +103,7 @@ class GCEAlgorithm(CoverAlgorithm):
 		self.name = 'GCE'
 		self.alpha = alpha
 
-	def run(self, graph):
+	def run(self, graph, ground_truth):
 		with tempfile.TemporaryDirectory() as tempdir:
 			graph_filename = os.path.join(tempdir, "network.edgelist")
 			cover_filename = os.path.join(tempdir, "cover.txt")
@@ -120,7 +121,7 @@ class OSLOMAlgorithm(CoverAlgorithm):
 	def __init__(self):
 		self.name = 'OSLOM'
 
-	def run(self, graph):
+	def run(self, graph, ground_truth):
 		with tempfile.TemporaryDirectory() as tempdir:
 			graph_filename = os.path.join(tempdir, 'network.dat')
 			graphio.writeGraph(graph, graph_filename, fileformat=graphio.Format.EdgeListTabZero)

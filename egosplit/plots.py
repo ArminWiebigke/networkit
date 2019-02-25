@@ -27,7 +27,7 @@ for name in ["comm_sizes", "node_comms", "num_comms"]:
 	except FileNotFoundError:
 		print("File " + filename + " not found")
 
-name = "partition_counts"
+name = "execution_info"
 filename = name + '.txt'
 try:
 	data[name] = pd.read_csv(name + '.txt', sep="\s+")
@@ -133,7 +133,6 @@ def metrics_filter(graphs, xlabel):
 					 style="algo",
 					 markers=True,
 					 dashes=False,
-					 # markersize=10,
 					 linewidth=2,
 					 markersize=8,
 					 palette="bright",
@@ -355,12 +354,12 @@ def partition_counts():
 
 
 def partition_counts_filter(graphs):
-	filtered_data = data["partition_counts"].query("graph.str.contains(@graphs)"
-												   " and partition_name.str.contains('twoPlus')")
+	filtered_data = data["execution_info"].query("graph.str.contains(@graphs)"
+												   " and info_name.str.contains('twoPlus')")
 	fig, ax = plt.subplots()
 	sns.lineplot(x="graph",
-				 y="count",
-				 hue="partition_name",
+				 y="value",
+				 hue="info_name",
 				 style="algo",
 				 markers=True,
 				 dashes=False,
@@ -374,21 +373,48 @@ def partition_counts_filter(graphs):
 	fig.suptitle("Partition counts per node (avg)")
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
 	fig.savefig(file_prefix + 'partition_counts_' + graphs + '.pdf')
-	plt.close(fig)
+	# plt.close(fig)
+
+
+def egonet_f1(graphs):
+	filtered_data = data["execution_info"].query("graph.str.contains(@graphs)"
+												   " and info_name.str.contains('egoF1Score')")
+	fig, ax = plt.subplots()
+	sns.lineplot(x="graph",
+				 y="value",
+				 hue="algo",
+				 # style="algo",
+				 ci=None,
+				 markers=True,
+				 dashes=False,
+				 linewidth=2,
+				 markersize=8,
+				 palette="bright",
+				 data=filtered_data,
+				 ax=ax)
+	sns.despine(left=True, ax=ax)
+	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+	fig.suptitle("Partition counts per node (avg)")
+	plt.tight_layout(rect=(0, 0, 1, 0.96))
+	fig.savefig(file_prefix + 'egonet_F1_' + graphs + '.pdf')
+	# plt.close(fig)
 
 
 # metrics_real()
-metrics_lfr()
+# metrics_lfr()
 
 # num_comms_real()
-num_comms_lfr()
+# num_comms_lfr()
 
-partition_counts()
+# comm_sizes_lfr()
+# comm_sizes_ego()
 
-comm_sizes_lfr()
-comm_sizes_ego()
+# node_comms_lfr()
+# node_comms_ego()
 
-node_comms_lfr()
-node_comms_ego()
+# partition_counts()
 
-# plt.show()
+egonet_f1('LFR_om')
+egonet_f1('LFR_mu')
+
+plt.show()

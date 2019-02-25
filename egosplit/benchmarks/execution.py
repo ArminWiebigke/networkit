@@ -183,12 +183,13 @@ def run_benchmarks(algos, graphs):
 			print("\t\t" + graph_name)
 			graph = graph_wrapper.graph
 			ground_truth = graph_wrapper.ground_truth
-			algo.run(graph)
+			algo.run(graph, ground_truth)
 			cover = algo.getCover()
 			f1 = calc_F1(graph, cover, ground_truth)
 			f1_rev = calc_F1(graph, ground_truth, cover)
 			nmi = calc_NMI(graph, cover, ground_truth)
-			if nmi is not -1 and nmi < 0.0 and nmi > 1.0:
+			if nmi != -1.0 and not 0.0 <= nmi <= 1.0:
+				print(nmi)
 				raise RuntimeError
 			t = algo.getTime()
 			count_communities(algo_name, graph_name, graph, cover)
@@ -196,7 +197,7 @@ def run_benchmarks(algos, graphs):
 				print_execution_info(algo_name, graph_name, algo.getExecutionInfo())
 			print("\t\t\tF1:" + str(f1) + ", F1_rev:" + str(f1_rev)
 				  + ", NMI:" + str(nmi) + ", t:" + str(t))
-			if not graph_name in results[algo_name]:
+			if graph_name not in results[algo_name]:
 				results[algo_name][graph_name] = OrderedDict()
 				r = results[algo_name][graph_name]
 				for m in ['F1', 'F1_rev', 'NMI', 'time']:

@@ -52,12 +52,12 @@ def start_benchmarks():
 	# ************************************************************************************
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
-	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	# partition_algos['PLP_Infomap'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
 	# 								  lambda g: clusterInfomap(g)]
 	# partition_algos['PLM_Infomap'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition(),
