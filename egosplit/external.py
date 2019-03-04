@@ -8,6 +8,8 @@ import os
 import subprocess
 import scipy
 import random
+import igraph
+import leidenalg
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
@@ -23,11 +25,12 @@ def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
 		return graphio.SNAPEdgeListPartitionReader().read(outPath, [(i + 1, i) for i in range(graph.upperNodeIdBound())], graph)
 
 
+# http://www.mapequation.org/code.html
 def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + '/Infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
+		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
 		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
 			result.toSingleton(result.extend())
@@ -51,6 +54,7 @@ def clusterLouvain(G):
 		return result
 
 
+# http://oslom.org/software.htm
 def clusterOSLOM(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
@@ -72,6 +76,7 @@ def cleanUpOSLOM(G, cover):
 		return result
 
 
+# https://sites.google.com/site/aaronmcdaid/downloads
 def clusterMOSES(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
@@ -82,6 +87,7 @@ def clusterMOSES(G):
 		return result
 
 
+# https://sites.google.com/site/greedycliqueexpansion/ (Use Ubuntu 9.10 binary)
 def clusterGCE(G, alpha = 1.5):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.edgelist')
@@ -97,6 +103,64 @@ def clusterGCE(G, alpha = 1.5):
 		return C
 
 
+def writeLeidenPartition(G, partition, filename):
+	partition_ids = []
+	for i in range(0, partition.n):
+		partition_ids.append([])
+	for i in range(0, len(partition)):
+		for u in partition[i]:
+			# if G.hasNode(u):
+			partition_ids[u].append(i)
+
+	file = open(filename, 'w')
+	for pid in partition_ids:
+		if len(pid) > 1:
+			raise RuntimeError
+		if len(pid) == 1:
+			file.write(str(pid[0]))
+		file.write("\n")
+
+
+def convertLeidenPartition(G, la_partition):
+	partition = structures.Partition(G.upperNodeIdBound())
+	for i in range(0, len(la_partition)):
+		for u in la_partition[i]:
+			if G.hasNode(u):
+				partition.addToSubset(i, u)
+	return partition
+
+
+def convertToIgraph(G):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graph_filename = os.path.join(tempdir, 'graph.dat')
+		graph_writer = graphio.EdgeListWriter(' ', 0)
+		graph_writer.write(G, graph_filename)
+		graph_i = igraph.Graph.Read_Edgelist(graph_filename)
+		return graph_i
+
+# https://github.com/vtraag/leidenalg
+def partitionLeiden(G, partition_type_name):
+		graph_i = convertToIgraph(G)
+		if partition_type_name == "modularity":
+			partition_type =  leidenalg.ModularityVertexPartition
+		elif partition_type_name == "surprise":
+			partition_type = leidenalg.SurpriseVertexPartition
+		else:
+			raise RuntimeError
+		la_partition = leidenalg.find_partition(graph_i, partition_type)
+		partition = convertLeidenPartition(G, la_partition)
+		# Partition.numberOfSubsets() seems broken
+
+		# Convert to networkit.Partition
+		# partition_filename = os.path.join('./partition.dat')
+		# writeLeidenPartition(G, partition_i, partition_filename)
+		# partition = community.readCommunities(partition_filename, "edgelist-s0")
+		# partition = community.PartitionReader().read(partition_filename)
+		# partition = readLeidenPartition(partition_filename)
+		return partition
+
+
+# https://sites.google.com/site/andrealancichinetti/files
 def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500, om=3, C=None):
 	args = [code_path + '/lfr_graph_generator/benchmark', '-N', N, '-k', k, '-maxk', maxk, '-mu', mu, '-t1', t1, '-t2', t2, '-minc', minc, '-maxc', maxc]
 	if on > 0:

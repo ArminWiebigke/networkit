@@ -8,14 +8,15 @@ from egosplit.benchmarks.execution import *
 
 
 def bench_ego_net_partitions():
+	result_dir = "../results/"
 	append = False
 	open_mode = 'w'
 	if append:
 		open_mode = 'a'
-	out_file_comm = open('../results/ego_net_partitions.result', open_mode)
-	out_file_part = open('../results/ego_net_partition_composition.result', open_mode)
+	out_file_comm = open(result_dir + 'ego_net_partitions.result', open_mode)
+	out_file_part = open(result_dir + 'ego_net_partition_composition.result', open_mode)
 	if not append:
-		out_file_comm.write("algo graph comm_size wrong_nodes num_partitions\n")
+		out_file_comm.write("algo graph comm_size wrong_nodes wrong_percentage num_partitions\n")
 		out_file_part.write("algo graph partition_size wrong_nodes wrong_percentage\n")
 
 	om = 3
@@ -29,8 +30,9 @@ def bench_ego_net_partitions():
 	partition_algos = OrderedDict()
 	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	partition_algos['Leiden_surprise'] = [lambda g: partitionLeiden(g, "surprise")]
 
 	for algo_name in partition_algos:
 		for graph in graphs:
@@ -57,7 +59,9 @@ def run_algo(algo_name, partition_algos, graph, out_file_comm, out_file_part):
 		for result in result_list:
 			out_file_comm.write(
 				algo_name + " " + graph_name + " " + str(result["comm_size"])
-				+ " " + str(result["wrong_nodes"]) + " " + str(result["num_partitions"])
+				+ " " + str(result["wrong_nodes"])
+				+ " " + str(result["wrong_percentage"])
+				+ " " + str(result["num_partitions"])
 				+ "\n"
 			)
 
@@ -76,11 +80,11 @@ def run_algo(algo_name, partition_algos, graph, out_file_comm, out_file_part):
 # Returns partition->node list, best community for each partition, community->size map
 def calculate_partition_properties(ground_truth, truth_communities, partition_map):
 	num_partitions = partition_map[none]
-	partitions = []
+	partitions = [[]]
 	for i in range(0, num_partitions):
 		partitions.append([])
 	for v, partition in partition_map.items():
-		if v != none:
+		if v != none and partition != none: # TODO: Why does leidenalg assign partition = none, but no other algorithm?
 			partitions[partition].append(v)
 	# Remove partitions of size one
 	# partitions = [p for p in partitions if len(p) > 1]
@@ -158,6 +162,7 @@ def check_community_partitioning(ground_truth, partitions, best_communities,
 		result_list.append({
 			'comm_size': community_sizes[c],
 			'wrong_nodes': node_cnt,
+			'wrong_percentage': float(node_cnt) / community_sizes[c],
 			'num_partitions': best_communities.count(c)
 		})
 		# if best_communities.count(c) > 2:

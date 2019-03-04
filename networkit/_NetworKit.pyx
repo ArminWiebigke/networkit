@@ -4836,27 +4836,6 @@ cdef class CutClustering(CommunityDetector):
 			pyResult[res.first] = Partition().setThis(res.second)
 		return pyResult
 
-cdef cppclass ClusteringFunctionWrapper:
-	void* callback
-	void setCallback(object callback):
-		this.callback = <void*>callback
-	_Partition cython_call_operator(_Graph& G) nogil:
-		cdef bool_t error = False
-		cdef string message
-		with gil:
-			pyG = Graph()
-			pyG.setThis(G)
-
-			try:
-				pyP = (<object>callback)(pyG)
-			except Exception as e:
-				error = True
-				message = stdstring("An Exception occurred in the clustering callback: {0}".format(e))
-			if (error):
-				throw_runtime_error(message)
-
-			return move((<Partition>(pyP))._this)
-
 cdef extern from "cpp/community/LPPotts.h":
 	cdef cppclass _LPPotts "NetworKit::LPPotts"(_CommunityDetectionAlgorithm):
 		_LPPotts(_Graph G, double alpha, count theta, count maxIterations, bool_t para) except +
@@ -4890,6 +4869,27 @@ cdef class OLP(Algorithm):
 	"""
 	def getCover(self):
 		return Cover().setThis((<_OLP*>(self._this)).getCover())
+
+cdef cppclass ClusteringFunctionWrapper:
+	void* callback
+	void setCallback(object callback):
+		this.callback = <void*>callback
+	_Partition cython_call_operator(_Graph& G) nogil:
+		cdef bool_t error = False
+		cdef string message
+		with gil:
+			pyG = Graph()
+			pyG.setThis(G)
+
+			try:
+				pyP = (<object>callback)(pyG)
+			except Exception as e:
+				error = True
+				message = stdstring("An Exception occurred in the clustering callback: {0}".format(e))
+			if (error):
+				throw_runtime_error(message)
+
+			return move((<Partition>(pyP))._this)
 
 cdef extern from "cpp/community/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):

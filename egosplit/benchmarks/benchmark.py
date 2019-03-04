@@ -39,7 +39,7 @@ def start_benchmarks():
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 2):
+	for om in range(1, 6):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -52,16 +52,13 @@ def start_benchmarks():
 	# ************************************************************************************
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
-	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
-	# partition_algos['PLP_Infomap'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
-	# 								  lambda g: clusterInfomap(g)]
-	# partition_algos['PLM_Infomap'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition(),
-	# 								  lambda g: clusterInfomap(g)]
+	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	partition_algos['Leiden_surprise'] = [lambda g: partitionLeiden(g, "surprise")]
 	for partition_algo in partition_algos:
 		algos.append(EgoSplitAlgorithm(ego_file, partition_algo, *partition_algos[partition_algo]))
 		# algos.append(EgoSplitAlgorithm(ego_file, partition_algo, *partition_algos[partition_algo], clean_up="OSLOM"))
@@ -93,5 +90,3 @@ def count_triangles(graph):
 	triangle.run()
 	t.stop()
 	print("Time for triangle counting: " + str(t.elapsed))
-
-
