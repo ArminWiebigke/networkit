@@ -6,8 +6,8 @@ from networkit.community import EgoSplitting, CoverF1Similarity, PLM, PLP, \
 from egosplit.benchmarks.graph import *
 
 
-def print_headers():
-	ego_file = open('ego_timings.txt', 'w')
+def print_headers(result_dir):
+	ego_file = open(result_dir + 'ego_timings.result', 'w')
 	s = 21
 	ego_file.write('create EgoNets'.ljust(s) + 'a) assign IDs'.ljust(s)
 				   + 'b) find triangles'.ljust(s) + 'c) cluster EgoNet'.ljust(s)
@@ -18,16 +18,16 @@ def print_headers():
 				   + '\n')
 	ego_file.close()
 
-	num_comms_file = open('cover_num_comms.txt', 'w')
+	num_comms_file = open(result_dir + 'cover_num_comms.result', 'w')
 	num_comms_file.write('algo graph num_comms\n')
 	num_comms_file.close()
-	comm_sizes_file = open('cover_comm_sizes.txt', 'w')
+	comm_sizes_file = open(result_dir + 'cover_comm_sizes.result', 'w')
 	comm_sizes_file.write('algo graph comm_size\n')
 	comm_sizes_file.close()
-	node_comms_file = open('cover_node_comms.txt', 'w')
+	node_comms_file = open(result_dir + 'cover_node_comms.result', 'w')
 	node_comms_file.write('algo graph num_comms\n')
 	node_comms_file.close()
-	partition_counts_file = open('execution_info.txt', 'w')
+	partition_counts_file = open(result_dir + 'execution_info.result', 'w')
 	partition_counts_file.write('algo graph info_name value\n')
 	partition_counts_file.close()
 
@@ -37,27 +37,28 @@ def calc_F1(graph, cover, refCover):
 	return similarity.getUnweightedAverage()
 
 
-def create_LFR_graphs(graphs, graphArgs, iterations):
+def create_LFR_graphs(result_dir, graphs, graphArgs, iterations):
 	for argsName in graphArgs.keys():
 		args = graphArgs[argsName]
 		graphName = 'LFR_' + argsName
 		for i in range(iterations):
 			graph_wrapper = LFRGraph(graphName, args)
-			count_communities("ground_truth", graphName, graph_wrapper.graph,
+			count_communities(result_dir, "ground_truth", graphName, graph_wrapper.graph,
 							  graph_wrapper.ground_truth)
 			graphs.append(graph_wrapper)
 	return graphs
 
 
-def fixed_decimals(val, decimals = 3):
-	string = str(val)
-	if "e" in string:
-		return string
-	split_strs = string.split('.')
-	if '-' not in split_strs[0]:
-		split_strs[0] = " " + split_strs[0]
-	split_strs[1] = split_strs[1].ljust(decimals, '0')
-	return split_strs[0] + '.' + split_strs[1][:decimals]
+def fixed_decimals(val, decimals=3):
+	return str("{:.{decimals}f}").format(val, decimals=decimals)
+	# string = str(val)
+	# if "e" in string or "." not in string:
+	# 	return string
+	# split_strs = string.split('.')
+	# if '-' not in split_strs[0]:
+	# 	split_strs[0] = " " + split_strs[0]
+	# split_strs[1] = split_strs[1].ljust(decimals, '0')
+	# return split_strs[0] + '.' + split_strs[1][:decimals]
 
 
 def print_results_to_file(results, file, print_head):
@@ -120,10 +121,10 @@ def print_results_compact(results):
 		print(algo_results)
 
 
-def count_communities(algo_name, graph_name, graph, cover):
-	num_comms_file = open('cover_num_comms.txt', 'a')
-	comm_sizes_file = open('cover_comm_sizes.txt', 'a')
-	node_comms_file = open('cover_node_comms.txt', 'a')
+def count_communities(result_dir, algo_name, graph_name, graph, cover):
+	num_comms_file = open(result_dir + 'cover_num_comms.result', 'a')
+	comm_sizes_file = open(result_dir + 'cover_comm_sizes.result', 'a')
+	node_comms_file = open(result_dir + 'cover_node_comms.result', 'a')
 	# Number of communities
 	num_comms_file.write(algo_name + ' ' + graph_name + ' '
 						 + str(cover.numberOfSubsets()) + '\n')
@@ -161,8 +162,8 @@ def count_communities(algo_name, graph_name, graph, cover):
 								  + str(log2(num_comms)) + '\n')
 
 
-def print_execution_info(algo_name, graph_name, partition_counts):
-	out_file = open('execution_info.txt', 'a')
+def print_execution_info(result_dir, algo_name, graph_name, partition_counts):
+	out_file = open(result_dir + 'execution_info.result', 'a')
 	for info_name in sorted(partition_counts.keys()):
 		if "Components" in info_name.decode('ASCII'):
 			out_algo_name = "components"
@@ -172,7 +173,7 @@ def print_execution_info(algo_name, graph_name, partition_counts):
 					   + str(partition_counts[info_name]) + '\n')
 
 
-def run_benchmarks(algos, graphs):
+def run_benchmarks(algos, graphs, result_dir):
 	results = OrderedDict()
 	for algo in algos:
 		algo_name = algo.getName()
@@ -192,9 +193,10 @@ def run_benchmarks(algos, graphs):
 				print(nmi)
 				raise RuntimeError
 			t = algo.getTime()
-			count_communities(algo_name, graph_name, graph, cover)
+			count_communities(result_dir, algo_name, graph_name, graph, cover)
 			if algo.hasExecutionInfo():
-				print_execution_info(algo_name, graph_name, algo.getExecutionInfo())
+				print_execution_info(result_dir, algo_name, graph_name,
+				                     algo.getExecutionInfo())
 			print("\t\t\tF1:" + str(f1) + ", F1_rev:" + str(f1_rev)
 				  + ", NMI:" + str(nmi) + ", t:" + str(t))
 			if graph_name not in results[algo_name]:

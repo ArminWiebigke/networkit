@@ -5,7 +5,6 @@ CMG_101014
 instances
 .settings*
 plots
-!egosplit/plots
 *~
 *.dot$
 tracelog*
@@ -30,6 +29,9 @@ dist/
 .idea/
 cmake-build*
 venv/
+!egosplit/plots
+time_seed.dat
+tp
 
 ### NetworKit specific
 include/NetworKit

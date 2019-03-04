@@ -8,20 +8,20 @@ from egosplit.benchmarks.execution import *
 
 
 def start_benchmarks():
-	# setNumberOfThreads(1)
-	iterations = 5
+	iterations = 1
 	graphs = []
 	LFR_graph_args = OrderedDict()
 	algos = []
 	partition_algos = OrderedDict()
 
+	result_dir = "results/"
 	append = False
 	if not append:
-		print_headers()
+		print_headers(result_dir)
 	open_mode = 'w'
 	if append:
 		open_mode = 'a'
-	ego_file = open('ego_timings.txt', open_mode)
+	ego_file = open(result_dir + 'ego_timings.result', open_mode)
 
 	# ************************************************************************************
 	# *                             Input graphs                                         *
@@ -39,42 +39,43 @@ def start_benchmarks():
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 6):
+	for om in range(1, 2):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
-	for mu_factor in range(0, 56, 5):
-		LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
-			'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
-			't1': 2, 't2': 1, 'mu': 0.01 * mu_factor, 'on': 1000, 'om': 2}
-	create_LFR_graphs(graphs, LFR_graph_args, iterations)
+	# for mu_factor in range(0, 56, 5):
+	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
+	# 		'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
+	# 		't1': 2, 't2': 1, 'mu': 0.01 * mu_factor, 'on': 1000, 'om': 2}
+	create_LFR_graphs(result_dir, graphs, LFR_graph_args, iterations)
 
 	# ************************************************************************************
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
-	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	# partition_algos['PLP_Infomap'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
 	# 								  lambda g: clusterInfomap(g)]
 	# partition_algos['PLM_Infomap'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition(),
 	# 								  lambda g: clusterInfomap(g)]
 	for partition_algo in partition_algos:
 		algos.append(EgoSplitAlgorithm(ego_file, partition_algo, *partition_algos[partition_algo]))
+		# algos.append(EgoSplitAlgorithm(ego_file, partition_algo, *partition_algos[partition_algo], clean_up="OSLOM"))
 	# algos.append(OLPAlgorithm())
 	# algos.append(GCEAlgorithm())
 	# algos.append(MOSESAlgorithm())
-	# algos.append(OSLOMAlgorithm())
+	algos.append(OSLOMAlgorithm())
 
 	# ************************************************************************************
 	# *                     Run benchmarks and print results                             *
 	# ************************************************************************************
-	results = run_benchmarks(algos, graphs)
+	results = run_benchmarks(algos, graphs, result_dir)
 
-	result_file = open('results.txt', open_mode)
+	result_file = open(result_dir + 'metrics.result', open_mode)
 	print_results_to_file(results, result_file, not append)
 	print_results_compact(results)
 
@@ -84,10 +85,13 @@ start_benchmarks()
 from networkit.stopwatch import Timer
 from networkit.sparsification import TriangleEdgeScore
 
-def countTriangles(graph):
+
+def count_triangles(graph):
 	graph.indexEdges()
 	triangle = TriangleEdgeScore(graph)
 	t = Timer()
 	triangle.run()
 	t.stop()
 	print("Time for triangle counting: " + str(t.elapsed))
+
+

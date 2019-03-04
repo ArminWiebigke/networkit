@@ -61,7 +61,7 @@ EgoSplitting::EgoSplitting(const Graph &G,
 }
 
 void EgoSplitting::init() {
-	egoNets.resize(G.upperNodeIdBound());
+	egoNetPartitions.resize(G.upperNodeIdBound());
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 }
 
@@ -116,7 +116,7 @@ void EgoSplitting::createEgoNets() {
 
 	// Store number of partitions of the ego-net
 	for (std::size_t i = 0; i < G.upperNodeIdBound(); ++i) {
-		egoNets[i].emplace(none, 0);
+		egoNetPartitions[i].emplace(none, 0);
 	}
 
 	Aux::SignalHandler handler;
@@ -127,6 +127,8 @@ void EgoSplitting::createEgoNets() {
 	count allComponents = 0;
 	count components = 0;
 	std::pair<count, double> f1Score(0, 0.0);
+	egoPartitions.resize(G.upperNodeIdBound());
+
 	G.forNodes([&](node u) {
 		handler.assureRunning();
 		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
@@ -143,7 +145,7 @@ void EgoSplitting::createEgoNets() {
 			assert(i == degree);
 		}
 		timer.stop();
-		timings["1a)    Assign IDs    "] += timer.elapsedMicroseconds();
+		timings["1a)    Assign IDs"] += timer.elapsedMicroseconds();
 
 
 		DEBUG("Find triangles");
@@ -168,11 +170,12 @@ void EgoSplitting::createEgoNets() {
 		timer.start();
 		// Cluster ego-net with the local cluster algorithm
 		Partition egoPartition;
-		if (egoGraph.numberOfEdges() > 0)
-			egoPartition = localClusterAlgo(egoGraph);
-		else
+		if (egoGraph.numberOfEdges() > 0) {
+			Graph egoCopy(egoGraph);
+			egoPartition = localClusterAlgo(egoCopy); // Python moves the graph so we need a copy
+		} else {
 			egoPartition = unionFind.toPartition();
-
+		}
 		timer.stop();
 		timings["1c)    Cluster EgoNet"] += timer.elapsedMicroseconds();
 
@@ -187,9 +190,6 @@ void EgoSplitting::createEgoNets() {
 				++partitions;
 			++allPartitions;
 		}
-//		ConnectedComponents componentsAlgo(egoGraph);
-//		componentsAlgo.run();
-//		auto comp = componentsAlgo.getPartition();
 		auto comp = unionFind.toPartition();
 		for (count size : comp.subsetSizes()) {
 			if (size > 1)
@@ -210,44 +210,20 @@ void EgoSplitting::createEgoNets() {
 				}
 			});
 			Cover egoCover = Cover(egoPartition);
-			auto printCommunities = [&egoGraph](Cover const &cover) {
-				std::vector<std::vector<index>> communites(cover.upperBound());
-				egoGraph.forNodes([&](node v) {
-					for (index c : cover[v]) {
-						communites[c].push_back(v);
-					}
-				});
-				std::stringstream outString;
-				for (auto const &c : communites) {
-					if (c.empty())
-						continue;
-					outString << "(";
-					for (node v : c)
-						outString << v << ", ";
-					outString << ")";
-				}
-				std::cout << outString.str() << std::endl;
-			};
-//			printCommunities(egoCover);
-//			printCommunities(egoGroundTruth);
-			CoverF1Similarity f1Similarity(egoGraph, egoCover, egoGroundTruth);
-			f1Similarity.run();
-			double f1 = f1Similarity.getUnweightedAverage();
-			f1Score.second += (f1 - f1Score.second) / ++f1Score.first;
-			std::cout << f1Score.second << std::endl;
 		}
+
 
 		DEBUG("Build EgoNet");
 		timer.start();
 		// Insert nodes into ego-net data structure
 		for (index i = 0; i < degree; ++i) {
-			egoNets[u].emplace(idToNode[i], egoPartition.subsetOf(i));
+			egoNetPartitions[u].emplace(idToNode[i], egoPartition.subsetOf(i));
 		}
 		timer.stop();
 		timings["1e)    EgoNet subsets"] += timer.elapsedMicroseconds();
 
 		timer.start();
-		egoNets[u][none] = egoPartition.numberOfSubsets();
+		egoNetPartitions[u][none] = egoPartition.numberOfSubsets();
 		timer.stop();
 		timings["1f)    EgoNet subsetCnt"] += timer.elapsedMicroseconds();
 
@@ -259,7 +235,7 @@ void EgoSplitting::createEgoNets() {
 			nodeToId[v] = none;
 		}
 		timer.stop();
-		timings["1g)    Clean up       "] += timer.elapsedMicroseconds();
+		timings["1g)    Clean up"] += timer.elapsedMicroseconds();
 	});
 	executionInfo["egoF1Score"] = f1Score.second;
 	executionInfo["allPartitions"] = allPartitions / (double) G.numberOfNodes();
@@ -272,8 +248,7 @@ void EgoSplitting::splitIntoPersonas() {
 	count sum = 0;
 	for (index i = 0; i < G.upperNodeIdBound(); ++i) {
 		personaOffsets[i] = sum;
-		//sum += std::max((count) 1, egoNets[i][none]); // include isolated nodes in persona graph?
-		sum += egoNets[i][none];
+		sum += egoNetPartitions[i][none];
 	}
 	personaOffsets[G.upperNodeIdBound()] = sum;
 	personaGraph = Graph(sum);
@@ -285,13 +260,13 @@ void EgoSplitting::connectPersonas() {
 	};
 
 	G.forEdges([&](node u, node v, edgeweight weight) {
-		auto idx_u = egoNets[u].find(v);
-		auto idx_v = egoNets[v].find(u);
-		assert(idx_u != egoNets[u].end() && idx_v != egoNets[v].end());
+		auto idx_u = egoNetPartitions[u].find(v);
+		auto idx_v = egoNetPartitions[v].find(u);
+		assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
 		personaGraph.addEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second), weight);
 	});
 
-	egoNets.clear();
+//	egoNetPartitions.clear();
 
 #ifndef NDEBUG
 	assert(personaGraph.numberOfEdges() == G.numberOfEdges());
@@ -360,6 +335,10 @@ std::map<std::string, double> EgoSplitting::getTimings() {
 
 std::map<std::string, double> EgoSplitting::getExecutionInfo() {
 	return executionInfo;
+}
+
+std::vector<std::unordered_map<node, index>> EgoSplitting::getEgoNetPartitions() {
+	return egoNetPartitions;
 }
 
 } /* namespace NetworKit */

@@ -60,6 +60,18 @@ def clusterOSLOM(G):
 		return result
 
 
+def cleanUpOSLOM(G, cover):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graph_filename = os.path.join(tempdir, 'network.dat')
+		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+		cover_filename = os.path.join(tempdir, 'cover.dat')
+		graphio.CoverWriter().write(cover, cover_filename)
+		subprocess.call([code_path + '/OSLOM2/oslom_undir', '-r', '0', '-hr', '0', '-uw',
+		                 '-f', graph_filename, '-hint', cover_filename], stdout=dev_null)
+		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
+		return result
+
+
 def clusterMOSES(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')

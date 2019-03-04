@@ -88,11 +88,13 @@ public:
 
 	std::map<std::string, double> getExecutionInfo();
 
+	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
+
 private:
 
 	const Graph &G;
 	std::function<Partition(Graph &)> localClusterAlgo, globalClusterAlgo;
-	std::vector<std::unordered_map<node, index>> egoNets; // for each node: <global node ID, set ID in ego-net>
+	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: <global node ID, set ID in ego-net>
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
 	Partition personaPartition;
@@ -100,6 +102,7 @@ private:
 	std::map<std::string, double> timings;
 	std::map<std::string, double> executionInfo;
 	Cover groundTruth;
+	std::vector<Partition> egoPartitions;
 
 	void init();
 

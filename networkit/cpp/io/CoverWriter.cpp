@@ -14,6 +14,8 @@ void CoverWriter::write(Cover& zeta, const std::string& path) const {
 	});
 
 	for (auto &nodes : sets) {
+		if (nodes.empty())
+			continue;
 		for (auto &v : nodes) {
 			file << v << " ";
 		}
