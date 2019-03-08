@@ -4896,7 +4896,6 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		_EgoSplitting(_Graph G) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
-		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper, _Cover groundTruth) except +
 		_Cover getCover() except +
 		map[string, double] getTimings() except +
 		map[string, double] getExecutionInfo() except +
@@ -4926,7 +4925,7 @@ cdef class EgoSplitting(Algorithm):
 	cdef Cover _groundTruth
 
 	def __cinit__(self, Graph G not None, object localClusteringCallback = None,
-			object globalClusteringCallback = None, Cover groundTruth = None):
+			object globalClusteringCallback = None):
 		self._G = G
 		if localClusteringCallback is None and globalClusteringCallback is not None:
 			raise TypeError("Error, no local clustering algorithm was given.")
@@ -4943,11 +4942,8 @@ cdef class EgoSplitting(Algorithm):
 
 		if localClusteringCallback is None:
 			self._this = new _EgoSplitting(G._this)
-		elif groundTruth is None:
-			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
 		else:
-			self._groundTruth = groundTruth
-			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback, groundTruth._this)
+			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
 
 	"""
 	Get the result of the algorithm.

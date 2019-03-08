@@ -1,5 +1,6 @@
 from egosplit.external import *
 
+
 class BenchGraph:
 
 	def __init__(self, graph, ground_truth, name, parameters=""):

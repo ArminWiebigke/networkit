@@ -4,51 +4,54 @@ from networkit.structures import Partition
 from networkit.components import ConnectedComponents
 from networkit import none
 from egosplit.benchmarks.algorithms import *
-from egosplit.benchmarks.execution import *
+from egosplit.benchmarks.output import *
 
 
-def bench_ego_net_partitions():
-	result_dir = "../results/"
-	append = False
+def analyse_ego_net_partitions(benchmarks, result_dir, append):
 	open_mode = 'w'
 	if append:
 		open_mode = 'a'
 	out_file_comm = open(result_dir + 'ego_net_partitions.result', open_mode)
 	out_file_part = open(result_dir + 'ego_net_partition_composition.result', open_mode)
 	if not append:
-		out_file_comm.write("algo graph comm_size wrong_nodes wrong_percentage num_partitions\n")
-		out_file_part.write("algo graph partition_size wrong_nodes wrong_percentage\n")
+		print_headers(out_file_comm, out_file_part)
 
-	om = 3
-	lfr_params = {
-		'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
-		't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
-	graph_name = "LFR_om_3"
-	graphs = []
-	graphs.append(LFRGraph(graph_name, lfr_params))
-
-	partition_algos = OrderedDict()
-	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
-	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
-	partition_algos['Leiden_surprise'] = [lambda g: partitionLeiden(g, "surprise")]
-
-	for algo_name in partition_algos:
-		for graph in graphs:
-			run_algo(algo_name, partition_algos[algo_name], graph, out_file_comm,
-			         out_file_part)
+	for benchmark in benchmarks:
+		analyse_ego_net_partition(benchmark, out_file_comm, out_file_part)
 
 
-def run_algo(algo_name, partition_algos, graph, out_file_comm, out_file_part):
-	graph_name = graph.name
-	ground_truth = graph.ground_truth
-	ego_algo = EgoSplitting(graph.graph, *partition_algos)
-	ego_algo.run()
-	ego_net_partitions = ego_algo.getEgoNetPartitions()
+def print_headers(out_file_comm, out_file_part):
+	out_file_comm.write(create_line(
+		"algo",
+		"graph",
+		"comm_size",
+		"wrong_nodes",
+		"wrong_percentage",
+		"num_partitions"
+	))
+	out_file_part.write(create_line(
+		"algo",
+		"graph",
+		"partition_size",
+		"wrong_nodes",
+		"wrong_nodes_gt",
+		"wrong_nodes_other",
+		"wrong_percentage",
+		"wrong_percentage_gt",
+		"wrong_percentage_other"
+	))
 
-	for u in graph.graph.nodes():
-		truth_communities = ground_truth.subsetsOf(u)
+
+def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part):
+	try:
+		ego_net_partitions = benchmark.algo.getEgoNetPartitions()
+	except AttributeError:
+		return
+	ground_truth = benchmark.graph.ground_truth
+	algo_name = benchmark.algo.name
+	graph_name = benchmark.graph.name
+	for u in benchmark.graph.graph.nodes():
+		truth_communities = set(ground_truth.subsetsOf(u))
 		partitions, best_communities, community_sizes = calculate_partition_properties(
 			ground_truth, truth_communities, ego_net_partitions[u])
 
@@ -57,24 +60,30 @@ def run_algo(algo_name, partition_algos, graph, out_file_comm, out_file_part):
 			ground_truth, partitions, best_communities, community_sizes,
 			truth_communities)
 		for result in result_list:
-			out_file_comm.write(
-				algo_name + " " + graph_name + " " + str(result["comm_size"])
-				+ " " + str(result["wrong_nodes"])
-				+ " " + str(result["wrong_percentage"])
-				+ " " + str(result["num_partitions"])
-				+ "\n"
-			)
+			out_file_comm.write(create_line(
+				algo_name,
+				graph_name,
+				result["comm_size"],
+				result["wrong_nodes"],
+				result["wrong_percentage"],
+				result["num_partitions"]
+			))
 
 		# Do partitions consist of multiple communities?
 		result_list = check_partition_composition(
-			ground_truth, partitions, best_communities, community_sizes,
-			truth_communities)
+			ground_truth, partitions, best_communities, truth_communities)
 		for result in result_list:
-			out_file_part.write(
-				algo_name + " " + graph_name + " " + str(result["partition_size"])
-				+ " " + str(result["wrong_nodes"])
-				+ " " + str(result["wrong_percentage"]) + "\n"
-			)
+			out_file_part.write(create_line(
+				algo_name,
+				graph_name,
+				result["partition_size"],
+				result["wrong_nodes"],
+				result["wrong_nodes_gt"],
+				result["wrong_nodes_other"],
+				result["wrong_percentage"],
+				result["wrong_percentage_gt"],
+				result["wrong_percentage_other"]
+			))
 
 
 # Returns partition->node list, best community for each partition, community->size map
@@ -118,21 +127,31 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 # For each partition: Get the community with the most nodes. Count the number of nodes
 # that are not in that community.
 def check_partition_composition(ground_truth, partitions, best_communities,
-                                community_sizes, truth_communities):
+                                truth_communities):
 	result_list = []
 	for i in range(0, len(partitions)):
 		p = partitions[i]
+		num_partitions = len(p)
 		best_community = best_communities[i]
-		node_cnt = 0
+		gt_comms_cnt = 0
+		other_comms_cnt = 0
 		for u in p:
-			if best_community not in ground_truth.subsetsOf(u):
-				node_cnt += 1
+			gt_comms = set(ground_truth.subsetsOf(u))
+			if best_community not in gt_comms:
+				if len(truth_communities.intersection(gt_comms)) > 0:
+					gt_comms_cnt += 1
+				else:
+					other_comms_cnt += 1
 		result_list.append({
 			'partition_size': len(p),
-			'wrong_nodes': node_cnt,
-			'wrong_percentage': float(node_cnt) / len(p)
+			'wrong_nodes': gt_comms_cnt + other_comms_cnt,
+			'wrong_nodes_gt': gt_comms_cnt,
+			'wrong_nodes_other': other_comms_cnt,
+			'wrong_percentage': float(gt_comms_cnt + other_comms_cnt) / num_partitions,
+			'wrong_percentage_gt': float(gt_comms_cnt) / num_partitions,
+			'wrong_percentage_other': float(other_comms_cnt) / num_partitions,
 		})
-		if node_cnt > 0.8 * len(p) and len(p) > 20:
+		if gt_comms_cnt > 0.8 * len(p) and len(p) > 20:
 			print("")
 			print(p)
 			for u in p:
@@ -159,6 +178,7 @@ def check_community_partitioning(ground_truth, partitions, best_communities,
 					if c in comms:
 						if best_communities[i] not in comms or best_communities[i] == c:
 							node_cnt += 1
+
 		result_list.append({
 			'comm_size': community_sizes[c],
 			'wrong_nodes': node_cnt,
@@ -202,6 +222,3 @@ def dominating_community(community_cnts, num_nodes):
 			max_comm = comm
 			max_comm_cnt = comm_cnt
 	return max_comm
-
-
-bench_ego_net_partitions()

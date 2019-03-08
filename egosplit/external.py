@@ -138,6 +138,7 @@ def convertToIgraph(G):
 		graph_i = igraph.Graph.Read_Edgelist(graph_filename)
 		return graph_i
 
+
 # https://github.com/vtraag/leidenalg
 def partitionLeiden(G, partition_type_name):
 		graph_i = convertToIgraph(G)
