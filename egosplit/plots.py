@@ -17,7 +17,7 @@ for name in ["metrics", "execution_info", "ego_net_partitions",
 	except FileNotFoundError:
 		print("File " + filename + " not found")
 
-metrics = ["F1", "F1_rev", "NMI", "time"]
+metrics = ["f1", "f1_rev", "nmi", "time"]
 all_graph_names = data["metrics"].groupby("graph").mean().index.values
 all_algo_names = data["metrics"].groupby("algo").mean().index.values
 
@@ -28,27 +28,42 @@ error_config = {'ecolor': '0.3',
 				'capsize': 4}
 colors = {
 	"ground_truth": "xkcd:black",
-	"EgoSplitting_(PLP)": "xkcd:goldenrod",
-	"EgoSplitting_(PLM)": "xkcd:red",
-	"EgoSplitting_(LPPotts)": "xkcd:light orange",
-	"EgoSplitting_(LPPotts_par)": "xkcd:orange",
-	"OLP": "xkcd:green",
-	"GCE": "xkcd:blue",
+	"Ego_PLP": "xkcd:goldenrod",
+	"Ego_PLM": "xkcd:green",
+	"Ego_LPPotts": "xkcd:light blue",
+	"Ego_Infomap": "xkcd:red",
+	"Ego_Surprise": "xkcd:blue",
+	"OLP": "xkcd:magenta",
+	"GCE": "xkcd:fuchsia",
 	"MOSES": "xkcd:dark teal",
-	"OSLOM": "xkcd:fuchsia",
+	"OSLOM": "xkcd:blue",
 }
+
+markers = {
+	"ground_truth": ".",
+	"Ego_PLP": "v",
+	"Ego_PLM": "s",
+	"Ego_LPPotts": "*",
+	"Ego_Infomap": "X",
+	"Ego_Surprise": "o",
+	"OLP": "<",
+	"GCE": "P",
+	"MOSES": "D",
+	"OSLOM": "^",
+}
+
 metric_names = {
-	"F1": {
+	"f1": {
 		"description": "F1 Score",
 		"y_val": "F1",
 		"file_name": "F1_score"
 	},
-	"F1_rev": {
+	"f1_rev": {
 		"description": "F1 Score (reversed)",
 		"y_val": "F1",
 		"file_name": "F1_score_rev"
 	},
-	"NMI": {
+	"nmi": {
 		"description": "NMI Score",
 		"y_val": "NMI",
 		"file_name": "NMI_score"
@@ -60,6 +75,17 @@ metric_names = {
 	},
 }
 sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
+
+algo_sets = dict()
+algo_sets["metrics"] = [
+	"Ego_PLM", "Ego_Infomap", "Ego_PLP", "Ego_Surprise", "MOSES", "OSLOM", "GCE"
+]
+algo_sets["comm_sizes"] = [
+	"ground_truth", "Ego_PLM", "Ego_Infomap", "Ego_Surprise", "Ego_PLP", "MOSES", "OSLOM", "GCE"
+]
+algo_sets["ego"] = [
+	"Ego_PLM", "Ego_Infomap", "Ego_PLP", "Ego_Surprise"
+]
 
 
 def filter_data(data, conditions):
@@ -120,11 +146,11 @@ def metrics_filter(graphs, xlabel):
 					 hue="algo",
 					 ci=None,
 					 style="algo",
-					 markers=True,
+					 markers=markers,
 					 dashes=False,
 					 linewidth=3,
 					 markersize=8,
-					 palette="bright",
+					 palette=colors,
 					 data=filtered_data,
 					 ax=ax)
 		sns.despine(ax=ax)
@@ -226,24 +252,37 @@ def comm_sizes_lfr():
 
 def comm_sizes_filter(graphs):
 	graph_names = sorted(list(set(data["cover_comm_sizes"].query("graph.str.contains(@graphs)")["graph"])))
+	algos = algo_sets["comm_sizes"]
+
 	for graph_name in graph_names:
-		filtered_data = data["cover_comm_sizes"].query(("graph == @graph_name"))
+		filtered_data = data["cover_comm_sizes"].query(("graph == @graph_name and algo in @algos"))
 		fig, ax = plt.subplots()
-		sns.violinplot(x="graph",
-					   y="comm_size",
-					   hue="algo",
-					   scale="count",
-					   linewidth=0.5,
-					   inner=None,
-					   palette="bright",
-					   data=filtered_data,
-					   ax=ax,
-					   )
+		# sns.violinplot(x="graph",
+		# 			   y="comm_size",
+		# 			   hue="algo",
+		# 			   scale="count",
+		# 			   linewidth=0.5,
+		# 			   inner=None,
+		# 			   palette="bright",
+		# 			   data=filtered_data,
+		# 			   ax=ax,
+		# 			   )
+		sns.swarmplot(
+			x="algo",
+			y="comm_size",
+			hue="algo",
+			# dodge=True,
+			order=algos,
+			hue_order=algos,
+			size=2,
+			data=filtered_data,
+			ax=ax,
+		)
 		sns.despine(ax=ax)
 		ax.set(ylabel="size (log2)",
 			   ylim=(0,10))
 		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
-		fig.suptitle("Size of communities, " + graphs)
+		fig.suptitle("Size of communities, " + graph_name)
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
 		fig.savefig(file_prefix + "communities/" + 'comm_sizes_' + graph_name + '.pdf')
 		# plt.close(fig)
@@ -353,11 +392,11 @@ def partition_counts_filter(graphs):
 				 y="value",
 				 hue="info_name",
 				 style="algo",
-				 markers=True,
+				 markers=markers,
 				 dashes=False,
 				 linewidth=2,
 				 markersize=8,
-				 palette="bright",
+				 palette=colors,
 				 data=filtered_data,
 				 ax=ax)
 	sns.despine(left=True, ax=ax)
@@ -394,11 +433,15 @@ def egonet_f1(graphs):
 
 def egonet_comm_partition(graphs):
 	filtered_data = data["ego_net_partitions"].query("graph.str.contains(@graphs)")
+
+	# Nodes in other partitions (absolute)
 	fig, ax = plt.subplots()
 	sns.lineplot(
 		x="comm_size",
 		y="wrong_nodes",
 		hue="algo",
+		linewidth=3,
+		palette=colors,
 		ci=None,
 		data=filtered_data,
 		ax=ax,
@@ -409,11 +452,14 @@ def egonet_comm_partition(graphs):
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
 	fig.savefig(file_prefix + 'ego_partition/' + 'comm_' + graphs + '_total.pdf')
 
+	# Nodes in other partitions (percentage)
 	fig, ax = plt.subplots()
 	sns.lineplot(
 		x="comm_size",
 		y="wrong_percentage",
 		hue="algo",
+		linewidth=3,
+		palette=colors,
 		ci=None,
 		data=filtered_data,
 		ax=ax,
@@ -424,76 +470,63 @@ def egonet_comm_partition(graphs):
 	plt.tight_layout(rect=(0, 0, 1, 0.96))
 	fig.savefig(file_prefix + 'ego_partition/' + 'comm_' + graphs + '_percent.pdf')
 
-	# sns.catplot(
-	# 	x="comm_size",
-	# 	y="wrong_nodes",
-	# 	kind="swarm",
-	# 	hue="num_partitions",
-	# 	col="algo",
-	# 	data=filtered_data,
-	# )
+	# Number of partitions
+	fig, ax = plt.subplots()
+	sns.lineplot(
+		x="comm_size",
+		y="num_partitions",
+		hue="algo",
+		linewidth=3,
+		palette=colors,
+		ci=None,
+		data=filtered_data,
+		ax=ax,
+	)
+	sns.despine(left=True, ax=ax)
+	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+	plt.suptitle("Number of partitions in which the community is dominant\n Graph: " + graphs)
+	plt.tight_layout(rect=(0, 0, 1, 0.96))
+	fig.savefig(file_prefix + 'ego_partition/' + 'comm_' + graphs + '_partcnt.pdf')
 
-	for algo in filtered_data.groupby("algo").mean().index.values:
-		sns.jointplot(
-			x="comm_size",
-			y="wrong_nodes",
-			kind="hex",
-			data=filtered_data.query("algo == @algo"),
-			xlim=(0, 38),
-			ylim=(-1, 20),
-		)
-		plt.suptitle(algo)
-		plt.tight_layout(rect=(0, 0, 1, 0.96))
-
-	for algo in filtered_data.groupby("algo").mean().index.values:
-		sns.jointplot(
-			x="comm_size",
-			y="wrong_nodes",
-			kind="kde",
-			data=filtered_data.query("algo == @algo"),
-			xlim=(0, 38),
-			ylim=(-1, 20),
-		)
-		plt.suptitle(algo)
-		plt.tight_layout(rect=(0, 0, 1, 0.96))
+	# # Kernel density
+	# for algo in filtered_data.groupby("algo").mean().index.values:
+	# 	sns.jointplot(
+	# 		x="comm_size",
+	# 		y="wrong_nodes",
+	# 		kind="kde",
+	# 		data=filtered_data.query("algo == @algo"),
+	# 		xlim=(0, 38),
+	# 		ylim=(-1, 20),
+	# 	)
+	# 	plt.suptitle(algo)
+	# 	plt.tight_layout(rect=(0, 0, 1, 0.96))
 
 
 def egonet_partition_composition(graphs):
 	filtered_data = data["ego_net_partition_composition"].query("graph.str.contains(@graphs)")
-	fig, ax = plt.subplots()
-	sns.lineplot(
-		x="partition_size",
-		y="wrong_nodes",
-		hue="algo",
-		# style="algo",
-		# markers=True,
-		ci=None,
-		data=filtered_data,
-		ax=ax,
-	)
-	sns.despine(left=True, ax=ax)
-	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
-	plt.suptitle("Number of wrong nodes in the partition, Graph: " + graphs)
-	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'ego_partition/' + 'part_' + graphs + '_total.pdf')
 
-	fig, ax = plt.subplots()
-	sns.lineplot(
-		x="partition_size",
-		y="wrong_percentage",
-		hue="algo",
-		# style="algo",
-		# markers=True,
-		ci=None,
-		data=filtered_data,
-		ax=ax,
-	)
-	sns.despine(left=True, ax=ax)
-	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
-	plt.suptitle("Percentage of wrong nodes in the partition, Graph: " + graphs)
-	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'ego_partition/' + 'part_' + graphs + '_percent.pdf')
+	# Wrong nodes in partition
+	for y_val in ["wrong_nodes", "wrong_percentage", "wrong_percentage_gt", "wrong_percentage_other"]:
+		fig, ax = plt.subplots()
+		sns.lineplot(
+			x="partition_size",
+			y=y_val,
+			hue="algo",
+			# style="algo",
+			# markers=True,
+			linewidth=2.5,
+			palette=colors,
+			ci=None,
+			data=filtered_data,
+			ax=ax,
+		)
+		sns.despine(left=True, ax=ax)
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+		plt.suptitle("Wrong nodes in the partition, Graph: " + graphs)
+		plt.tight_layout(rect=(0, 0, 1, 0.96))
+		fig.savefig(file_prefix + 'ego_partition/' + 'part_' + graphs + '_' + y_val + '.pdf')
 
+	# # Partition sizes
 	# fig, ax = plt.subplots()
 	# sns.violinplot(x="graph",
 	#                y="partition_size",
@@ -501,44 +534,54 @@ def egonet_partition_composition(graphs):
 	#                scale="count",
 	#                linewidth=1,
 	#                inner=None,
-	#                palette="bright",
+	#                palette=colors,
 	#                data=filtered_data,
 	#                ax=ax)
 
-	for algo in filtered_data.groupby("algo").mean().index.values:
-		sns.jointplot(
-			x="partition_size",
-			y="wrong_nodes",
-			kind="hex",
-			data=filtered_data.query("algo == @algo"),
-			xlim=(0, 80),
-			ylim=(-1, 50),
-		)
-		plt.suptitle("Number of wrong nodes in the partition, Graph: " + graphs + ", "+ algo)
-		plt.tight_layout(rect=(0, 0, 1, 0.96))
-		plt.savefig(file_prefix + 'ego_partition/' + 'part_' + 'hex_' + algo + '.pdf')
+	# # Kernel density
+	# for algo in filtered_data.groupby("algo").mean().index.values:
+	# 	sns.jointplot(
+	# 		x="partition_size",
+	# 		y="wrong_nodes",
+	# 		kind="kde",
+	# 		data=filtered_data.query("algo == @algo"),
+	# 		xlim=(-16, 80),
+	# 		ylim=(-10, 50),
+	# 	)
+	# 	plt.suptitle("Number of wrong nodes in the partition, Graph: " + graphs + ", "+ algo)
+	# 	plt.tight_layout(rect=(0, 0, 1, 0.96))
+	# 	plt.savefig(file_prefix + 'ego_partition/' + 'part_' + 'kde_' + algo + '.pdf')
 
-	for algo in filtered_data.groupby("algo").mean().index.values:
-		sns.jointplot(
-			x="partition_size",
-			y="wrong_nodes",
-			kind="kde",
-			data=filtered_data.query("algo == @algo"),
-			xlim=(-16, 80),
-			ylim=(-10, 50),
-		)
-		plt.suptitle("Number of wrong nodes in the partition, Graph: " + graphs + ", "+ algo)
+	for ylim in [True, False]:
+		fig, ax = plt.subplots()
+		for algo_name in data["ego_net_partition_composition"].groupby("algo").mean().index.values:
+			count_communities = filtered_data.query("algo == @algo_name")
+			sns.distplot(
+				a=count_communities["partition_size"],
+				# hist=False,
+				kde=False,
+				bins=range(0, 60, 1),
+				hist_kws={"histtype": "step", "linewidth": 2,
+				          "alpha": 1, "color": colors[algo_name]},
+				label=algo_name,
+				ax=ax,
+			)
+		sns.despine(left=True, ax=ax)
+		if ylim:
+			ax.set(ylim=(0, 900))
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+		plt.suptitle("Partition sizes, Graph: " + graphs)
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
-		plt.savefig(file_prefix + 'ego_partition/' + 'part_' + 'kde_' + algo + '.pdf')
+		plt.savefig(file_prefix + 'ego_partition/' + 'part_sizes_' + str(int(ylim)) + '.pdf')
 
 
 # metrics_real()
-# metrics_lfr()
+metrics_lfr()
 
 # num_comms_real()
 # num_comms_lfr()
 
-# comm_sizes_lfr()
+comm_sizes_lfr()
 # comm_sizes_ego()
 
 # node_comms_lfr()
@@ -546,10 +589,7 @@ def egonet_partition_composition(graphs):
 
 # partition_counts()
 
-# egonet_f1('LFR_om')
-# egonet_f1('LFR_mu')
-
-# egonet_comm_partition("LFR_om_3")
+egonet_comm_partition("LFR_om_3")
 egonet_partition_composition("LFR_om_3")
 
 # plt.show()

@@ -123,9 +123,12 @@ def writeLeidenPartition(G, partition, filename):
 
 def convertLeidenPartition(G, la_partition):
 	partition = structures.Partition(G.upperNodeIdBound())
+	partition.setUpperBound(len(la_partition) + 1)
 	for i in range(0, len(la_partition)):
 		for u in la_partition[i]:
 			if G.hasNode(u):
+				if partition.contains(u):
+					print("Error")
 				partition.addToSubset(i, u)
 	return partition
 
@@ -143,14 +146,14 @@ def convertToIgraph(G):
 def partitionLeiden(G, partition_type_name):
 		graph_i = convertToIgraph(G)
 		if partition_type_name == "modularity":
-			partition_type =  leidenalg.ModularityVertexPartition
+			partition_type = leidenalg.ModularityVertexPartition
 		elif partition_type_name == "surprise":
 			partition_type = leidenalg.SurpriseVertexPartition
 		else:
 			raise RuntimeError
 		la_partition = leidenalg.find_partition(graph_i, partition_type)
 		partition = convertLeidenPartition(G, la_partition)
-		# Partition.numberOfSubsets() seems broken
+		# TODO: Something with the partition is wrong.
 
 		# Convert to networkit.Partition
 		# partition_filename = os.path.join('./partition.dat')

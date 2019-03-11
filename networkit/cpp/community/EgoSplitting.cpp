@@ -122,13 +122,6 @@ void EgoSplitting::createEgoNets() {
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 
-	count allPartitions = 0;
-	count partitions = 0;
-	count allComponents = 0;
-	count components = 0;
-	std::pair<count, double> f1Score(0, 0.0);
-	egoPartitions.resize(G.upperNodeIdBound());
-
 	G.forNodes([&](node u) {
 		handler.assureRunning();
 		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
@@ -149,7 +142,6 @@ void EgoSplitting::createEgoNets() {
 
 
 		DEBUG("Find triangles");
-		UnionFind unionFind(degree);
 		timer.start();
 		// Find all triangles and add the edges to the egoGraph
 		Graph egoGraph(degree);
@@ -158,7 +150,6 @@ void EgoSplitting::createEgoNets() {
 				if (nodeToId[w] != none) {
 					// we have found a triangle u-v-w
 					egoGraph.addEdge(nodeToId[v], nodeToId[w], weight);
-					unionFind.merge(nodeToId[v], nodeToId[w]);
 				}
 			});
 		});
@@ -174,7 +165,8 @@ void EgoSplitting::createEgoNets() {
 			Graph egoCopy(egoGraph);
 			egoPartition = localClusterAlgo(egoCopy); // Python moves the graph so we need a copy
 		} else {
-			egoPartition = unionFind.toPartition();
+			egoPartition = Partition(degree);
+			egoPartition.allToSingletons();
 		}
 		timer.stop();
 		timings["1c)    Cluster EgoNet"] += timer.elapsedMicroseconds();
@@ -183,34 +175,6 @@ void EgoSplitting::createEgoNets() {
 		egoPartition.compact();
 		timer.stop();
 		timings["1d)    Compact EgoNet"] += timer.elapsedMicroseconds();
-
-		// Count partitions of EgoNet
-		for (count size : egoPartition.subsetSizes()) {
-			if (size > 1)
-				++partitions;
-			++allPartitions;
-		}
-		auto comp = unionFind.toPartition();
-		for (count size : comp.subsetSizes()) {
-			if (size > 1)
-				++components;
-			++allComponents;
-		}
-
-		// Compare partitions with ground truth
-		// For each partition in the EgoNet, check if a community exists in the ground truth
-		if (groundTruth.upperBound() > 1 && egoGraph.numberOfNodes() > 1) {
-			Cover egoGroundTruth(degree);
-			egoGroundTruth.setUpperBound(groundTruth.upperBound());
-			egoGraph.forNodes([&](node u) {
-				auto globalNode = idToNode[u];
-				auto communites = groundTruth.subsetsOf(globalNode);
-				for (index c : communites) {
-					egoGroundTruth.addToSubset(c, u);
-				}
-			});
-			Cover egoCover = Cover(egoPartition);
-		}
 
 
 		DEBUG("Build EgoNet");
@@ -237,11 +201,6 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1g)    Clean up"] += timer.elapsedMicroseconds();
 	});
-	executionInfo["egoF1Score"] = f1Score.second;
-	executionInfo["allPartitions"] = allPartitions / (double) G.numberOfNodes();
-	executionInfo["twoPlusPartitions"] = partitions / (double) G.numberOfNodes();
-	executionInfo["allComponents"] = allComponents / (double) G.numberOfNodes();
-	executionInfo["twoPlusComponents"] = components / (double) G.numberOfNodes();
 }
 
 void EgoSplitting::splitIntoPersonas() {

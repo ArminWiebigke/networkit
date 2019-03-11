@@ -10,7 +10,7 @@ from egosplit.benchmarks.ego_net_partition import *
 
 
 def start_benchmarks():
-	iterations = 5
+	iterations = 3
 
 	# ************************************************************************************
 	# *                             Input graphs                                         *
@@ -34,7 +34,7 @@ def start_benchmarks():
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
-	# for mu_factor in range(0, 56, 5):
+	# for mu_factor in range(0, 51, 5):
 	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
 	# 		'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
 	# 		't1': 2, 't2': 1, 'mu': 0.01 * mu_factor, 'on': 1000, 'om': 2}
@@ -44,26 +44,26 @@ def start_benchmarks():
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
 	algos = []
+	# algos.append(OslomAlgorithm())
+	# algos.append(MosesAlgorithm())
+	# algos.append(OlpAlgorithm())
+	# algos.append(GceAlgorithm())
+
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
 	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
-	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
+	partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
 	# partition_algos['Surprise_PLM'] = [lambda g: partitionLeiden(g, "surprise"),
 	#                                    lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['Surprise_Infomap'] = [
 	# 	lambda g: partitionLeiden(g, "surprise"),
 	# 	lambda g: clusterInfomap(g)]
 	algos += create_egosplit_algorithms(partition_algos)
-	algos += create_egosplit_algorithms(partition_algos, clean_up="OSLOM")
-
-	algos.append(OlpAlgorithm())
-	algos.append(GceAlgorithm())
-	# algos.append(MosesAlgorithm())
-	# algos.append(OslomAlgorithm())
+	# algos += create_egosplit_algorithms(partition_algos, clean_up="OSLOM")
 
 	benchmarks = create_benchmarks(graphs, algos)
 
@@ -76,7 +76,7 @@ def start_benchmarks():
 	run_benchmarks(benchmarks)
 
 	result_dir = "../results/"
-	append = False
+	append = True
 	write_results_to_file(benchmarks, result_dir, append)
 	print_benchmarks_compact(benchmarks)
 	analyse_ego_net_partitions(benchmarks, result_dir, append)

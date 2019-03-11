@@ -9,7 +9,9 @@ class CoverBenchmark:
 		self.graph = graph
 
 	def run(self):
+		print("Graph: " + self.graph.name + ", Algo: " + self.algo.name)
 		self.algo.run(self.graph.graph)
+		print("Time: " + str(self.getTime()) + "\n")
 
 	def getTime(self):
 		return self.algo.getTime()

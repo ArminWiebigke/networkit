@@ -56,18 +56,18 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		super().__init__()
 		self.local_partition_algorithm = local_partition_algorithm
 		self.global_partition_algorithm = global_partition_algorithm
-		self.name = 'Ego_' + name
+		self.name = name
 		self.clean_up = clean_up
 		self.executionInfo = None
 		self.egoNetPartitions = None
 
 	def copy(self):
-		return EgoSplitAlgorithm(self.name, self.local_partition_algorithm,
+		return EgoSplitAlgorithm(self._name, self.local_partition_algorithm,
 		                         self.global_partition_algorithm, self.clean_up)
 
 	@property
 	def name(self):
-		name = self._name
+		name = 'Ego_' + self._name
 		if self.clean_up != "":
 			name += "_clean_" + self.clean_up
 		return name
