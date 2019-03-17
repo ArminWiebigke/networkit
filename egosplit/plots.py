@@ -28,11 +28,13 @@ error_config = {'ecolor': '0.3',
 				'capsize': 4}
 colors = {
 	"ground_truth": "xkcd:black",
-	"Ego_PLP": "xkcd:goldenrod",
+	"Ego_PLP": "xkcd:brown",
 	"Ego_PLM": "xkcd:green",
+	"Ego_PLM_clean_OSLOM": "xkcd:light green",
 	"Ego_LPPotts": "xkcd:light blue",
 	"Ego_Infomap": "xkcd:red",
-	"Ego_Surprise": "xkcd:blue",
+	"Ego_Infomap_clean_OSLOM": "xkcd:light red",
+	"Ego_Surprise": "xkcd:goldenrod",
 	"OLP": "xkcd:magenta",
 	"GCE": "xkcd:fuchsia",
 	"MOSES": "xkcd:dark teal",
@@ -43,8 +45,10 @@ markers = {
 	"ground_truth": ".",
 	"Ego_PLP": "v",
 	"Ego_PLM": "s",
+	"Ego_PLM_clean_OSLOM": "v",
 	"Ego_LPPotts": "*",
 	"Ego_Infomap": "X",
+	"Ego_Infomap_clean_OSLOM": "*",
 	"Ego_Surprise": "o",
 	"OLP": "<",
 	"GCE": "P",
@@ -77,8 +81,11 @@ metric_names = {
 sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
 
 algo_sets = dict()
-algo_sets["metrics"] = [
-	"Ego_PLM", "Ego_Infomap", "Ego_PLP", "Ego_Surprise", "MOSES", "OSLOM", "GCE"
+algo_sets["clean"] = [
+	"Ego_PLM", "Ego_PLM_clean_OSLOM", "OSLOM",
+]
+algo_sets["ego"] = [
+	"Ego_PLP", "Ego_LPPotts", "Ego_PLM", "Ego_Infomap", "Ego_Surprise",
 ]
 algo_sets["comm_sizes"] = [
 	"ground_truth", "Ego_PLM", "Ego_Infomap", "Ego_Surprise", "Ego_PLP", "MOSES", "OSLOM", "GCE"
@@ -131,12 +138,20 @@ def metrics_real():
 
 
 def metrics_lfr():
-	metrics_filter('LFR_om', 'om')
-	metrics_filter('LFR_mu', 'mu')
+	metrics_filter('LFR_om', 'om', algo_sets["clean"], "_clean")
+	metrics_filter('LFR_om', 'om', algo_sets["ego"], "_ego")
+	metrics_filter('LFR_mu', 'mu', algo_sets["ego"], "")
 
 
-def metrics_filter(graphs, xlabel):
-	filtered_data = data["metrics"].query("graph.str.contains(@graphs)")
+def set_xticklabels(ax, xlabel):
+	if xlabel is "om":
+		ax.set_xticklabels([str(i) for i in range(1, 6)])
+	elif xlabel is "mu":
+		ax.set_xticklabels([str(i) for i in range(0, 51, 5)])
+
+
+def metrics_filter(graphs, xlabel, algos, name):
+	filtered_data = data["metrics"].query("graph.str.contains(@graphs) and algo in @algos")
 	if len(filtered_data) is 0:
 		return
 	for metric in metrics:
@@ -157,15 +172,15 @@ def metrics_filter(graphs, xlabel):
 		ax.set(
 			xlabel=xlabel,
 			ylabel=metric_names[metric]["y_val"],
-			# xticklabels=[label.get_text() for label in ax.get_xticklabels()]
 		)
+		set_xticklabels(ax, xlabel)
 		if metric != "time":
 			ax.set(ylim=(-0.01, 1))
 		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
-		fig.suptitle(metric_names[metric]["description"] + " LFR graphs" )
+		fig.suptitle(metric_names[metric]["description"] + ", LFR graphs" )
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
 		fig.savefig(file_prefix + "metrics/" + metric_names[metric]["file_name"]
-					+ "_" + graphs + ".pdf")
+					+ "_" + graphs + name + ".pdf")
 
 
 def num_comms_real():
@@ -274,6 +289,7 @@ def comm_sizes_filter(graphs):
 			# dodge=True,
 			order=algos,
 			hue_order=algos,
+			palette=colors,
 			size=2,
 			data=filtered_data,
 			ax=ax,
@@ -581,7 +597,7 @@ metrics_lfr()
 # num_comms_real()
 # num_comms_lfr()
 
-comm_sizes_lfr()
+# comm_sizes_lfr()
 # comm_sizes_ego()
 
 # node_comms_lfr()
@@ -589,7 +605,7 @@ comm_sizes_lfr()
 
 # partition_counts()
 
-egonet_comm_partition("LFR_om_3")
-egonet_partition_composition("LFR_om_3")
+# egonet_comm_partition("LFR_om_3")
+# egonet_partition_composition("LFR_om_3")
 
 # plt.show()
