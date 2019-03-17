@@ -1,7 +1,8 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from networkit.community import EgoSplitting, CoverF1Similarity, PLM, PLP, \
 	LPPotts, OLP
+from networkit import gephi
 from egosplit.benchmarks.algorithms import *
 from egosplit.benchmarks.cover_analysis import *
 from egosplit.benchmarks.cover_benchmark import *
@@ -10,7 +11,7 @@ from egosplit.benchmarks.ego_net_partition import *
 
 
 def start_benchmarks():
-	iterations = 3
+	iterations = 1
 
 	# ************************************************************************************
 	# *                             Input graphs                                         *
@@ -30,7 +31,7 @@ def start_benchmarks():
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 4):
+	for om in range(2, 4):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -51,14 +52,16 @@ def start_benchmarks():
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	partition_algos['PLM'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
-	# partition_algos['LPPotts_par'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
-	# 								  lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	# partition_algos['LPPotts_par'] = [
+	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
+	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
+	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
-	# partition_algos['Surprise_PLM'] = [lambda g: partitionLeiden(g, "surprise"),
-	#                                    lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	# partition_algos['Surprise_PLM'] = [
+	# 	lambda g: partitionLeiden(g, "surprise"),
+	# 	lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['Surprise_Infomap'] = [
 	# 	lambda g: partitionLeiden(g, "surprise"),
 	# 	lambda g: clusterInfomap(g)]
@@ -81,6 +84,44 @@ def start_benchmarks():
 	print_benchmarks_compact(benchmarks)
 	analyse_ego_net_partitions(benchmarks, result_dir, append)
 	analyse_cover(graphs, benchmarks, result_dir, append)
+	stream_partition(graphs, benchmarks)
+
+
+def create_ground_truth_partition(node_id, egonet, ground_truth):
+	gt_comms = ground_truth.subsetsOf(node_id)
+	partition = dict()
+	for u in egonet.nodes():
+		comms = ground_truth.subsetsOf(u).intersection(gt_comms)
+		if len(comms) == 0:
+			color = 1000
+		elif len(comms) > 1:
+			color = 1001
+		else:
+			color = list(comms)[0]
+		partition[u] = color
+	return partition
+
+
+def stream_partition(graphs, benchmarks):
+	# assert len(graphs) == 1
+	i = 0
+	for graph in graphs:
+		G = graph.graph
+		for _ in range(0, 3):
+			i += 1
+			node_id = G.randomNode()
+			egonet = G.subgraphFromNodes(G.neighbors(node_id))
+			client = gephi.streaming.GephiStreamingClient(
+				url='http://localhost:8080/workspace' + str(i))
+			client.exportGraph(egonet)
+			gt_partition = create_ground_truth_partition(node_id, egonet, graph.ground_truth)
+			client.exportNodeValues(egonet, gt_partition, "ground_truth")
+			for benchmark in benchmarks:
+				if benchmark.graph is not graph:
+					continue
+				partition = benchmark.algo.getEgoNetPartitions()[node_id]
+				del partition[none]
+				client.exportNodeValues(egonet, partition, benchmark.algo.name)
 
 
 def create_LFR_graphs(graphs, graphArgs, iterations):
