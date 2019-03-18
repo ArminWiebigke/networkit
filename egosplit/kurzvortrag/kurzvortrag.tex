@@ -23,7 +23,7 @@
 
 \begin{document}
 	\author{Armin Wiebigke}
-	\title{Ego-Splitting Framework}
+	\title[Ego-Splitting Framework]{Engineering Overlapping Community Detection\\ based on the Ego-Splitting Framework}
 	%\subtitle{}
 	%\logo{}
 	%\institute{}
@@ -54,7 +54,7 @@
 	 \item For each node:
 	 \begin{itemize}
 	 	\item Create the ego-net graph (triangle search)
-	 	\item Use the local clustering algorithm to partition the ego-net
+	 	\item Use the local partition algorithm on the ego-net
 	 \end{itemize}
 	 \item Create persona graph:
 	 \begin{itemize}
@@ -70,7 +70,7 @@
 \begin{frame}{The Framework}
 	
 \begin{itemize}	
-	\item Use the global clustering algorithm on the persona graph
+	\item Use the global partition algorithm on the persona graph
 	\begin{itemize}
 		\item Each partition is one community
 	\end{itemize}
@@ -81,19 +81,26 @@
 	\includegraphics[height=85pt]{/home/armin/Documents/partition_persona.pdf}
 \end{frame}
 
-\begin{frame}{Problems}
+\begin{frame}{Problems \& Possible Solutions}
 	\begin{itemize}
 		\item Local partitioning is critical
 		\begin{itemize}
 			\item number of Communities $\leq$ number of Personas
 			\item Detecting communities in ego-net can be difficult/impossible
-			\item Repairing possible?
 		\end{itemize}
+	
+	\item Connect personas of one node with additional edges
+	%		\item Combinations of local/global algorithms
+	\item Increase size of ego-net
+	\begin{itemize}
+		\item neighbors of neighbors
+		\item squares
+	\end{itemize}
 %		\item Triangle with two nodes in community and one outside $\Rightarrow$ outside node is included in community by global partition algorithm 
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Problems}
+\begin{frame}{Problems \& Possible Solutions}
 	\begin{itemize}
 		\item Which partition algorithm(s)?
 	\end{itemize}
@@ -110,17 +117,12 @@
 	\includegraphics[width=0.8\linewidth]{metrics/NMI_score_LFR_om_clean.pdf}
 \end{frame}
 
-\begin{frame}{Possible Improvements}
-	\begin{itemize}
-		\item Connect personas of one node with additional edges
-		\item Combinations of local/global algorithms
-		\item Increase size of ego-net
-		\begin{itemize}
-			\item neighbors of neighbors
-			\item squares
-		\end{itemize}
-	\end{itemize}
-\end{frame}
+%\begin{frame}{Possible Improvements}
+%	\begin{itemize}
+%	\end{itemize}
+%\end{frame}
+
+\appendix
 
 \begin{frame}{Plots}
 \centering
