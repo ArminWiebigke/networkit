@@ -93,6 +93,15 @@ algo_sets["comm_sizes"] = [
 algo_sets["ego"] = [
 	"Ego_PLM", "Ego_Infomap", "Ego_PLP", "Ego_Surprise"
 ]
+algo_sets["ego_parameters"] = [
+	"Ego_PLM_base",
+	"Ego_PLM_standard",
+	"Ego_PLM_directedNodes",
+	"Ego_PLM_directedEdges",
+	"Ego_PLM_directedBoth",
+	"Ego_PLM_discardNonTriangle",
+	"Ego_PLM_noNeigOfNeigEdges"
+]
 
 
 def filter_data(data, conditions):
@@ -138,9 +147,10 @@ def metrics_real():
 
 
 def metrics_lfr():
-	metrics_filter('LFR_om', 'om', algo_sets["clean"], "_clean")
-	metrics_filter('LFR_om', 'om', algo_sets["ego"], "_ego")
-	metrics_filter('LFR_mu', 'mu', algo_sets["ego"], "")
+	# metrics_filter('LFR_om', 'om', algo_sets["clean"], "_clean")
+	# metrics_filter('LFR_om', 'om', algo_sets["ego"], "_ego")
+	# metrics_filter('LFR_mu', 'mu', algo_sets["ego"], "")
+	metrics_filter('LFR_om', 'om', algo_sets["ego_parameters"], "_parameters")
 
 
 def set_xticklabels(ax, xlabel):
@@ -161,11 +171,12 @@ def metrics_filter(graphs, xlabel, algos, name):
 					 hue="algo",
 					 ci=None,
 					 style="algo",
-					 markers=markers,
+		             markers=True,
+					 # markers=markers,
 					 dashes=False,
-					 linewidth=3,
-					 markersize=8,
-					 palette=colors,
+					 linewidth=2,
+					 markersize=6,
+					 # palette=colors,
 					 data=filtered_data,
 					 ax=ax)
 		sns.despine(ax=ax)
@@ -261,13 +272,13 @@ def comm_sizes_real():
 
 
 def comm_sizes_lfr():
-	comm_sizes_filter('LFR_om')
-	comm_sizes_filter('LFR_mu')
+	comm_sizes_filter('LFR_om_3')
+	# comm_sizes_filter('LFR_mu')
 
 
 def comm_sizes_filter(graphs):
 	graph_names = sorted(list(set(data["cover_comm_sizes"].query("graph.str.contains(@graphs)")["graph"])))
-	algos = algo_sets["comm_sizes"]
+	algos = ["ground_truth"] + algo_sets["ego_parameters"]
 
 	for graph_name in graph_names:
 		filtered_data = data["cover_comm_sizes"].query(("graph == @graph_name and algo in @algos"))
@@ -289,7 +300,7 @@ def comm_sizes_filter(graphs):
 			# dodge=True,
 			order=algos,
 			hue_order=algos,
-			palette=colors,
+			# palette=colors,
 			size=2,
 			data=filtered_data,
 			ax=ax,
@@ -397,12 +408,14 @@ def node_comms_ego_filter(graphs):
 
 def partition_counts():
 	partition_counts_filter('LFR_om')
-	partition_counts_filter('LFR_mu')
+	# partition_counts_filter('LFR_mu')
 
 
 def partition_counts_filter(graphs):
+	algos = ["ground_truth"] + algo_sets["ego_parameters"]
 	filtered_data = data["execution_info"].query("graph.str.contains(@graphs)"
-												   " and info_name.str.contains('twoPlus')")
+	                                             " and info_name.str.contains('twoPlus')"
+	                                             " and algo in @algos")
 	fig, ax = plt.subplots()
 	sns.lineplot(x="graph",
 				 y="value",
@@ -448,7 +461,9 @@ def egonet_f1(graphs):
 
 
 def egonet_comm_partition(graphs):
-	filtered_data = data["ego_net_partitions"].query("graph.str.contains(@graphs)")
+	algos = ["ground_truth"] + algo_sets["ego_parameters"]
+	filtered_data = data["ego_net_partitions"].query("graph.str.contains(@graphs)"
+	                                                 " and algo in @algos")
 
 	# Nodes in other partitions (absolute)
 	fig, ax = plt.subplots()
@@ -457,7 +472,7 @@ def egonet_comm_partition(graphs):
 		y="wrong_nodes",
 		hue="algo",
 		linewidth=3,
-		palette=colors,
+		# palette=colors,
 		ci=None,
 		data=filtered_data,
 		ax=ax,
@@ -475,7 +490,7 @@ def egonet_comm_partition(graphs):
 		y="wrong_percentage",
 		hue="algo",
 		linewidth=3,
-		palette=colors,
+		# palette=colors,
 		ci=None,
 		data=filtered_data,
 		ax=ax,
@@ -493,7 +508,7 @@ def egonet_comm_partition(graphs):
 		y="num_partitions",
 		hue="algo",
 		linewidth=3,
-		palette=colors,
+		# palette=colors,
 		ci=None,
 		data=filtered_data,
 		ax=ax,
@@ -519,7 +534,9 @@ def egonet_comm_partition(graphs):
 
 
 def egonet_partition_composition(graphs):
-	filtered_data = data["ego_net_partition_composition"].query("graph.str.contains(@graphs)")
+	algos = ["ground_truth"] + algo_sets["ego_parameters"]
+	filtered_data = data["ego_net_partition_composition"].query("graph.str.contains(@graphs)"
+	                                                 " and algo in @algos")
 
 	# Wrong nodes in partition
 	for y_val in ["wrong_nodes", "wrong_percentage", "wrong_percentage_gt", "wrong_percentage_other"]:
@@ -531,7 +548,7 @@ def egonet_partition_composition(graphs):
 			# style="algo",
 			# markers=True,
 			linewidth=2.5,
-			palette=colors,
+			# palette=colors,
 			ci=None,
 			data=filtered_data,
 			ax=ax,
@@ -577,8 +594,11 @@ def egonet_partition_composition(graphs):
 				# hist=False,
 				kde=False,
 				bins=range(0, 60, 1),
-				hist_kws={"histtype": "step", "linewidth": 2,
-				          "alpha": 1, "color": colors[algo_name]},
+				hist_kws={"histtype": "step",
+				          "linewidth": 2,
+				          "alpha": 1,
+				          #"color": colors[algo_name],
+				          },
 				label=algo_name,
 				ax=ax,
 			)
@@ -592,7 +612,7 @@ def egonet_partition_composition(graphs):
 
 
 # metrics_real()
-metrics_lfr()
+# metrics_lfr()
 
 # num_comms_real()
 # num_comms_lfr()
@@ -605,7 +625,7 @@ metrics_lfr()
 
 # partition_counts()
 
-# egonet_comm_partition("LFR_om_3")
-# egonet_partition_composition("LFR_om_3")
+egonet_comm_partition("LFR_om_3")
+egonet_partition_composition("LFR_om_3")
 
 # plt.show()

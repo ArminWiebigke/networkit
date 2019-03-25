@@ -88,13 +88,13 @@ def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part):
 
 # Returns partition->node list, best community for each partition, community->size map
 def calculate_partition_properties(ground_truth, truth_communities, partition_map):
-	num_partitions = partition_map[none]
-	partitions = [[]]
-	for i in range(0, num_partitions):
-		partitions.append([])
-	for v, partition in partition_map.items():
-		if v != none and partition != none: # TODO: Why does leidenalg assign partition = none, but no other algorithm?
-			partitions[partition].append(v)
+	max_partition = 0
+	for id in partition_map.values():
+		max_partition = max(max_partition, id)
+	partitions = [[] for _ in range(max_partition + 1)]
+	for v, p_id in partition_map.items():
+		if v != none and p_id != none: # TODO: Why does leidenalg assign partition = none, but no other algorithm?
+			partitions[p_id].append(v)
 	# Remove partitions of size one
 	# partitions = [p for p in partitions if len(p) > 1]
 
@@ -106,7 +106,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 		community_sizes[c] = 0
 	best_communities = [] # for each partition: the ground truth community with the most nodes
 	community_cnts = [] # for each partition: number of nodes for each ground truth community
-	for i in range(0, len(partitions)):
+	for i in range(len(partitions)):
 		partition = partitions[i]
 		community_cnts.append(dict())
 		for c in truth_communities:
@@ -129,7 +129,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 def check_partition_composition(ground_truth, partitions, best_communities,
                                 truth_communities):
 	result_list = []
-	for i in range(0, len(partitions)):
+	for i in range(len(partitions)):
 		p = partitions[i]
 		num_partitions = len(p)
 		best_community = best_communities[i]
@@ -171,7 +171,7 @@ def check_community_partitioning(ground_truth, partitions, best_communities,
 	for c in truth_communities:
 		best_partition, best_partition_cnt = find_best_partition(ground_truth, c, partitions)
 		node_cnt = 0
-		for i in range(0, len(partitions)):
+		for i in range(len(partitions)):
 			if i != best_partition:
 				for u in partitions[i]:
 					comms = ground_truth.subsetsOf(u)
@@ -201,7 +201,7 @@ def check_community_partitioning(ground_truth, partitions, best_communities,
 def find_best_partition(ground_truth, community, partitions):
 	best_partition = -1
 	best_partition_cnt = 0
-	for i in range(0, len(partitions)):
+	for i in range(len(partitions)):
 		num_nodes = 0
 		for u in partitions[i]:
 			if community in ground_truth.subsetsOf(u):

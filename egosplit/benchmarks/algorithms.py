@@ -51,7 +51,7 @@ class CoverAlgorithm:
 
 
 class EgoSplitAlgorithm(CoverAlgorithm):
-	def __init__(self, name, local_partition_algorithm,
+	def __init__(self, name, parameters, local_partition_algorithm,
 	             global_partition_algorithm=None, clean_up=""):
 		super().__init__()
 		self.local_partition_algorithm = local_partition_algorithm
@@ -60,9 +60,10 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.clean_up = clean_up
 		self.executionInfo = None
 		self.egoNetPartitions = None
+		self.parameters = parameters
 
 	def copy(self):
-		return EgoSplitAlgorithm(self._name, self.local_partition_algorithm,
+		return EgoSplitAlgorithm(self._name, self.parameters, self.local_partition_algorithm,
 		                         self.global_partition_algorithm, self.clean_up)
 
 	@property
@@ -79,6 +80,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	def run(self, graph):
 		algo = EgoSplitting(graph, self.local_partition_algorithm,
 		                    self.global_partition_algorithm)
+		algo.setParameters(self.parameters)
 		with self.timer:
 			algo.run()
 			cover = algo.getCover()
@@ -88,22 +90,28 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 		self.executionInfo = algo.getExecutionInfo()
 		self.egoNetPartitions = algo.getEgoNetPartitions()
+		self.egoNets = []
+		for i, _ in enumerate(self.egoNetPartitions):
+			self.egoNets.append(algo.getEgoNet(i))
 
-	# Output timings
-	# timings = a.getTimings()
-	# for name in sorted(timings.keys()):
-	# 	print((name.decode('ASCII') + ": ").ljust(26) + str(timings[name]/1000))
-	# timings_str = ""
-	# for name in sorted(timings.keys()):
-	# 	timings_str += str(timings[name]/1000000).ljust(21)
-	# self.out_file.write(timings_str + '\n')
-	# print(timings_str)
+		# Output timings
+		timings = algo.getTimings()
+		for name in sorted(timings.keys()):
+			print(str(timings[name]/1000).rjust(9) + "  " + name.decode('ASCII'))
+		# timings_str = ""
+		# for name in sorted(timings.keys()):
+		# 	timings_str += str(timings[name]/1000000).ljust(21)
+		# self.out_file.write(timings_str + '\n')
+		# print(timings_str)
 
 	# def getExecutionInfo(self):
 	# 	return self.executionInfo
 
 	def getEgoNetPartitions(self):
 		return self.egoNetPartitions
+
+	def getEgoNet(self, u):
+		return self.egoNets[u]
 
 
 class OlpAlgorithm(CoverAlgorithm):

@@ -10,9 +10,7 @@ from egosplit.benchmarks.metrics import *
 from egosplit.benchmarks.ego_net_partition import *
 
 
-def start_benchmarks():
-	iterations = 1
-
+def get_graphs(iterations):
 	# ************************************************************************************
 	# *                             Input graphs                                         *
 	# ************************************************************************************
@@ -31,7 +29,7 @@ def start_benchmarks():
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(2, 4):
+	for om in range(5, 6):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -40,7 +38,10 @@ def start_benchmarks():
 	# 		'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
 	# 		't1': 2, 't2': 1, 'mu': 0.01 * mu_factor, 'on': 1000, 'om': 2}
 	create_LFR_graphs(graphs, LFR_graph_args, iterations)
+	return graphs
 
+
+def get_algos():
 	# ************************************************************************************
 	# *                         Benchmark algorithms                                     *
 	# ************************************************************************************
@@ -57,24 +58,78 @@ def start_benchmarks():
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
-	partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
+	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
 	# partition_algos['Surprise_PLM'] = [
 	# 	lambda g: partitionLeiden(g, "surprise"),
 	# 	lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	# partition_algos['Surprise_Infomap'] = [
-	# 	lambda g: partitionLeiden(g, "surprise"),
-	# 	lambda g: clusterInfomap(g)]
-	algos += create_egosplit_algorithms(partition_algos)
+
+	ego_parameters = get_ego_parameters()
+
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
 	# algos += create_egosplit_algorithms(partition_algos, clean_up="OSLOM")
+	return algos
 
+
+def get_ego_parameters():
+	ego_parameters = OrderedDict()
+	ego_parameters['base'] = {
+		"extendEgoNet": "No",
+		"removeLowDegreeNeig": "No",
+		"edgesBetweenNeigNeig": "No",
+		"discardNeigOfNeigEdgesAtFirst": "No",
+		"discardNonTriangle": "No",
+		"searchNeigOfNeighInDirectedGraph": "No",
+		"searchEdgesInDirected": "No",
+	}
+	ego_parameters_standard = {
+		"extendEgoNet": "Yes",
+		"removeLowDegreeNeig": "Yes",
+		"edgesBetweenNeigNeig": "Yes",
+		"discardNeigOfNeigEdgesAtFirst": "Yes",
+		"minDegreeCleaning": "1",
+		"maxDegreeCleaning": "9999999",
+		"addNodesFactor": "0.5",
+		"discardNonTriangle": "No",
+		"searchNeigOfNeighInDirectedGraph": "No",
+		"searchEdgesInDirected": "No",
+	}
+	ego_parameters['standard'] = {
+	}
+	ego_parameters['directedNodes'] = {
+		"searchNeigOfNeighInDirectedGraph": "Yes",
+	}
+	ego_parameters['directedEdges'] = {
+		"searchEdgesInDirected": "Yes",
+	}
+	ego_parameters['directedBoth'] = {
+		"searchNeigOfNeighInDirectedGraph": "Yes",
+		"searchEdgesInDirected": "Yes",
+	}
+	ego_parameters['discardNonTriangle'] = {
+		"discardNonTriangle": "Yes",
+	}
+	ego_parameters['noNeigOfNeigEdges'] = {
+		"edgesBetweenNeigNeig": "No",
+	}
+	# ego_parameters['noNeigOfNeigEdgesOnlyTriangles'] = {
+	# 	"edgesBetweenNeigNeig": "No",
+	# 	"discardNonTriangle": "Yes",
+	# }
+	# ego_parameters['neigOfNeigEdgesAtFirst'] = {
+	# 	"discardNeigOfNeigEdgesAtFirst": "No",
+	# }
+
+	for key, value in ego_parameters.items():
+		ego_parameters[key] = {**ego_parameters_standard, **value}
+	return ego_parameters
+
+
+def start_benchmarks():
+	iterations = 3
+	graphs = get_graphs(iterations)
+	algos = get_algos()
 	benchmarks = create_benchmarks(graphs, algos)
-
-	# ************************************************************************************
-	# *                     Run benchmarks and get results                               *
-	# ************************************************************************************
-	# ego_file = open(result_dir + 'ego_timings.result', open_mode)
-	# count_ground_truth_communities(graphs, result_dir)
 
 	run_benchmarks(benchmarks)
 
@@ -84,7 +139,7 @@ def start_benchmarks():
 	print_benchmarks_compact(benchmarks)
 	analyse_ego_net_partitions(benchmarks, result_dir, append)
 	analyse_cover(graphs, benchmarks, result_dir, append)
-	stream_partition(graphs, benchmarks)
+	# stream_partition(graphs, benchmarks)
 
 
 def create_ground_truth_partition(node_id, egonet, ground_truth):
@@ -102,26 +157,46 @@ def create_ground_truth_partition(node_id, egonet, ground_truth):
 	return partition
 
 
+def mark_direct_neighbors(graph, egonet, node_id):
+	neighbors = graph.neighbors(node_id)
+	neighbor_map = dict()
+	for u in egonet.nodes():
+		if u in neighbors:
+			neighbor_map[u] = 1
+		else:
+			neighbor_map[u] = 0
+	return neighbor_map
+
+
+def extend_graph_to_node(graph, u):
+	for _ in range(graph.upperNodeIdBound(), u + 1):
+		v = graph.addNode()
+		graph.removeNode(v)
+
+
 def stream_partition(graphs, benchmarks):
-	# assert len(graphs) == 1
-	i = 0
+	workspace_id = 1
 	for graph in graphs:
 		G = graph.graph
-		for _ in range(0, 3):
-			i += 1
+		for _ in range(1):
 			node_id = G.randomNode()
-			egonet = G.subgraphFromNodes(G.neighbors(node_id))
-			client = gephi.streaming.GephiStreamingClient(
-				url='http://localhost:8080/workspace' + str(i))
-			client.exportGraph(egonet)
-			gt_partition = create_ground_truth_partition(node_id, egonet, graph.ground_truth)
-			client.exportNodeValues(egonet, gt_partition, "ground_truth")
+
 			for benchmark in benchmarks:
-				if benchmark.graph is not graph:
+				if benchmark.graph is not graph \
+						or not isinstance(benchmark.algo, EgoSplitAlgorithm):
 					continue
+				client = gephi.streaming.GephiStreamingClient(
+					url='http://localhost:8080/workspace' + str(workspace_id))
+				egonet = benchmark.algo.getEgoNet(node_id)
+				client.exportGraph(egonet)
+				gt_partition = create_ground_truth_partition(node_id, egonet,
+				                                             graph.ground_truth)
+				client.exportNodeValues(egonet, gt_partition, "ground_truth")
+				neighbors = mark_direct_neighbors(graph.graph, egonet, node_id)
+				client.exportNodeValues(egonet, neighbors, "neighbors")
 				partition = benchmark.algo.getEgoNetPartitions()[node_id]
-				del partition[none]
 				client.exportNodeValues(egonet, partition, benchmark.algo.name)
+				workspace_id += 1
 
 
 def create_LFR_graphs(graphs, graphArgs, iterations):
@@ -134,11 +209,16 @@ def create_LFR_graphs(graphs, graphArgs, iterations):
 	return graphs
 
 
-def create_egosplit_algorithms(partition_algos, clean_up=""):
+def create_egosplit_algorithms(partition_algos, ego_parameters, clean_up=""):
 	algos = []
-	for p_name in partition_algos:
-		algos.append(EgoSplitAlgorithm(p_name, *partition_algos[p_name],
-		                               clean_up=clean_up))
+	for part_name in partition_algos:
+		for para_name, parameters in ego_parameters.items():
+			algos.append(EgoSplitAlgorithm(
+				part_name + "_" + para_name,
+				{key.encode("utf-8"): str(value).encode("utf-8")
+				 for (key, value) in parameters.items()},
+				*partition_algos[part_name],
+				clean_up=clean_up))
 	return algos
 
 

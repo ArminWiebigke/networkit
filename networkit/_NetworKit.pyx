@@ -4900,6 +4900,8 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		map[string, double] getTimings() except +
 		map[string, double] getExecutionInfo() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
+		_Graph getEgoNet(node) except +
+		void setParameters(map[string, string]) except +
 
 cdef class EgoSplitting(Algorithm):
 	"""
@@ -4964,10 +4966,22 @@ cdef class EgoSplitting(Algorithm):
 		return (<_EgoSplitting*>(self._this)).getExecutionInfo()
 
 	"""
-	Get the partitions of the EgoNets
+	Get the partitions of the EgoNets.
 	"""
 	def getEgoNetPartitions(self):
 		return (<_EgoSplitting*>(self._this)).getEgoNetPartitions()
+
+	"""
+	Get the EgoNet graphs.
+	"""
+	def getEgoNet(self, node_id):
+		return Graph().setThis((<_EgoSplitting*>(self._this)).getEgoNet(node_id))
+
+	"""
+	Set parameters of the algorithm.
+	"""
+	def setParameters(self, parameters):
+		(<_EgoSplitting*>(self._this)).setParameters(parameters)
 
 
 cdef class DissimilarityMeasure:

@@ -55,18 +55,6 @@ public:
 				 std::function<Partition(Graph &)> globalClusterAlgo);
 
 	/**
-	 * Construct an instance of this algorithm for the input graph.
-	 *
-	 * @param[in]	G   input graph
-	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
-	 */
-	EgoSplitting(const Graph &G,
-				 std::function<Partition(Graph &)> localClusterAlgo,
-				 std::function<Partition(Graph &)> globalClusterAlgo,
-				 const Cover &groundTruth);
-
-	/**
 	 * Detect communities.
 	 */
 	void run() override;
@@ -90,11 +78,16 @@ public:
 
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
 
+	Graph getEgoNet(node u);
+
+	void setParameters(std::map<std::string, std::string> parameters);
+
 private:
 
 	const Graph &G;
 	std::function<Partition(Graph &)> localClusterAlgo, globalClusterAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: <global node ID, set ID in ego-net>
+	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
 	Partition personaPartition;
@@ -102,7 +95,8 @@ private:
 	std::map<std::string, double> timings;
 	std::map<std::string, double> executionInfo;
 	Cover groundTruth;
-	std::vector<Partition> egoPartitions;
+	std::vector<Graph> egoNets;
+	std::map<std::string, std::string> parameters;
 
 	void init();
 

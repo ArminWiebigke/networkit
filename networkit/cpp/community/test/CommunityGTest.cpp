@@ -727,12 +727,12 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-//    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
-//    Graph G = gen.generate();
-	EdgeListReader reader('\t', 0);
-	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
-								 G);
+    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+    Graph G = gen.generate();
+//	EdgeListReader reader('\t', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+//								 G);
 
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
@@ -742,7 +742,7 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 		return clustAlgo.getPartition();
 	};
 
-    EgoSplitting algo(G, clusterAlgo, clusterAlgo, C);
+    EgoSplitting algo(G, clusterAlgo, clusterAlgo);
 	algo.run();
 	Cover cover = algo.getCover();
 	
