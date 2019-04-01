@@ -1,12 +1,7 @@
-from collections import OrderedDict
 from math import log2
 
-from networkit.community import EgoSplitting, CoverF1Similarity, PLM, PLP, \
-	LPPotts, OLP
-from egosplit.benchmarks.graph import *
-from egosplit.benchmarks.algorithms import *
 from egosplit.benchmarks.cover_benchmark import *
-from .output import create_line
+from egosplit.benchmarks.evaluation.output import create_line
 
 
 def analyse_cover(graphs, benchmarks, result_dir, append):

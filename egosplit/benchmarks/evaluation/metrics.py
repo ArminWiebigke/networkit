@@ -1,5 +1,7 @@
-from .cover_analysis import *
-from .output import create_line
+from collections import OrderedDict
+
+from egosplit.benchmarks.evaluation.cover_analysis import *
+from egosplit.benchmarks.evaluation.output import create_line
 
 
 def write_results_to_file(benchmarks, result_dir, append):
@@ -40,12 +42,12 @@ def print_headers(result_dir):
 	# ego_file.close()
 
 
-def print_benchmarks_compact(benchmarks):
-	results = get_compact_results(benchmarks)
+def print_benchmarks_compact(benchmarks, metrics):
+	results = get_compact_results(benchmarks, metrics)
 	print_results_compact(results)
 
 
-def get_compact_results(benchmarks):
+def get_compact_results(benchmarks, metrics):
 	results = OrderedDict()
 	for benchmark in benchmarks:
 		algo = benchmark.algo
@@ -56,16 +58,11 @@ def get_compact_results(benchmarks):
 		graph_name = graph.name
 		if graph_name not in results[algo_name].keys():
 			d = OrderedDict()
-			d['time'] = []
-			d['nmi'] = []
-			d['f1'] = []
-			d['f1_rev'] = []
+			for m in metrics:
+				d[m] = []
 			results[algo_name][graph_name] = d
-
-		results[algo_name][graph_name]['time'].append(benchmark.getTime())
-		results[algo_name][graph_name]['nmi'].append(benchmark.getNMI())
-		results[algo_name][graph_name]['f1'].append(benchmark.getF1())
-		results[algo_name][graph_name]['f1_rev'].append(benchmark.getF1_rev())
+		for metric in metrics:
+			results[algo_name][graph_name][metric].append(benchmark.getMetric(metric))
 	return results
 
 

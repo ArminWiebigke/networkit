@@ -1,4 +1,3 @@
-
 def create_line(*args, sep=" "):
 	line = ""
 	for arg in args:

@@ -8,8 +8,8 @@ import seaborn as sns
 result_dir = "results/"
 data = dict()
 
-for name in ["metrics", "execution_info", "ego_net_partitions",
-             "ego_net_partition_composition",
+for name in ["metrics", "ego_net_partitions",
+             "ego_net_partition_composition", "ego_net_partition_counts",
              "cover_comm_sizes", "cover_node_comms", "cover_num_comms"]:
 	filename = name + '.result'
 	try:
@@ -95,12 +95,11 @@ algo_sets["ego"] = [
 ]
 algo_sets["ego_parameters"] = [
 	"Ego_PLM_base",
-	"Ego_PLM_standard",
-	"Ego_PLM_directedNodes",
-	"Ego_PLM_directedEdges",
-	"Ego_PLM_directedBoth",
-	"Ego_PLM_discardNonTriangle",
-	"Ego_PLM_noNeigOfNeigEdges"
+	"Ego_PLM_base_add",
+	"Ego_PLM_simpleNN",
+	"Ego_PLM_simpleNN_add",
+	"Ego_PLM_edgeScores",
+	"Ego_PLM_edgeScores_add",
 ]
 
 
@@ -150,7 +149,11 @@ def metrics_lfr():
 	# metrics_filter('LFR_om', 'om', algo_sets["clean"], "_clean")
 	# metrics_filter('LFR_om', 'om', algo_sets["ego"], "_ego")
 	# metrics_filter('LFR_mu', 'mu', algo_sets["ego"], "")
-	metrics_filter('LFR_om', 'om', algo_sets["ego_parameters"], "_parameters")
+	# metrics_filter('LFR_om', 'om', algo_sets["ego_parameters"], "_parameters")
+	metrics_filter('LFR_om', 'om', "edgeScore_0.4", "_exponent_0.4", True)
+	metrics_filter('LFR_om', 'om', "edgeScore_0.6", "_exponent_0.6", True)
+	metrics_filter('LFR_om', 'om', "edgeScore_0.8", "_exponent_0.8", True)
+	metrics_filter('LFR_om', 'om', "edgeScore_1.0", "_exponent_1.0", True)
 
 
 def set_xticklabels(ax, xlabel):
@@ -160,38 +163,49 @@ def set_xticklabels(ax, xlabel):
 		ax.set_xticklabels([str(i) for i in range(0, 51, 5)])
 
 
-def metrics_filter(graphs, xlabel, algos, name):
-	filtered_data = data["metrics"].query("graph.str.contains(@graphs) and algo in @algos")
+def metrics_filter(graphs, xlabel, algos, name, match_algo_name=False):
+	filtered_data = data["metrics"].query("graph.str.contains(@graphs)")
+	if match_algo_name:
+		filtered_data = filtered_data.query("algo.str.contains(@algos)")
+	else:
+		filtered_data = filtered_data.query("algo in @algos")
 	if len(filtered_data) is 0:
 		return
-	for metric in metrics:
+
+	for metric in ["nmi"]:#metrics:
 		fig, ax = plt.subplots()
 		sns.lineplot(x="graph",
-					 y=metric,
-					 hue="algo",
-					 ci=None,
-					 style="algo",
-		             markers=True,
-					 # markers=markers,
-					 dashes=False,
-					 linewidth=2,
-					 markersize=6,
-					 # palette=colors,
-					 data=filtered_data,
-					 ax=ax)
+		             y=metric,
+		             hue="algo",
+		             ci=None,
+		             style="algo",
+		             # markers=True,
+		             # markers=markers,
+		             dashes=False,
+		             linewidth=2,
+		             markersize=6,
+		             palette=sns.light_palette("green", 20),
+		             # palette=colors,
+		             data=filtered_data,
+		             ax=ax)
 		sns.despine(ax=ax)
 		ax.set(
 			xlabel=xlabel,
 			ylabel=metric_names[metric]["y_val"],
 		)
+		legend_handles, legend_labels = ax.get_legend_handles_labels()
+		legend_labels = [l[18:] for l in legend_labels]
+
 		set_xticklabels(ax, xlabel)
 		if metric != "time":
 			ax.set(ylim=(-0.01, 1))
-		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3)
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3,
+		          labels=legend_labels, handles=legend_handles)
 		fig.suptitle(metric_names[metric]["description"] + ", LFR graphs" )
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
-		fig.savefig(file_prefix + "metrics/" + metric_names[metric]["file_name"]
-					+ "_" + graphs + name + ".pdf")
+		file_name = file_prefix + "metrics/" + metric_names[metric]["file_name"] + "_" \
+		            + graphs + name
+		fig.savefig(file_name + ".pdf")
 
 
 def num_comms_real():
@@ -272,7 +286,7 @@ def comm_sizes_real():
 
 
 def comm_sizes_lfr():
-	comm_sizes_filter('LFR_om_3')
+	comm_sizes_filter('LFR_om')
 	# comm_sizes_filter('LFR_mu')
 
 
@@ -412,28 +426,29 @@ def partition_counts():
 
 
 def partition_counts_filter(graphs):
-	algos = ["ground_truth"] + algo_sets["ego_parameters"]
-	filtered_data = data["execution_info"].query("graph.str.contains(@graphs)"
-	                                             " and info_name.str.contains('twoPlus')"
-	                                             " and algo in @algos")
-	fig, ax = plt.subplots()
-	sns.lineplot(x="graph",
-				 y="value",
-				 hue="info_name",
-				 style="algo",
-				 markers=markers,
-				 dashes=False,
-				 linewidth=2,
-				 markersize=8,
-				 palette=colors,
-				 data=filtered_data,
-				 ax=ax)
-	sns.despine(left=True, ax=ax)
-	ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
-	fig.suptitle("Partition counts per node (avg)")
-	plt.tight_layout(rect=(0, 0, 1, 0.96))
-	fig.savefig(file_prefix + 'partition_counts_' + graphs + '.pdf')
-	# plt.close(fig)
+	algos = algo_sets["ego_parameters"]
+	filtered_data = data["ego_net_partition_counts"].query("graph.str.contains(@graphs)"
+	                                              " and algo in @algos")
+	for algo in algos:
+		fig, ax = plt.subplots()
+		sns.lineplot(x="graph",
+					 y="count",
+					 hue="count_name",
+					 # style="algo",
+					 # markers=markers,
+		             markers=True,
+					 dashes=False,
+					 linewidth=2,
+					 markersize=8,
+					 # palette=colors,
+					 data=filtered_data.query("algo == @algo"),
+					 ax=ax)
+		sns.despine(left=True, ax=ax)
+		ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01), ncol=3, prop={'size': 9})
+		fig.suptitle("Partition counts per node (avg)")
+		plt.tight_layout(rect=(0, 0, 1, 0.96))
+		fig.savefig(file_prefix + 'partition_counts/' + graphs + "_" + algo + '.pdf')
+		# plt.close(fig)
 
 
 def egonet_f1(graphs):
@@ -610,9 +625,10 @@ def egonet_partition_composition(graphs):
 		plt.tight_layout(rect=(0, 0, 1, 0.96))
 		plt.savefig(file_prefix + 'ego_partition/' + 'part_sizes_' + str(int(ylim)) + '.pdf')
 
+# TODO: Refactor, also ego_net_partition.py
 
 # metrics_real()
-# metrics_lfr()
+metrics_lfr()
 
 # num_comms_real()
 # num_comms_lfr()
@@ -625,7 +641,7 @@ def egonet_partition_composition(graphs):
 
 # partition_counts()
 
-egonet_comm_partition("LFR_om_3")
-egonet_partition_composition("LFR_om_3")
+# egonet_comm_partition("LFR_om_3")
+# egonet_partition_composition("LFR_om_3")
 
 # plt.show()

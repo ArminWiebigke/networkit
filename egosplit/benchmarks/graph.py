@@ -1,8 +1,7 @@
-from egosplit.external import *
+from egosplit.external import genLFR
 
 
 class BenchGraph:
-
 	def __init__(self, graph, ground_truth, name, parameters=""):
 		self.graph = graph
 		self.ground_truth = ground_truth

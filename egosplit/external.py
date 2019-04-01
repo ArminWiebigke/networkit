@@ -103,45 +103,6 @@ def clusterGCE(G, alpha = 1.5):
 		return C
 
 
-def writeLeidenPartition(G, partition, filename):
-	partition_ids = []
-	for i in range(0, partition.n):
-		partition_ids.append([])
-	for i in range(0, len(partition)):
-		for u in partition[i]:
-			# if G.hasNode(u):
-			partition_ids[u].append(i)
-
-	file = open(filename, 'w')
-	for pid in partition_ids:
-		if len(pid) > 1:
-			raise RuntimeError
-		if len(pid) == 1:
-			file.write(str(pid[0]))
-		file.write("\n")
-
-
-def convertLeidenPartition(G, la_partition):
-	partition = structures.Partition(G.upperNodeIdBound())
-	partition.setUpperBound(len(la_partition) + 1)
-	for i in range(0, len(la_partition)):
-		for u in la_partition[i]:
-			if G.hasNode(u):
-				if partition.contains(u):
-					print("Error")
-				partition.addToSubset(i, u)
-	return partition
-
-
-def convertToIgraph(G):
-	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, 'graph.dat')
-		graph_writer = graphio.EdgeListWriter(' ', 0)
-		graph_writer.write(G, graph_filename)
-		graph_i = igraph.Graph.Read_Edgelist(graph_filename)
-		return graph_i
-
-
 # https://github.com/vtraag/leidenalg
 def partitionLeiden(G, partition_type_name):
 		graph_i = convertToIgraph(G)
@@ -162,6 +123,45 @@ def partitionLeiden(G, partition_type_name):
 		# partition = community.PartitionReader().read(partition_filename)
 		# partition = readLeidenPartition(partition_filename)
 		return partition
+
+
+def convertToIgraph(G):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graph_filename = os.path.join(tempdir, 'graph.dat')
+		graph_writer = graphio.EdgeListWriter(' ', 0)
+		graph_writer.write(G, graph_filename)
+		graph_i = igraph.Graph.Read_Edgelist(graph_filename)
+		return graph_i
+
+
+def convertLeidenPartition(G, la_partition):
+	partition = structures.Partition(G.upperNodeIdBound())
+	partition.setUpperBound(len(la_partition) + 1)
+	for i in range(0, len(la_partition)):
+		for u in la_partition[i]:
+			if G.hasNode(u):
+				if partition.contains(u):
+					print("Error")
+				partition.addToSubset(i, u)
+	return partition
+
+
+def writeLeidenPartition(G, partition, filename):
+	partition_ids = []
+	for i in range(0, partition.n):
+		partition_ids.append([])
+	for i in range(0, len(partition)):
+		for u in partition[i]:
+			# if G.hasNode(u):
+			partition_ids[u].append(i)
+
+	file = open(filename, 'w')
+	for pid in partition_ids:
+		if len(pid) > 1:
+			raise RuntimeError
+		if len(pid) == 1:
+			file.write(str(pid[0]))
+		file.write("\n")
 
 
 # https://sites.google.com/site/andrealancichinetti/files
@@ -187,7 +187,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 			C = community.readCommunities(os.path.join(tempdir, 'community.dat'), format='edgelist-s1')
 		else:
 			C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, 'community.dat'), G)
-		return (G, C)
+		return G, C
 
 
 def calc_NMI(graph, cover, ref_cover):
@@ -222,7 +222,7 @@ def calc_NMI(graph, cover, ref_cover):
 		finally:
 			os.chdir(old_dir)
 	if nmi_val > 1.0 or nmi_val < 0.0:
-		nmi_val = -1.0
+		nmi_val = 0.0
 	return nmi_val
 
 
@@ -253,16 +253,6 @@ def getFacebookData(name, attribute):
 	return P
 
 
-def remove_small_communities(filename):
-	original_file = open(filename, 'r')
-	cleaned_filename = filename + '.cleaned'
-	cleaned_file = open(cleaned_filename, 'w')
-	for line in original_file:
-		if len(str.split(line)) > 4:
-			cleaned_file.write(line)
-	return cleaned_filename
-
-
 def getFacebookGraph(name):
 	return graphio.readMat(home_path + '/graphs/facebook100/{0}.mat'.format(name), key='A')
 
@@ -271,6 +261,16 @@ def get_filename(filename, clean):
 	if clean:
 		filename = remove_small_communities(filename)
 	return filename
+
+
+def remove_small_communities(filename):
+	original_file = open(filename, 'r')
+	cleaned_filename = filename + '.cleaned'
+	cleaned_file = open(cleaned_filename, 'w')
+	for line in original_file:
+		if len(str.split(line)) > 4:
+			cleaned_file.write(line)
+	return cleaned_filename
 
 
 def getAmazonGraph5000(clean=False):

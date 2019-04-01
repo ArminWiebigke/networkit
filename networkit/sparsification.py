@@ -491,7 +491,7 @@ class ForestFireSparsifier(Sparsifier):
 		return gf.calculate()
 
 	def _getParameterizationAlgorithm(self):
-		 return BinarySearchParameterization(False, 0.0, 1.0, 20)
+		return BinarySearchParameterization(False, 0.0, 1.0, 20)
 
 class LocalDegreeSparsifier(Sparsifier):
 

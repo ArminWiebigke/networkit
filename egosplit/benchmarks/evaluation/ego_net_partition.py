@@ -1,26 +1,23 @@
-from networkit.community import EgoSplitting, CoverF1Similarity, PLM, PLP, \
-	LPPotts, OLP
-from networkit.structures import Partition
-from networkit.components import ConnectedComponents
 from networkit import none
-from egosplit.benchmarks.algorithms import *
-from egosplit.benchmarks.output import *
+from egosplit.benchmarks.evaluation.output import *
 
 
+# TODO: refactor
 def analyse_ego_net_partitions(benchmarks, result_dir, append):
 	open_mode = 'w'
 	if append:
 		open_mode = 'a'
 	out_file_comm = open(result_dir + 'ego_net_partitions.result', open_mode)
 	out_file_part = open(result_dir + 'ego_net_partition_composition.result', open_mode)
+	out_file_count = open(result_dir + 'ego_net_partition_counts.result', open_mode)
 	if not append:
-		print_headers(out_file_comm, out_file_part)
+		print_headers(out_file_comm, out_file_part, out_file_count)
 
 	for benchmark in benchmarks:
-		analyse_ego_net_partition(benchmark, out_file_comm, out_file_part)
+		analyse_ego_net_partition(benchmark, out_file_comm, out_file_part, out_file_count)
 
 
-def print_headers(out_file_comm, out_file_part):
+def print_headers(out_file_comm, out_file_part, out_file_count):
 	out_file_comm.write(create_line(
 		"algo",
 		"graph",
@@ -41,8 +38,15 @@ def print_headers(out_file_comm, out_file_part):
 		"wrong_percentage_other"
 	))
 
+	out_file_count.write(create_line(
+		"algo",
+		"graph",
+		"count_name",
+		"count",
+	))
 
-def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part):
+
+def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part, out_file_count):
 	try:
 		ego_net_partitions = benchmark.algo.getEgoNetPartitions()
 	except AttributeError:
@@ -66,7 +70,7 @@ def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part):
 				result["comm_size"],
 				result["wrong_nodes"],
 				result["wrong_percentage"],
-				result["num_partitions"]
+				result["num_partitions"],
 			))
 
 		# Do partitions consist of multiple communities?
@@ -82,8 +86,35 @@ def analyse_ego_net_partition(benchmark, out_file_comm, out_file_part):
 				result["wrong_nodes_other"],
 				result["wrong_percentage"],
 				result["wrong_percentage_gt"],
-				result["wrong_percentage_other"]
+				result["wrong_percentage_other"],
 			))
+
+		# Count number of partitions
+		result = count_partitions(partitions, truth_communities)
+		for key, value in result.items():
+			out_file_count.write(create_line(
+				algo_name,
+				graph_name,
+				key,
+				value,
+			))
+
+
+# Returns the number of partitions in the ego-net
+def count_partitions(partitions, truth_communitites):
+	num_partitions = len(partitions)
+	num_two_plus_partitions = len([p for p in partitions if len(p) >= 2])
+	num_three_plus_partitions = len([p for p in partitions if len(p) >= 3])
+	truth_communities = len(truth_communitites)
+
+	result = {
+		'num_partitions': num_partitions,
+		'num_two_plus_partitions': num_two_plus_partitions,
+		'num_three_plus_partitions': num_three_plus_partitions,
+		'truth_communities': truth_communities,
+	}
+
+	return result
 
 
 # Returns partition->node list, best community for each partition, community->size map
@@ -120,7 +151,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 			max_community_cnts[c] = max(max_community_cnts[c], community_cnts[i][c])
 			community_sizes[c] += community_cnts[i][c]
 
-		best_communities.append(dominating_community(community_cnts[i], len(partition)))
+		best_communities.append(dominating_community(community_cnts[i]))
 	return partitions, best_communities, community_sizes
 
 
@@ -185,15 +216,6 @@ def check_community_partitioning(ground_truth, partitions, best_communities,
 			'wrong_percentage': float(node_cnt) / community_sizes[c],
 			'num_partitions': best_communities.count(c)
 		})
-		# if best_communities.count(c) > 2:
-		# 	print("Community: ", str(c))
-		# 	print("Wrong:     ", str(wrong_nodes[c]) + "/" + str(total_community_cnts[c]))
-		# 	print("Partitions:", str(best_communities.count(c)))
-		# 	print("Max cnt:   ", max_community_cnts)
-		# 	print("Total cnt: ", total_community_cnts)
-		# 	print("Best:      ", best_communities)
-		# 	print("Counts:    ", community_cnts)
-		# 	print("")
 	return result_list
 
 
@@ -214,11 +236,11 @@ def find_best_partition(ground_truth, community, partitions):
 
 # For a given partition, return the community with the highest number of nodes.
 # If no community has more than 50% of the nodes, return -1.
-def dominating_community(community_cnts, num_nodes):
+def dominating_community(community_cnts):
 	max_comm = -1
 	max_comm_cnt = 0
 	for comm, comm_cnt in community_cnts.items():
-		if comm_cnt > max_comm_cnt: # and comm_cnt > 0.5 * num_nodes:
+		if comm_cnt > max_comm_cnt:
 			max_comm = comm
 			max_comm_cnt = comm_cnt
 	return max_comm

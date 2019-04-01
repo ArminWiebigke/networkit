@@ -14,6 +14,8 @@
 #include "../Globals.h"
 #include "CommunityDetectionAlgorithm.h"
 #include "../structures/Cover.h"
+#include "../structures/AdjacencyArray.h"
+#include "../structures/NodeMapping.h"
 
 namespace NetworKit {
 
@@ -94,9 +96,9 @@ private:
 	Cover cover; // the result of the algorithm
 	std::map<std::string, double> timings;
 	std::map<std::string, double> executionInfo;
-	Cover groundTruth;
 	std::vector<Graph> egoNets;
 	std::map<std::string, std::string> parameters;
+	Graph edgeScoreGraph;
 
 	void init();
 
@@ -109,6 +111,14 @@ private:
 	void createPersonaClustering();
 
 	void createCover();
+
+	void extend_simpleNN(Graph &egoGraph, NodeMapping &nodeMapping,
+						 AdjacencyArray const &directedEdges, count extendNodeCnt, node u);
+
+	void extend_edgeScores(Graph &egoGraph, NodeMapping &nodeMapping,
+						   AdjacencyArray const &directedEdges, count extendNodeCnt, node u);
+
+	Graph weightedEdgesGraph(Graph const &inputGraph);
 };
 
 } /* namespace NetworKit */

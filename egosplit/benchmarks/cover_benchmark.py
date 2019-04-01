@@ -1,4 +1,4 @@
-from egosplit.benchmarks.cover_analysis import *
+from .evaluation.cover_analysis import *
 from egosplit.external import *
 from networkit.community import CoverF1Similarity
 
@@ -12,6 +12,16 @@ class CoverBenchmark:
 		print("Graph: " + self.graph.name + ", Algo: " + self.algo.name)
 		self.algo.run(self.graph.graph)
 		print("Time: " + str(self.getTime()) + "\n")
+
+	def getMetric(self, name):
+		if name == "time":
+			return self.getTime()
+		if name == "nmi":
+			return self.getNMI()
+		if name == "f1":
+			return self.getF1()
+		if name == "f1_rev":
+			return self.getF1_rev()
 
 	def getTime(self):
 		return self.algo.getTime()

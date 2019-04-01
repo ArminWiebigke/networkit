@@ -15,23 +15,24 @@ namespace NetworKit {
 // TODO: other name
 class AdjacencyArray {
 private:
-    std::vector <index> edgesBegin;
-    std::vector <node> edges;
-    std::vector <edgeweight> edgeWeights;
+	std::vector<index> edgesBegin;
+	std::vector<node> edges;
+	std::vector<edgeweight> edgeWeights;
 
 public:
-    explicit AdjacencyArray(const Graph &G);
+	explicit AdjacencyArray(const Graph &G);
 
-    template <typename L> void forEdgesOf(node u, L handle) const;
+	template<typename L>
+	void forEdgesOf(node u, L handle) const;
 
 };
 
 
 template<typename L>
 void AdjacencyArray::forEdgesOf(node u, L handle) const {
-    for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
-        handle(u, edges[i], edgeWeights[i]);
-    }
+	for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
+		handle(u, edges[i], edgeWeights[i]);
+	}
 }
 
 } /* namespace NetworKit */
