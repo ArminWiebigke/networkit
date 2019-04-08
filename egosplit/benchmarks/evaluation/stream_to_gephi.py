@@ -1,5 +1,7 @@
 from networkit import gephi
 
+from ..algorithms import EgoSplitAlgorithm
+
 
 def create_ground_truth_partition(node_id, egonet, ground_truth):
 	gt_comms = ground_truth.subsetsOf(node_id)

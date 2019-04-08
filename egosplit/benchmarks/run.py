@@ -124,47 +124,19 @@ def get_ego_parameters(storeEgoNets):
 		"discardThreshold": "0.0",
 		"scoreStrategy": "count",
 	}
-	ego_parameters['base_0.1'] = {
-		**standard,
-		"weightFactor": "1",
-		"weightOffset": "0",
-		"discardThreshold": 0.1,
-	}
-	ego_parameters['base_0.2'] = {
-		**standard,
-		"weightFactor": "1",
-		"weightOffset": "0",
-		"discardThreshold": 0.2,
-	}
-	ego_parameters["edgeScores"] = edge_scores_standard
-	ego_parameters["edgeScores_0.1"] = {
+	ego_parameters['random'] = {
 		**edge_scores_standard,
-		"weightFactor": "1",
-		"weightOffset": "0",
-		"discardThreshold": 0.1,
+		"scoreStrategy": "random",
 	}
-	ego_parameters["edgeScores_0.2"] = {
+	ego_parameters['count'] = {
 		**edge_scores_standard,
-		"weightFactor": "1",
-		"weightOffset": "0",
-		"discardThreshold": 0.2,
+		"scoreStrategy": "count",
 	}
-	# ego_parameters["edgeScores_weighted_geometric"] = {
-	# 	**edge_scores_standard,
-	# 	"weightFactor": "1",
-	# 	"weightOffset": "0",
-	# 	"scoreStrategy": "geometric",
-	# }
-	# ego_parameters["edgeScores_weighted_numScores"] = {
-	# 	**edge_scores_standard,
-	# 	"weightFactor": "1",
-	# 	"weightOffset": "0",
-	# 	"scoreStrategy": "numScores",
-	# }
+
 	# add_nodes_exponent_factors = {
-	# 	"0.4": 8,
-	# 	"0.6": 5,
-	# 	"0.8": 3,
+	# 	"0.4": 15,
+	# 	"0.6": 9,
+	# 	"0.8": 4,
 	# 	"1.0": 2,
 	# }
 	# for exponent, max_factor in add_nodes_exponent_factors.items():
@@ -172,7 +144,7 @@ def get_ego_parameters(storeEgoNets):
 	# 	step_size = max_factor / num_steps
 	# 	for i in range(0, num_steps):
 	# 		factor = str(i * step_size)[:5]
-	# 		ego_parameters['edgeScore_' + exponent + "_" + factor] = {
+	# 		ego_parameters['edgeScore_{}_{}'.format(exponent, factor)] = {
 	# 			**edge_scores_standard,
 	# 			"addNodesExponent": exponent,
 	# 			"addNodesFactor": factor,
