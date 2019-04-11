@@ -20,23 +20,23 @@ void NodeMapping::addNode(NetworKit::node u) {
 	}
 }
 
-node NodeMapping::local(NetworKit::node globalNode) {
+node NodeMapping::local(NetworKit::node globalNode) const {
 	return globalToLocal[globalNode];
 }
 
-node NodeMapping::global(NetworKit::node localNode) {
+node NodeMapping::global(NetworKit::node localNode) const {
 	return localToGlobal[localNode];
 }
 
-bool NodeMapping::isMapped(NetworKit::node u) {
+bool NodeMapping::isMapped(NetworKit::node u) const {
 	return local(u) != none;
 }
 
-count NodeMapping::nodeCount() {
+count NodeMapping::nodeCount() const {
 	return localToGlobal.size();
 }
 
-std::vector<node> NodeMapping::globalNodes() {
+std::vector<node> NodeMapping::globalNodes() const {
 	return localToGlobal;
 }
 

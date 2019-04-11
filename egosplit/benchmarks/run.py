@@ -12,18 +12,26 @@ from .graph import BenchGraph, LFRGraph
 
 
 def start_benchmarks():
-	iterations = 1
+	iterations = 3
 	store_ego_nets = False
+	print("Creating Graphs...")
 	graphs = get_graphs(iterations)
 	algos = get_algos(store_ego_nets)
 	benchmarks = create_benchmarks(graphs, algos)
 
+	print("Starting Benchmarks...")
 	run_benchmarks(benchmarks)
 
+	print("Collecting results...")
 	result_dir = "./results/"
 	append = False
 	write_results_to_file(benchmarks, result_dir, append)
-	compact_metrics = ["nmi"]
+	compact_metrics = [
+		# "time",
+		"nmi",
+		# "f1",
+		# "f1_rev",
+	]
 	print_benchmarks_compact(benchmarks, compact_metrics)
 	analyse_cover(graphs, benchmarks, result_dir, append)
 	if store_ego_nets:
@@ -51,7 +59,7 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 6):
+	for om in range(3, 5):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -105,7 +113,7 @@ def get_ego_parameters(storeEgoNets):
 		"addNodesExponent": "0.6",
 		"storeEgoNet": "Yes" if storeEgoNets else "No",
 		"addEgoNode": "No",
-		"extendStrategy": "none",
+		"processEgoNet": "none",
 	}
 	ego_parameters['base'] = standard
 	simple_nn_standard = {
@@ -120,32 +128,62 @@ def get_ego_parameters(storeEgoNets):
 	}
 	edge_scores_standard = {
 		**standard,
-		"extendStrategy": "edgeScores",
-		"discardThreshold": "0.0",
-		"scoreStrategy": "count",
+		"processEgoNet": "extend",
+		"extendStrategy": "edgeScore",
+		"scoreStrategy": "score",
+		"extendRandom": "No",
+		"keepOnlyTriangles": "No",
 	}
-	ego_parameters['random'] = {
+	ego_parameters['edges'] = {
 		**edge_scores_standard,
-		"scoreStrategy": "random",
 	}
-	ego_parameters['count'] = {
+	ego_parameters['triangles'] = {
 		**edge_scores_standard,
-		"scoreStrategy": "count",
+		"extendStrategy": "triangles",
+	}
+	ego_parameters['triangles_norm'] = {
+		**edge_scores_standard,
+		"extendStrategy": "triangles",
+		"scoreStrategy": "score_normed",
+	}
+	ego_parameters['triangles_^2_norm'] = {
+		**edge_scores_standard,
+		"extendStrategy": "triangles",
+		"scoreStrategy": "score^2_normed",
+	}
+	ego_parameters['triangles_only'] = {
+		**edge_scores_standard,
+		"extendStrategy": "triangles",
+		"keepOnlyTriangles": "Yes",
+	}
+	ego_parameters['triangles_only_normed'] = {
+		**edge_scores_standard,
+		"extendStrategy": "triangles",
+		"keepOnlyTriangles": "Yes",
+		"scoreStrategy": "score_normed",
+	}
+	ego_parameters['triangles_only_^2_normed'] = {
+		**edge_scores_standard,
+		"extendStrategy": "triangles",
+		"keepOnlyTriangles": "Yes",
+		"scoreStrategy": "score^2_normed",
 	}
 
 	# add_nodes_exponent_factors = {
-	# 	"0.4": 15,
-	# 	"0.6": 9,
-	# 	"0.8": 4,
-	# 	"1.0": 2,
+	# 	"0.4": 4,
+	# 	# "0.7": 4,
+	# 	"1.0": 1,
 	# }
 	# for exponent, max_factor in add_nodes_exponent_factors.items():
-	# 	num_steps = 20
+	# 	num_steps = 5
 	# 	step_size = max_factor / num_steps
 	# 	for i in range(0, num_steps):
 	# 		factor = str(i * step_size)[:5]
-	# 		ego_parameters['edgeScore_{}_{}'.format(exponent, factor)] = {
+	# 		ego_parameters['consensus_{}_{}'.format(exponent, factor)] = {
 	# 			**edge_scores_standard,
+	# 			"extendStrategy": "consensus",
+	# 			"scoreStrategy": "count",
+	# 			"extendRandom": "Yes",
 	# 			"addNodesExponent": exponent,
 	# 			"addNodesFactor": factor,
 	# 		}

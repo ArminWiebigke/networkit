@@ -18,15 +18,15 @@ public:
 
 	void addNode(node u);
 
-	node local(node globalNode);
+	node local(node globalNode) const;
 
-	node global(node localNode);
+	node global(node localNode) const;
 
-	bool isMapped(node u);
+	bool isMapped(node u) const;
 
-	count nodeCount();
+	count nodeCount() const;
 
-	std::vector<node> globalNodes();
+	std::vector<node> globalNodes() const;
 
 	void reset();
 

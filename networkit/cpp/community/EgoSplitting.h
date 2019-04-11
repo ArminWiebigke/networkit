@@ -10,6 +10,7 @@
 
 #include <unordered_map>
 #include <functional>
+#include <ostream>
 
 #include "../Globals.h"
 #include "CommunityDetectionAlgorithm.h"
@@ -43,7 +44,7 @@ public:
 	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-				 std::function<Partition(Graph &)> clusterAlgo);
+	             std::function<Partition(Graph &)> clusterAlgo);
 
 	/**
 	 * Construct an instance of this algorithm for the input graph.
@@ -53,8 +54,8 @@ public:
 	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-				 std::function<Partition(Graph &)> localClusterAlgo,
-				 std::function<Partition(Graph &)> globalClusterAlgo);
+	             std::function<Partition(Graph &)> localClusterAlgo,
+	             std::function<Partition(Graph &)> globalClusterAlgo);
 
 	/**
 	 * Detect communities.
@@ -82,7 +83,7 @@ public:
 
 	Graph getEgoNet(node u);
 
-	void setParameters(std::map<std::string, std::string> parameters);
+	void setParameters(std::map<std::string, std::string> const &new_parameters);
 
 private:
 
@@ -98,7 +99,8 @@ private:
 	std::map<std::string, double> executionInfo;
 	std::vector<Graph> egoNets;
 	std::map<std::string, std::string> parameters;
-	Graph edgeScoreGraph;
+//	Graph edgeScoreGraph;
+	AdjacencyArray directedEdges;
 
 	void init();
 
@@ -112,13 +114,21 @@ private:
 
 	void createCover();
 
-	void extend_simpleNN(Graph &egoGraph, NodeMapping &nodeMapping,
-						 AdjacencyArray const &directedEdges, count extendNodeCnt, node u);
-
-	void extend_edgeScores(Graph &egoGraph, NodeMapping &nodeMapping,
-						   AdjacencyArray const &directedEdges, count extendNodeCnt, node u);
+	void extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors, count extendNodeCnt);
 
 	Graph weightedEdgesGraph(Graph const &inputGraph);
+
+	void
+	consensusWeighting(Graph &egoGraph, node u, const NodeMapping &nodeMapping,
+	                   count extendNodeCnt);
+
+	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors);
+
+	std::vector<std::pair<node, double>> scoreTriangles(node u, const NodeMapping &neighbors,
+	                                                    std::vector<std::set<node>> &triangleEdges);
+
+	double normalizeScore(node v, double score);
+
 };
 
 } /* namespace NetworKit */

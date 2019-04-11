@@ -22,6 +22,8 @@ private:
 public:
 	explicit AdjacencyArray(const Graph &G);
 
+	AdjacencyArray() = default;
+
 	template<typename L>
 	void forEdgesOf(node u, L handle) const;
 

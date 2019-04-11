@@ -162,3 +162,16 @@ Ego_PLM_base LFR_om_4 0.5204548835754395 0.5267750763210454 0.44691605676527385 
 OSLOM LFR_om_5 1819.0048830509186 0.7849203197129375 0.7439326695372789 0.534168
 MOSES LFR_om_5 75.78659057617188 0.8531306771220656 0.9507363535651946 0.812853
 Ego_PLM_base LFR_om_5 0.7239632606506348 0.3463821188273326 0.24587366595946172 0.0169033
+
+                           Graph | LFR_om_3
+-------------------------------------------
+Algo                             |      nmi
+-------------------------------------------
+Ego_PLM_base                     |   0.5757
+Ego_PLM_edges                    |   0.5842
+Ego_PLM_triangles                |   0.5784
+Ego_PLM_triangles_norm           |   0.5760
+Ego_PLM_triangles_^2_norm        |   0.5896
+Ego_PLM_triangles_only           |   0.6567
+Ego_PLM_triangles_only_normed    |   0.6279
+Ego_PLM_triangles_only_^2_normed |   0.6478
