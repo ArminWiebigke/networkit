@@ -21,7 +21,7 @@ metrics_lfr(data)
 # node_comms_lfr(data)
 # node_comms_ego(data)
 #
-# partition_counts(data)
+partition_counts(data)
 #
 # egonet_comm_partition(data, "LFR_om_3")
 # egonet_partition_composition(data, "LFR_om_3")

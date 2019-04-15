@@ -1,3 +1,5 @@
+import sys
+
 from networkit import gephi
 
 from ..algorithms import EgoSplitAlgorithm
@@ -39,7 +41,7 @@ def stream_partition(graphs, benchmarks):
 	workspace_id = 1
 	for graph in graphs:
 		G = graph.graph
-		for _ in range(1):
+		while True:
 			node_id = G.randomNode()
 
 			for benchmark in benchmarks:
@@ -51,7 +53,7 @@ def stream_partition(graphs, benchmarks):
 					print("No egonet stored")
 					continue
 				egonet.indexEdges()
-
+				print(workspace_id)
 				client = gephi.streaming.GephiStreamingClient(
 					url='http://localhost:8080/workspace' + str(workspace_id))
 				client.exportGraph(egonet)
@@ -74,3 +76,7 @@ def stream_partition(graphs, benchmarks):
 				client.exportNodeValues(egonet, partition, benchmark.algo.name)
 
 				workspace_id += 1
+			command = input("Press Enter to proceed, or q + Enter to quit")
+			if command == "q":
+				break
+			workspace_id = 1

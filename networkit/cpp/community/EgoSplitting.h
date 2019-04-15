@@ -124,8 +124,10 @@ private:
 
 	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors);
 
-	std::vector<std::pair<node, double>> scoreTriangles(node u, const NodeMapping &neighbors,
-	                                                    std::vector<std::set<node>> &triangleEdges);
+	std::vector<std::pair<node, double>>
+    scoreTriangles(node u, const NodeMapping &neighbors,
+                   std::vector<std::set<node>> &triangleEdges,
+                   Graph const &egoGraph);
 
 	double normalizeScore(node v, double score);
 

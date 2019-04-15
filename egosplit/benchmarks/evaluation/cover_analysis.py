@@ -8,7 +8,7 @@ def analyse_cover(graphs, benchmarks, result_dir, append):
 	if not append:
 		print_headers(result_dir)
 
-	for graph_wrapper in graphs:
+	for graph_wrapper in graphs: # TODO: only do this once
 		count_communities(result_dir, "ground_truth", graph_wrapper.name,
 		                  graph_wrapper.graph, graph_wrapper.ground_truth)
 

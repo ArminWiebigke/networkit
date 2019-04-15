@@ -46,8 +46,24 @@ class CoverAlgorithm:
 	def getCover(self):
 		return self.cover
 
+	def run_with_wrapper(self, graph):
+		self.run(graph.graph)
+
 	def run(self, graph):
 		raise NotImplementedError("Run method not implemented!")
+
+
+class GroundTruth(CoverAlgorithm):
+	def __init__(self):
+		super().__init__()
+		self.name = "ground_truth"
+
+	def getTime(self):
+		return 0.0
+
+	def run_with_wrapper(self, graph):
+		self.cover = graph.ground_truth
+
 
 
 class EgoSplitAlgorithm(CoverAlgorithm):
@@ -95,9 +111,9 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 			self.egoNets.append(algo.getEgoNet(i))
 
 		# Output timings
-		timings = algo.getTimings()
-		for name in sorted(timings.keys()):
-			print(str(timings[name]/1000).rjust(9) + "  " + name.decode('ASCII'))
+		# timings = algo.getTimings()
+		# for name in sorted(timings.keys()):
+		# 	print(str(timings[name]/1000).rjust(9) + "  " + name.decode('ASCII'))
 		# timings_str = ""
 		# for name in sorted(timings.keys()):
 		# 	timings_str += str(timings[name]/1000000).ljust(21)

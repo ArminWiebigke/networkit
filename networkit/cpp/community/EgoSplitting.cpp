@@ -82,6 +82,7 @@ void EgoSplitting::init() {
 	parameters["extendRandom"] = "No";
 	parameters["extendStrategy"] = "triangles";
 	parameters["scoreStrategy"] = "score";
+	parameters["minTriangles"] = "2";
 }
 
 void EgoSplitting::run() {
@@ -252,7 +253,7 @@ void EgoSplitting::createEgoNets() {
 				if (!egoGraph.hasNode(nodeMapping.local(v)))
 					egoNets[u].removeNode(v);
 			}
-			egoNets[u].addEdge(egoNets[u].nodes()[0], egoNets[u].nodes()[1], 0.000001);
+//			egoNets[u].addEdge(egoNets[u].nodes()[0], egoNets[u].nodes()[1], 0.000001);
 		}
 		timer.stop();
 		timings["1x)    Copy EgoNet"] += timer.elapsedMicroseconds();
@@ -317,7 +318,7 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors, coun
 	if (extendStrategy == "edgeScore")
 		nodeScores = scoreEdgeCount(u, neighbors);
 	else if (extendStrategy == "triangles")
-		nodeScores = scoreTriangles(u, neighbors, triangleEdges);
+		nodeScores = scoreTriangles(u, neighbors, triangleEdges, egoGraph);
 	else
 		throw std::runtime_error("No valid strategy to extend Ego-Net");
 
@@ -326,10 +327,16 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors, coun
 		if (nodeScores[i].second <= 0.0) {
 			nodeScores[i] = nodeScores.back();
 			nodeScores.pop_back();
+			--i; // Check node at current position again
 		}
 	}
+
+    for (auto pair : nodeScores) {
+        if (pair.second <= 0.0)
+            throw std::runtime_error("Zero score node added!");
+    }
 	// TODO: Use only nodes with score > 0.1 (or something), use all nodes with score > 0.5
-	// TODO: Score need to be normalized to (0, 1) for this to work
+	// TODO: Score needs to be normalized to (0, 1) for this to work
 
 
 	/**********************************************************************************************
@@ -382,7 +389,7 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors, coun
 			G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
 				if (neighbors.isMapped(w)) {
 					// Discard edges between neighbors of neighbors
-					if (parameters["edgesBetweenNeigNeig"] == "No"
+					if (parameters["edgesBetweenNeigNeig"] != "Yes"
 					    && neighbors.local(v) >= directNeighborsCnt
 					    && neighbors.local(w) >= directNeighborsCnt) {
 						return;
@@ -441,125 +448,98 @@ EgoSplitting::scoreEdgeCount(node u, const NodeMapping &neighbors) {
 
 std::vector<std::pair<node, double>>
 EgoSplitting::scoreTriangles(node u, const NodeMapping &neighbors,
-                             std::vector<std::set<node>> &triangleEdges) {
-	std::vector<int> numTriangles(G.upperNodeIdBound(), -1);
-	std::vector<node> secondNeighbors;
-	NodeMapping directAndSecondNeighbors = neighbors;
-	std::vector<node> directNeighbors = neighbors.globalNodes();
-	auto isDirectNeighbor = [&](node x) {
-		return neighbors.isMapped(x);
-	};
-	for (node v : directNeighbors) {
-		G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-			if (!isDirectNeighbor(w) && w != u) {
-				if (numTriangles[w] == -1) {
+                             std::vector<std::set<node>> &triangleEdges,
+                             Graph const &egoGraph) {
+    std::vector<int> triangleCnts(G.upperNodeIdBound(), -1);
+    std::vector<node> directNeighbors = neighbors.globalNodes();
+    std::vector<node> secondNeighbors;
+    auto isDirectNeighbor = [&](node x) {
+        return neighbors.isMapped(x);
+    };
+    count directNeighborsCnt = directNeighbors.size();
+
+	Graph extendedEgoGraph = egoGraph;
+	NodeMapping extendedMapping = neighbors;
+
+    for (node v : directNeighbors) {
+        G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
+            if (!isDirectNeighbor(w) && w != u) {
+                if (!extendedMapping.isMapped(w)) {
 					secondNeighbors.push_back(w);
-					directAndSecondNeighbors.addNode(w);
-				}
-				numTriangles[w] = 0;
-			}
-		});
-	}
-	auto getSingleSecondNeighbor = [&](node node1, node node2, node node3){
-		int b1 = numTriangles[node1] != -1;
-		int b2 = numTriangles[node2] != -1;
-		int b3 = numTriangles[node3] != -1;
-		if (b1 + b2 + b3 == 1) {
-			if (b1)
-				return node1;
-			if (b2)
-				return node2;
-			if (b3)
-				return node3;
-		}
-		return none;
-	};
-	triangleEdges.resize(G.upperNodeIdBound());
-	auto countTriangles = [&](node v){
-		std::vector<int> currentNeighbors(G.upperNodeIdBound(), 0);
-		directedEdges.forEdgesOf(v, [&](node, node w, edgeweight weight1) {
-			currentNeighbors[w] = 1;
-		});
-		directedEdges.forEdgesOf(v, [&](node, node w, edgeweight weight1) {
-			if (!directAndSecondNeighbors.isMapped(w))
-				return;
-			directedEdges.forEdgesOf(w, [&](node, node x, edgeweight weight2) {
-				if (!directAndSecondNeighbors.isMapped(x) || currentNeighbors[x] == 0)
-					return;
-				// We found a triangle v-w-x
-				assert(G.hasEdge(v, w) && G.hasEdge(w, x) && G.hasEdge(x, v));
-				// Only count triangles if exactly one node is a second neighbor
-				node secondNeighbor = getSingleSecondNeighbor(v, w, x);
-				if (secondNeighbor != none) {
-					assert(!G.hasEdge(u, secondNeighbor));
-					++numTriangles[secondNeighbor];
-					for (node neighborNode : {v, w, x}){
-						if (secondNeighbor != neighborNode) {
-							assert(G.hasEdge(u, neighborNode));
-							triangleEdges[secondNeighbor].insert(neighborNode);
-						}
-					}
-				}
-			});
-		});
-	};
-	for (node v : directNeighbors) {
-		countTriangles(v);
-	}
-	for (node v : secondNeighbors) {
-		countTriangles(v);
-	}
+                    triangleCnts[w] = 0;
+                    extendedEgoGraph.addNode();
+                    extendedMapping.addNode(w);
+                }
+                extendedEgoGraph.addEdge(extendedMapping.local(v),
+                                         extendedMapping.local(w));
+            }
+        });
+    }
+    assert(!extendedMapping.isMapped(u));
+    // If only one of the three nodes is not a direct neighbor, return that node
+    auto getSingleSecondNeighborLocal = [&](node node1, node node2, node node3){
+        int b1 = (node1 >= directNeighborsCnt);
+        int b2 = (node2 >= directNeighborsCnt);
+        int b3 = (node3 >= directNeighborsCnt);
+        if (b1 + b2 + b3 == 1) {
+            if (b1)
+                return node1;
+            if (b2)
+                return node2;
+            if (b3)
+                return node3;
+        }
+        return none;
+    };
+
+    AdjacencyArray directedEgoGraph(extendedEgoGraph);
+    triangleEdges.resize(G.upperNodeIdBound());
+    for (node v : extendedEgoGraph.nodes()) {
+        std::vector<int> currentNeighbors(G.upperNodeIdBound(), 0);
+        directedEgoGraph.forEdgesOf(v, [&](node, node w, edgeweight weight1) {
+            currentNeighbors[w] = 1;
+        });
+        directedEgoGraph.forEdgesOf(v, [&](node, node w, edgeweight weight1) {
+            directedEgoGraph.forEdgesOf(w, [&](node, node x, edgeweight weight2) {
+                if (currentNeighbors[x] == 0)
+                    return;
+                // We found a triangle v-w-x
+                assert(extendedEgoGraph.hasEdge(v, w) && extendedEgoGraph.hasEdge(w, x) && extendedEgoGraph.hasEdge(x, v));
+                // Only count triangles if exactly one node is a second neighbor
+                node secondNeighbor = getSingleSecondNeighborLocal(v, w, x);
+                if (secondNeighbor != none) {
+                    assert(!G.hasEdge(u, extendedMapping.global(secondNeighbor)));
+                    node globalNode = extendedMapping.global(secondNeighbor);
+                    ++triangleCnts[globalNode];
+                    for (node neighborNode : {v, w, x}){
+                        if (secondNeighbor != neighborNode) {
+                            assert(G.hasEdge(u, extendedMapping.global(neighborNode)));
+                            triangleEdges[extendedMapping.global(secondNeighbor)].insert(extendedMapping.global(neighborNode));
+                        }
+                    }
+                }
+            });
+        });
+    }
 
 	std::vector<std::pair<node, double>> nodeScores;
 	nodeScores.reserve(secondNeighbors.size());
 	for (node v : secondNeighbors) {
-		double score = numTriangles[v]; // TODO: Maybe use number of triangle edges as score?
+		double score = triangleCnts[v]; // TODO: Maybe use number of triangle edges as score?
 		// TODO: num_triangles / num_triangle_edges : Sinnvolle Metrik?
+		// TODO: teile durch Anzahl Kanten ins Egonet (Anzahl mitzählen)
+		int minTriangles = std::stoi(parameters["minTriangles"]);
+		if (score < minTriangles )
+		    score = 0.0;
+		double triangleThreshold = std::stod(parameters["triangleThreshold"]);
+        count inDegree = extendedEgoGraph.degree(extendedMapping.local(v));
+        if (score / inDegree < triangleThreshold)
+		    score = 0.0;
 		double normalizedScore = normalizeScore(v, score);
 		nodeScores.emplace_back(v, normalizedScore);
 	}
 	return nodeScores;
 }
-
-
-//	Graph extendedGraph = Graph(egoGraph.upperNodeIdBound());
-//	for (node v : extendedGraph.nodes()) {
-//		if (!egoGraph.hasNode(v))
-//			extendedGraph.removeNode(v);
-//	}
-//
-//	AdjacencyArray directedEgoGraph(egoGraph);
-//	std::vector<double> neighborEdgeWeight(egoGraph.upperNodeIdBound(), 0.0);
-//	egoGraph.forNodes([&](node v) {
-//		// Mark neighbors
-//		directedEgoGraph.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-//			neighborEdgeWeight[w] = weight;
-//		});
-//
-//		directedEgoGraph.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-//			// Always add edges between direct neighbors of u
-//			if (v < directNeighborsCnt && w < directNeighborsCnt)
-//				extendedGraph.addEdge(v, w, weight);
-//			directedEgoGraph.forEdgesOf(w, [&](node, node x, edgeweight weight2) {
-//				if (neighborEdgeWeight[x] != 0.0) {
-//					// we have found a triangle v-w-x
-//					auto tryAddEdge = [&](node u1, node u2, edgeweight edgeWeight) {
-//						if ((u1 >= directNeighborsCnt || u2 >= directNeighborsCnt) &&
-//						    !extendedGraph.hasEdge(u1, u2))
-//							extendedGraph.addEdge(u1, u2, edgeWeight);
-//					};
-//					tryAddEdge(v, w, weight);
-//					tryAddEdge(w, x, weight2);
-//					tryAddEdge(v, x, neighborEdgeWeight[x]);
-//				}
-//			});
-//		});
-//
-//		// Reset marked neighbors
-//		directedEgoGraph.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-//			neighborEdgeWeight[w] = 0.0;
-//		});
-//	});
 
 void EgoSplitting::splitIntoPersonas() {
 	count sum = 0;
@@ -659,7 +639,7 @@ std::vector<std::unordered_map<node, index>> EgoSplitting::getEgoNetPartitions()
 }
 
 Graph EgoSplitting::getEgoNet(node u) {
-	return egoNets[u];
+	return egoNets[u]; // TODO: only store some egoNets to save memory
 }
 
 void EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parameters) {

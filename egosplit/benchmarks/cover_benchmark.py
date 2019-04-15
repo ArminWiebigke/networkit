@@ -10,33 +10,38 @@ class CoverBenchmark:
 
 	def run(self):
 		print("Graph: " + self.graph.name + ", Algo: " + self.algo.name)
-		self.algo.run(self.graph.graph)
-		print("Time: " + str(self.getTime()) + "\n")
+		self.algo.run_with_wrapper(self.graph)
+		print("Time: " + str(self.get_time()) + "\n")
 
-	def getMetric(self, name):
+	def get_metric(self, name):
 		if name == "time":
-			return self.getTime()
+			return self.get_time()
 		if name == "nmi":
-			return self.getNMI()
+			return self.get_nmi()
 		if name == "f1":
-			return self.getF1()
+			return self.get_f1()
 		if name == "f1_rev":
-			return self.getF1_rev()
+			return self.get_f1_rev()
+		if name == "entropy":
+			return self.get_entropy()
 
-	def getTime(self):
-		return self.algo.getTime()
+	def get_time(self):
+		return self.algo.get_time()
 
-	def getNMI(self):
+	def get_nmi(self):
 		return calc_NMI(self.graph.graph, self.algo.getCover(),
 		                self.graph.ground_truth)
 
-	def getF1(self):
+	def get_f1(self):
 		return calc_F1(self.graph.graph, self.algo.getCover(),
 		               self.graph.ground_truth)
 
-	def getF1_rev(self):
+	def get_f1_rev(self):
 		return calc_F1(self.graph.graph, self.graph.ground_truth,
 		               self.algo.getCover())
+
+	def get_entropy(self):
+		return calc_entropy(self.graph.graph, self.algo.getCover())
 
 
 def calc_F1(graph, cover, refCover):
