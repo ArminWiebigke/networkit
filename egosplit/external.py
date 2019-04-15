@@ -1,8 +1,3 @@
-
-from networkit import graph
-from networkit import graphio
-from networkit import community
-from networkit import structures
 import tempfile
 import os
 import subprocess
@@ -10,6 +5,15 @@ import scipy
 import random
 import igraph
 import leidenalg
+import graph_tool
+
+from graph_tool.all import OverlapBlockState
+
+from networkit import graph
+from networkit import graphio
+from networkit import community
+from networkit import structures
+
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
@@ -303,3 +307,37 @@ def getOrkutGraph():
 	g = graphio.readGraph(code_path + '/graphs/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
 	c = graphio.CoverReader().read(code_path + '/graphs/com-orkut.top5000.cmty.txt', g)
 	return g, c
+
+
+def calc_entropy(G, cover):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graphPath = os.path.join(tempdir, 'graph.txt')
+		graphio.writeGraph(G, graphPath, fileformat=graphio.Format.GraphML)
+		gtGraph = graph_tool.load_graph(graphPath, "graphml")
+
+		edge_property = gtGraph.new_edge_property("vector<int>")
+		print("No cover:", OverlapBlockState(gtGraph, edge_property).entropy())
+
+		for source, target, edge_id in gtGraph.get_edges():
+			set_a = set(cover.subsetsOf(source))
+			set_b = set(cover.subsetsOf(target))
+			overlap = set_a.intersection(set_b)
+			if overlap:
+				comm_a = list(overlap)[0]
+				comm_b = comm_a
+			else:
+				# Nodes have no common community
+				comm_a = list(set_a)[0]
+				comm_b = list(set_b)[0]
+				if source > target:
+					comm_a, comm_b = comm_b, comm_a
+			edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
+
+		block_state = OverlapBlockState(gtGraph, edge_property)
+		entropy = block_state.entropy()
+		print("Cover entropy:", entropy)
+
+		print("Minimize:",
+		      graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph).entropy())
+
+	return entropy
