@@ -4,30 +4,24 @@ from egosplit.benchmarks.evaluation.cover_analysis import *
 from egosplit.benchmarks.evaluation.output import create_line
 
 
-def write_results_to_file(benchmarks, result_dir, append):
+def write_results_to_file(benchmarks, result_dir, metrics, append):
 	if not append:
-		print_headers(result_dir)
+		print_headers(result_dir, metrics)
 	result_file = open(result_dir + 'metrics.result', 'a')
 	for benchmark in benchmarks:
 		algo = benchmark.algo
 		graph_wrapper = benchmark.graph
-		graph = graph_wrapper.graph
-		cover = algo.getCover()
-		ground_truth = graph_wrapper.ground_truth
+		metric_values = []
+		for metric in metrics:
+			metric_values.append(benchmark.get_metric(metric))
 
-		time = algo.get_time()
-		f1 = calc_F1(graph, cover, ground_truth)
-		f1_rev = calc_F1(graph, ground_truth, cover)
-		nmi = calc_NMI(graph, cover, ground_truth)
-
-		line = create_line(algo.name, graph_wrapper.name, time, f1, f1_rev,
-		                   nmi)
+		line = create_line(algo.name, graph_wrapper.name, *metric_values)
 		result_file.write(line)
 
 
-def print_headers(result_dir):
+def print_headers(result_dir, metrics):
 	with open(result_dir + 'metrics.result', 'w') as f:
-		f.write(create_line('algo', 'graph', 'time', 'f1', 'f1_rev', 'nmi'))
+		f.write(create_line('algo', 'graph', *metrics))
 	# with open(result_dir + 'execution_info.result', 'w') as f:
 	# 	f.write(create_line('algo', 'graph', 'info_name', 'value'))
 	# ego_file = open(result_dir + 'ego_timings.result', 'w')

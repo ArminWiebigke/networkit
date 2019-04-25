@@ -1,31 +1,30 @@
-from plot_scripts.comm_sizes import comm_sizes_ego,	comm_sizes_lfr
-from plot_scripts.comms_per_node import node_comms_ego, node_comms_lfr
-from plot_scripts.egonet import egonet_comm_partition, egonet_partition_composition
-from plot_scripts.metrics import metrics_lfr
-from plot_scripts.num_comms import num_comms_lfr
-from plot_scripts.partition_counts import partition_counts
-from plot_scripts.read_data import read_data
-from plot_scripts.config import set_sns_style
+from egosplit.plot_scripts.comm_sizes import create_comm_sizes_plots
+from egosplit.plot_scripts.comms_per_node import create_node_comms_plots
+from egosplit.plot_scripts.egonet import create_egonet_plots
+from egosplit.plot_scripts.metrics import create_metric_plots
+from egosplit.plot_scripts.num_comms import create_num_comms_plots
+from egosplit.plot_scripts.partition_counts import create_partition_counts_plots
+from egosplit.plot_scripts.read_data import read_data
+from egosplit.plot_scripts.config import set_sns_style
 
+print("Reading results...")
 data, metrics, all_graph_names, all_algo_names = read_data()
 set_sns_style()
 
+print("Creating plots...")
 # Create plots
-metrics_lfr(data)
+create_metric_plots(data)
 
-# num_comms_lfr(data)
-#
-# comm_sizes_lfr(data)
-# comm_sizes_ego(data)
-#
-# node_comms_lfr(data)
-# node_comms_ego(data)
-#
-partition_counts(data)
-#
-# egonet_comm_partition(data, "LFR_om_3")
-# egonet_partition_composition(data, "LFR_om_3")
+create_num_comms_plots(data)
 
+create_comm_sizes_plots(data)
+
+create_node_comms_plots(data)
+
+create_partition_counts_plots(data)
+
+create_egonet_plots(data)
+# TODO: alles direkt hierhin
 # plt.show()
 
 

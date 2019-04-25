@@ -40,10 +40,10 @@ class CoverAlgorithm:
 		""" Override this method in subclass if __init__ takes arguments """
 		return self.__class__()
 
-	def getTime(self):
+	def get_time(self):
 		return self.timer.elapsed
 
-	def getCover(self):
+	def get_cover(self):
 		return self.cover
 
 	def run_with_wrapper(self, graph):
@@ -58,7 +58,7 @@ class GroundTruth(CoverAlgorithm):
 		super().__init__()
 		self.name = "ground_truth"
 
-	def getTime(self):
+	def get_time(self):
 		return 0.0
 
 	def run_with_wrapper(self, graph):

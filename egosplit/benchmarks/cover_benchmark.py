@@ -7,9 +7,14 @@ class CoverBenchmark:
 	def __init__(self, algo, graph):
 		self.algo = algo
 		self.graph = graph
+		self.time = None
+		self.nmi = None
+		self.f1 = None
+		self.f1_rev = None
+		self.entropy = None
 
 	def run(self):
-		print("Graph: " + self.graph.name + ", Algo: " + self.algo.name)
+		print("\nGraph: " + self.graph.name + ", Algo: " + self.algo.name)
 		self.algo.run_with_wrapper(self.graph)
 		print("Time: " + str(self.get_time()) + "\n")
 
@@ -26,22 +31,32 @@ class CoverBenchmark:
 			return self.get_entropy()
 
 	def get_time(self):
-		return self.algo.get_time()
+		if not self.time:
+			self.time = self.algo.get_time()
+		return self.time
 
 	def get_nmi(self):
-		return calc_NMI(self.graph.graph, self.algo.getCover(),
-		                self.graph.ground_truth)
+		if not self.nmi:
+			self.nmi = calc_NMI(self.graph.graph, self.algo.get_cover(),
+			                    self.graph.ground_truth)
+		return self.nmi
 
 	def get_f1(self):
-		return calc_F1(self.graph.graph, self.algo.getCover(),
-		               self.graph.ground_truth)
+		if not self.f1:
+			self.f1 = calc_F1(self.graph.graph, self.algo.get_cover(),
+			        self.graph.ground_truth)
+		return self.f1
 
 	def get_f1_rev(self):
-		return calc_F1(self.graph.graph, self.graph.ground_truth,
-		               self.algo.getCover())
+		if not self.f1_rev:
+			self.f1_rev = calc_F1(self.graph.graph, self.graph.ground_truth,
+			                      self.algo.get_cover())
+		return self.f1_rev
 
 	def get_entropy(self):
-		return calc_entropy(self.graph.graph, self.algo.getCover())
+		if not self.entropy:
+			self.entropy = calc_entropy(self.graph.graph, self.algo.get_cover())
+		return self.entropy
 
 
 def calc_F1(graph, cover, refCover):

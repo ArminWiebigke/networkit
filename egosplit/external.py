@@ -34,7 +34,8 @@ def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir])
+		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
+		                stdout=dev_null)
 		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
 			result.toSingleton(result.extend())
@@ -277,6 +278,7 @@ def remove_small_communities(filename):
 	return cleaned_filename
 
 
+# https://snap.stanford.edu/data/
 def getAmazonGraph5000(clean=False):
 	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
 	filename = code_path + '/graphs/com-amazon.top5000.cmty.txt'
@@ -327,10 +329,12 @@ def calc_entropy(G, cover):
 				comm_b = comm_a
 			else:
 				# Nodes have no common community
-				comm_a = list(set_a)[0]
-				comm_b = list(set_b)[0]
-				if source > target:
-					comm_a, comm_b = comm_b, comm_a
+				# comm_a = list(set_a)[0]
+				# comm_b = list(set_b)[0]
+				# if source > target:
+				# 	comm_a, comm_b = comm_b, comm_a
+				comm_a, comm_b = -1, -1
+				comm_a, comm_b = 0, 0
 			edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
 
 		block_state = OverlapBlockState(gtGraph, edge_property)

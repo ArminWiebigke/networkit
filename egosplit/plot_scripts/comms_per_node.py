@@ -6,9 +6,10 @@ import seaborn as sns
 from .config import *
 
 
-def node_comms_lfr(data):
-	node_comms(data, "LFR_om")
-	node_comms(data, "LFR_mu")
+def create_node_comms_plots(data):
+	# node_comms(data, "LFR_om")
+	# node_comms(data, "LFR_mu")
+	pass
 
 
 def node_comms(data, graphs):

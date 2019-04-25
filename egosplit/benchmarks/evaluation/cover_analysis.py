@@ -8,10 +8,6 @@ def analyse_cover(graphs, benchmarks, result_dir, append):
 	if not append:
 		print_headers(result_dir)
 
-	for graph_wrapper in graphs: # TODO: only do this once
-		count_communities(result_dir, "ground_truth", graph_wrapper.name,
-		                  graph_wrapper.graph, graph_wrapper.ground_truth)
-
 	for benchmark in benchmarks:
 		count_benchmark_cover(result_dir, benchmark)
 
@@ -29,7 +25,7 @@ def count_benchmark_cover(result_dir, benchmark):
 	algo = benchmark.algo
 	graph = benchmark.graph
 	count_communities(result_dir, algo.name, graph.name,
-	                  graph.graph, algo.getCover())
+	                  graph.graph, algo.get_cover())
 
 
 def count_communities(result_dir, algo_name, graph_name, graph, cover):

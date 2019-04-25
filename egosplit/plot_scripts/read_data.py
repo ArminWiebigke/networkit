@@ -8,8 +8,9 @@ def read_data():
 	result_dir = "results/"
 	data = dict()
 
-	for name in ["metrics", "ego_net_partitions",
-	             "ego_net_partition_composition", "ego_net_partition_counts",
+	for name in ["metrics",
+	             "ego_net_communities", "ego_net_partitions", "ego_net_ego_metrics",
+	             "ego_net_metrics",
 	             "cover_comm_sizes", "cover_node_comms", "cover_num_comms"]:
 		filename = name + '.result'
 		try:
