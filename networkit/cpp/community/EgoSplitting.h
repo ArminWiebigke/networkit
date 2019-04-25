@@ -129,8 +129,21 @@ private:
                    std::vector<std::set<node>> &triangleEdges,
                    Graph const &egoGraph);
 
-	double normalizeScore(node v, double score);
+	double normalizeScore(node v, double score) const;
 
+	/**
+	 * Remove all edges adjacent to nodes with a low degree
+	 */
+	void removeLowDegreeEdges(Graph &egoGraph, count minDegree) const;
+
+	void removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCnt) const;
+
+
+	/**
+	 * Search for triangles and execute function for each found triangle
+	 */
+	void findTriangles(Graph graph, AdjacencyArray directedGraph,
+			std::function<void(node, node, node)> triangleFunc) const;
 };
 
 } /* namespace NetworKit */

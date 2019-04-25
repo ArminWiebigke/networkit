@@ -10,7 +10,7 @@
 namespace NetworKit {
 
 AdjacencyArray::AdjacencyArray(const NetworKit::Graph &G) {
-    edgesBegin.resize(G.numberOfNodes() + 1);
+    edgesBegin.resize(G.upperNodeIdBound() + 1);
     edges.resize(G.numberOfEdges());
     edgeWeights.resize(G.numberOfEdges());
 
