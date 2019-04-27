@@ -15,7 +15,7 @@ from .graph import BenchGraph, LFRGraph
 def start_benchmarks():
 	iterations = 1
 	append_results = False
-	# append_results = True
+	append_results = True
 	evaluations = [
 		"metrics",
 		"cover",
@@ -107,7 +107,7 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 6):
+	for om in range(1, 5):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -126,7 +126,7 @@ def get_graphs(iterations):
 # ************************************************************************************
 def get_algos(storeEgoNets):
 	algos = []
-	algos.append(GroundTruth())
+	# algos.append(GroundTruth())
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm())
 	# algos.append(MosesAlgorithm())
@@ -134,11 +134,11 @@ def get_algos(storeEgoNets):
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM_0.6'] = [lambda g: PLM(g, False, 0.6, "none").run().getPartition()]
-	partition_algos['PLM_0.8'] = [lambda g: PLM(g, False, 0.8, "none").run().getPartition()]
-	partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
-	partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
+	# partition_algos['PLM_0.6'] = [lambda g: PLM(g, False, 0.6, "none").run().getPartition()]
+	# partition_algos['PLM_0.8'] = [lambda g: PLM(g, False, 0.8, "none").run().getPartition()]
+	# partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	# partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
+	# partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
 	# partition_algos['PLM_refine'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
 	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [
@@ -153,7 +153,6 @@ def get_algos(storeEgoNets):
 
 	for p_algos in partition_algos.values():
 		p_algos.append(lambda g: PLM(g, False, 1.0, "none").run().getPartition())
-	print(partition_algos)
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
 	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
@@ -176,8 +175,8 @@ def get_ego_parameters(storeEgoNets):
 	}
 	extend_standard = {
 		**standard,
-		"addNodesFactor": 1,
-		"addNodesExponent": 1,
+		"addNodesFactor": 8,
+		"addNodesExponent": 0.6,
 		"processEgoNet": "extend",
 		"edgesBetweenNeigNeig": "Yes",
 		"extendRandom": "No",
@@ -191,8 +190,6 @@ def get_ego_parameters(storeEgoNets):
 	}
 	triangles_standard = {
 		**extend_standard,
-		"addNodesFactor": 10,
-		"addNodesExponent": 0.6,
 		"extendStrategy": "triangles",
 		"scoreStrategy": "score_normed",
 		"minTriangles": 2,
@@ -202,81 +199,51 @@ def get_ego_parameters(storeEgoNets):
 		"minNodeDegree": 2,
 	}
 
-	ego_parameters['base'] = standard
+	# ego_parameters['base'] = standard
 	ego_parameters['edges'] = {
 		**edge_scores_standard,
 	}
-	# ego_parameters['edges_min0'] = {
-	# 	**edge_scores_standard,
-	# 	"minNodeDegree": 0,
-	# }
-	# ego_parameters['edges_4'] = {
-	# 	**edge_scores_standard,
-	# 	**extend_standard,
-	# 	"addNodesFactor": 4,
-	# 	"addNodesExponent": 0.6,
-	# }
-	ego_parameters['triangles'] = {
-		**triangles_standard,
-	}
-	# ego_parameters['triangles_noMinDeg'] = {
+	# ego_parameters['triangles'] = {
 	# 	**triangles_standard,
-	# 	"minNodeDegree": 0,
 	# }
-	# ego_parameters['triangles_only'] = {
-	# 	**triangles_standard,
-	# 	"keepOnlyTriangles": "Yes",
-	# 	"edgesBetweenNeigNeig": "No",
-	# }
-	# ego_parameters['triangles_noNN'] = {
-	# 	**triangles_standard,
-	# 	"edgesBetweenNeigNeig": "No",
-	# }
-	# ego_parameters['triangles_weighted'] = {
-	# 	**triangles_standard,
-	# 	"weightedEgoNet": "Yes",
-	# }
-
 	# for threshold in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.4, 1.7, 2]:
 	# 	ego_parameters['triangles_{}'.format(threshold)] = {
 	# 		**triangles_standard,
 	# 		"triangleThreshold": threshold,
 	# 	}
 
-	# for minDegree in range(1, 6):
-	# 	ego_parameters['triangles_remove_{}'.format(minDegree)] = {
-	# 		**triangles_standard,
-	# 		"minNodeDegree": minDegree,
-	# 		"removeNodesIterations": 10,
-	# 		"triangleThreshold": 1,
-	# 	}
-	# ego_parameters['triangles_weight'] = {
-	# 	**triangles_standard,
-	# 	"weightedEgoNet": "Yes",
-	# }
-	# ego_parameters['triangles_min1'] = {
-	# 	**triangles_standard,
-	# 	"minTriangles": 1,
-	# }
-
-	# ego_parameters['triangles_noNN'] = {
-	# 	**triangles_standard,
-	# 	"edgesBetweenNeigNeig": "No",
-	# }
 	# add_nodes_factor_exponents = [
-	# 	(16, 0.4),
-	# 	(10, 0.6),
-	# 	(5, 0.6),
+	# 	(0, 0.6),
+	# 	(1, 0.6),
+	# 	(2, 0.6),
 	# 	(3, 0.6),
-	# 	(4, 0.8),
-	# 	(2, 0.8),
+	# 	(4, 0.6),
+	# 	(6, 0.6),
+	# 	(8, 0.6),
+	# 	(12, 0.6),
+	# 	(16, 0.6),
+	# 	(0, 0.8),
+	# 	(0.5, 0.8),
 	# 	(1, 0.8),
+	# 	(1.5, 0.8),
+	# 	(2, 0.8),
+	# 	(3, 0.8),
+	# 	(4, 0.8),
+	# 	(6, 0.8),
+	# 	(8, 0.8),
+	# 	(0, 1),
+	# 	(0.25, 1),
 	# 	(0.5, 1),
+	# 	(0.75, 1),
 	# 	(1, 1),
+	# 	(1.5, 1),
 	# 	(2, 1),
+	# 	(2.5, 1),
+	# 	(3, 1),
+	# 	(4, 1),
 	# ]
 	# for factor, exponent in add_nodes_factor_exponents:
-	# 	name = 'edges_{factor}*{exponent}'.format(
+	# 	name = 'edges_f-{factor}*e-{exponent}'.format(
 	# 		factor=factor,
 	# 		exponent=exponent,
 	# 	)

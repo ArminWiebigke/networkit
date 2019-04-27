@@ -152,9 +152,6 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 
 	total_metrics = calc_metrics(total_sums)
 
-	a = total_metrics["community_cohesion"]
-	b = total_metrics["partition_exclusivity"]
-	total_metrics["ego_partitioning_score"] = 2 * a * b / (a + b)
 	for key, value in total_metrics.items():
 		out_metrics.write(create_line(
 			algo_name,
@@ -168,20 +165,20 @@ def calc_metrics(sums):
 		if b == 0:
 			return default
 		return a / b
-	try:
-		metrics = {
-			"community_cohesion": (1 - sums["comm_incorrect"] / sums["comm_size"]) ** 4,
-			"parts_per_comm": sums["num_comms"] / sums["parts_per_comm"],
-			"comms_per_part": safe_div(sums["num_partitions"], sums["comms_per_part"], 1),
-			"merged_external_nodes": (1 - safe_div(sums["part_incorrect_ext"],
-			                                             sums["num_external_nodes"])) ** 4,
-			"partition_exclusivity": (1 - safe_div(sums["part_incorrect_gt"],
-			                                              sums["partition_size"])) ** 4
-		}
-		return metrics
-	except ZeroDivisionError as e:
-		print(sums)
-		raise e
+	metrics = {
+		"community_cohesion": (1 - sums["comm_incorrect"] / sums["comm_size"]) ** 4,
+		"parts_per_comm": sums["num_comms"] / sums["parts_per_comm"],
+		"comms_per_part": safe_div(sums["num_partitions"], sums["comms_per_part"], 1),
+		"merged_external_nodes": (1 - safe_div(sums["part_incorrect_ext"],
+		                                             sums["num_external_nodes"])) ** 4,
+		"partition_exclusivity": (1 - safe_div(sums["part_incorrect_gt"],
+		                                              sums["partition_size"])) ** 4
+	}
+
+	a = metrics["community_cohesion"]
+	b = metrics["partition_exclusivity"]
+	metrics["ego_partitioning_score"] = 2 * a * b / (a + b)
+	return metrics
 
 
 def count_external_nodes(ground_truth, truth_communities, neighbors):

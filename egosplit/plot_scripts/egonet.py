@@ -10,79 +10,8 @@ from .utils import filter_data
 def create_egonet_plots(data):
 	# egonet_comm_partition(data, "LFR_om_5", "Ego_PLM_1.0_", "")
 	# egonet_partition_composition(data, "LFR_om_5", "Ego_PLM_1.0_", "")
-	metrics = [
-		"community_cohesion",
-		"partition_exclusivity",
-		# "ego_partitioning_score",
-		# "merged_external_nodes",
-		# "parts_per_comm",
-		# "comms_per_part",
-	]
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="PLM_1.0_",
-	               remove_algo_part="Ego_PLM_1.0_", file_name_add="", title_add=", PLM_1.0",
-	               metrics=metrics)
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-               remove_algo_part="_triangles", file_name_add="_triangles_comm", title_add=", triangles",
-               metrics=["community_cohesion"])
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-	               remove_algo_part="_triangles", file_name_add="_triangles_part", title_add=", triangles",
-	               metrics=["partition_exclusivity"])
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-	               remove_algo_part="_triangles", file_name_add="_triangles_score", title_add=", triangles",
-	               metrics=["ego_partitioning_score"])
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-	               remove_algo_part="_triangles", file_name_add="_triangles_ppc", title_add=", triangles",
-	               metrics=["parts_per_comm"])
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-	               remove_algo_part="_triangles", file_name_add="_triangles_cpp", title_add=", triangles",
-	               metrics=["comms_per_part"])
-	egonet_metrics(data, graphs="LFR_om", xlabel="om", algos="triangles",
-	               remove_algo_part="_triangles", file_name_add="_triangles_ext", title_add=", triangles",
-	               metrics=["merged_external_nodes"])
 	pass
 
-
-def egonet_metrics(data, graphs, xlabel, algos, remove_algo_part, file_name_add, title_add, metrics):
-	filtered_data = filter_data(data["ego_net_metrics"], graphs, algos)
-	if len(filtered_data) is 0:
-		return
-	filtered_data.query("metric_name in @metrics", inplace=True)
-
-	# if type(algos) == list:
-	# 	algo_list = algos
-	# else:
-	# 	algo_list = sorted(list(set(filtered_data["algo"])))
-
-	fig, ax = plt.subplots()
-	sns.lineplot(
-		x="graph",
-		y="value",
-		hue="algo",
-		style="metric_name",
-		markers=True,
-		linewidth=2,
-		# palette=colors,
-		ci=None,
-		data=filtered_data,
-		ax=ax,
-	)
-
-	sns.despine(ax=ax)
-	ax.set(
-		xlabel=xlabel,
-		ylim=(0, 1.05),
-	)
-	set_xticklabels(ax, xlabel)
-	fig.suptitle("Ego-Metrics, " + graphs + title_add)
-	legend_handles, legend_labels = ax.get_legend_handles_labels()
-	if type(algos) == str and remove_algo_part == "":
-		remove_algo_part = algos
-	legend_labels = [l.replace(remove_algo_part, '') for l in legend_labels]
-	set_layout(ax, legend_handles, legend_labels)
-	file_name = file_prefix + "ego_partition/" + "metrics_" + graphs + file_name_add
-	fig.savefig(file_name + ".pdf")
-
-# TODO: ein Wert für Partitions/Community und Communities/Partition
 def egonet_comm_partition(data, graphs, algos, name):
 	filtered_data = filter_data(data["ego_net_communities"], graphs, algos)
 	if len(filtered_data) is 0:
@@ -171,6 +100,7 @@ def egonet_comm_partition(data, graphs, algos, name):
 
 	# TODO: Summe comm_size / Summe wrong_nodes -> total wrong percentage
 	# Das gleich bei Partition
+
 
 def egonet_partition_composition(data, graphs, algos, name):
 	filtered_data = filter_data(data["ego_net_partitions"], graphs, algos,)

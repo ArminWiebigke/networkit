@@ -39,22 +39,26 @@ metric_names = {
 	"f1": {
 		"description": "F1 Score",
 		"y_val": "F1",
-		"file_name": "F1_score"
+		"file_name": "F1_score",
+		"ylim": (0, 1.05),
 	},
 	"f1_rev": {
 		"description": "F1 Score (reversed)",
 		"y_val": "F1",
-		"file_name": "F1_score_rev"
+		"file_name": "F1_score_rev",
+		"ylim": (0, 1.05),
 	},
 	"nmi": {
 		"description": "NMI Score",
 		"y_val": "NMI",
-		"file_name": "NMI_score"
+		"file_name": "NMI_score",
+		"ylim": (0, 1.05),
 	},
 	"time": {
 		"description": "Running Time",
 		"y_val": "time (s)",
-		"file_name": "time"
+		"file_name": "time",
+		"ylim": 0,
 	},
 }
 
