@@ -318,8 +318,35 @@ def calc_entropy(G, cover):
 		gtGraph = graph_tool.load_graph(graphPath, "graphml")
 
 		edge_property = gtGraph.new_edge_property("vector<int>")
-		print("No cover:", OverlapBlockState(gtGraph, edge_property).entropy())
+		# no_cover_bm = OverlapBlockState(gtGraph, edge_property)
+		# print("No cover:", no_cover_bm.entropy())
+		# print("No cover:", no_cover_bm.entropy(deg_entropy=False))
+		# print("No cover:", no_cover_bm.entropy(degree_dl=False))
+		# print("No cover:", no_cover_bm.entropy(deg_entropy=False, degree_dl=False))
 
+		# for source, target, edge_id in gtGraph.get_edges():
+		# 	set_a = set(cover.subsetsOf(source))
+		# 	set_b = set(cover.subsetsOf(target))
+		# 	overlap = set_a.intersection(set_b)
+		# 	if overlap:
+		# 		comm_a = list(overlap)[0]
+		# 		comm_b = comm_a
+		# 	else:
+		# 		# Nodes have no common community
+		# 		comm_a = list(set_a)[0]
+		# 		comm_b = list(set_b)[0]
+		# 		if source > target:
+		# 			comm_a, comm_b = comm_b, comm_a
+		# 		# comm_a, comm_b = -1, -1
+		# 		# comm_a, comm_b = 0, 0
+		# 	edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
+		#
+		# block_state = OverlapBlockState(gtGraph, edge_property)
+		# entropy = block_state.entropy()
+		# print("Cover entropy a:", entropy)
+
+
+		edge_property_b = gtGraph.new_edge_property("vector<int>")
 		for source, target, edge_id in gtGraph.get_edges():
 			set_a = set(cover.subsetsOf(source))
 			set_b = set(cover.subsetsOf(target))
@@ -327,21 +354,19 @@ def calc_entropy(G, cover):
 			if overlap:
 				comm_a = list(overlap)[0]
 				comm_b = comm_a
-			else:
-				# Nodes have no common community
-				# comm_a = list(set_a)[0]
-				# comm_b = list(set_b)[0]
-				# if source > target:
-				# 	comm_a, comm_b = comm_b, comm_a
-				comm_a, comm_b = -1, -1
-				comm_a, comm_b = 0, 0
-			edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
+				edge_property_b[gtGraph.edge(source, target)] = [comm_a, comm_b]
 
-		block_state = OverlapBlockState(gtGraph, edge_property)
-		entropy = block_state.entropy()
+		block_state_b = OverlapBlockState(gtGraph, edge_property_b)
+		entropy = block_state_b.entropy(deg_entropy=False, degree_dl=False)
 		print("Cover entropy:", entropy)
+		# print("No deg entropy:", block_state_b.entropy(deg_entropy=False))
+		# print("No deg entropy:", block_state_b.entropy(degree_dl=False))
+		# print("No deg entropy:", block_state_b.entropy(deg_entropy=False, degree_dl=False))
 
-		print("Minimize:",
-		      graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph).entropy())
+		# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
+		# print("Minimize:", min_bm.entropy())
+		# print("Minimize:", min_bm.entropy(deg_entropy=False))
+		# print("Minimize:", min_bm.entropy(degree_dl=False))
+		# print("Minimize:", min_bm.entropy(degree_dl=False, deg_entropy=False))
 
 	return entropy

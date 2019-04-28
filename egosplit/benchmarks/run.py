@@ -15,11 +15,11 @@ from .graph import BenchGraph, LFRGraph
 def start_benchmarks():
 	iterations = 1
 	append_results = False
-	append_results = True
+	#append_results = True
 	evaluations = [
 		"metrics",
-		"cover",
-		"ego_nets",
+		# "cover",
+		# "ego_nets",
 		# "stream_to_gephi",
 	]
 	stream_to_gephi = "stream_to_gephi" in evaluations
@@ -68,13 +68,13 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 			'f1',
 			'f1_rev',
 			'nmi',
-			# 'entropy',
+			'entropy',
 		]
 		write_results_to_file(benchmarks, result_dir, metrics, append)
 		compact_metrics = [
-			"time",
+			# "time",
 			"nmi",
-			# "entropy",
+			"entropy",
 			# "f1",
 			# "f1_rev",
 		]
@@ -107,7 +107,7 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 5):
+	for om in range(1, 6):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -126,7 +126,7 @@ def get_graphs(iterations):
 # ************************************************************************************
 def get_algos(storeEgoNets):
 	algos = []
-	# algos.append(GroundTruth())
+	algos.append(GroundTruth())
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm())
 	# algos.append(MosesAlgorithm())
@@ -136,7 +136,7 @@ def get_algos(storeEgoNets):
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 	# partition_algos['PLM_0.6'] = [lambda g: PLM(g, False, 0.6, "none").run().getPartition()]
 	# partition_algos['PLM_0.8'] = [lambda g: PLM(g, False, 0.8, "none").run().getPartition()]
-	# partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
+	partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
 	# partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
 	# partition_algos['PLM_refine'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
@@ -180,7 +180,7 @@ def get_ego_parameters(storeEgoNets):
 		"processEgoNet": "extend",
 		"edgesBetweenNeigNeig": "Yes",
 		"extendRandom": "No",
-		"minNodeDegree": 2,
+		"minNodeDegree": 0,
 		"triangleThreshold": 0,
 	}
 	edge_scores_standard = {
@@ -192,14 +192,14 @@ def get_ego_parameters(storeEgoNets):
 		**extend_standard,
 		"extendStrategy": "triangles",
 		"scoreStrategy": "score_normed",
-		"minTriangles": 2,
-		"keepOnlyTriangles": "No",
 		"edgesBetweenNeigNeig": "Yes",
+		"minNodeDegree": 0,
+		"minTriangles": 0,
+		"keepOnlyTriangles": "No",
 		"triangleThreshold": 0,
-		"minNodeDegree": 2,
 	}
 
-	# ego_parameters['base'] = standard
+	ego_parameters['base'] = standard
 	ego_parameters['edges'] = {
 		**edge_scores_standard,
 	}
