@@ -311,18 +311,16 @@ def getOrkutGraph():
 	return g, c
 
 
-def calc_entropy(G, cover):
+# https://graph-tool.skewed.de/
+def calc_entropy(G, cover, **entropy_args):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graphPath = os.path.join(tempdir, 'graph.txt')
 		graphio.writeGraph(G, graphPath, fileformat=graphio.Format.GraphML)
 		gtGraph = graph_tool.load_graph(graphPath, "graphml")
 
 		edge_property = gtGraph.new_edge_property("vector<int>")
-		# no_cover_bm = OverlapBlockState(gtGraph, edge_property)
-		# print("No cover:", no_cover_bm.entropy())
-		# print("No cover:", no_cover_bm.entropy(deg_entropy=False))
-		# print("No cover:", no_cover_bm.entropy(degree_dl=False))
-		# print("No cover:", no_cover_bm.entropy(deg_entropy=False, degree_dl=False))
+		no_cover_bm = OverlapBlockState(gtGraph, edge_property)
+		print("No cover:", no_cover_bm.entropy(**entropy_args))
 
 		# for source, target, edge_id in gtGraph.get_edges():
 		# 	set_a = set(cover.subsetsOf(source))
@@ -340,11 +338,6 @@ def calc_entropy(G, cover):
 		# 		# comm_a, comm_b = -1, -1
 		# 		# comm_a, comm_b = 0, 0
 		# 	edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
-		#
-		# block_state = OverlapBlockState(gtGraph, edge_property)
-		# entropy = block_state.entropy()
-		# print("Cover entropy a:", entropy)
-
 
 		edge_property_b = gtGraph.new_edge_property("vector<int>")
 		for source, target, edge_id in gtGraph.get_edges():
@@ -357,16 +350,10 @@ def calc_entropy(G, cover):
 				edge_property_b[gtGraph.edge(source, target)] = [comm_a, comm_b]
 
 		block_state_b = OverlapBlockState(gtGraph, edge_property_b)
-		entropy = block_state_b.entropy(deg_entropy=False, degree_dl=False)
+		entropy = block_state_b.entropy(**entropy_args)
 		print("Cover entropy:", entropy)
-		# print("No deg entropy:", block_state_b.entropy(deg_entropy=False))
-		# print("No deg entropy:", block_state_b.entropy(degree_dl=False))
-		# print("No deg entropy:", block_state_b.entropy(deg_entropy=False, degree_dl=False))
 
 		# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
-		# print("Minimize:", min_bm.entropy())
-		# print("Minimize:", min_bm.entropy(deg_entropy=False))
-		# print("Minimize:", min_bm.entropy(degree_dl=False))
-		# print("Minimize:", min_bm.entropy(degree_dl=False, deg_entropy=False))
+		# print("Minimize:", min_bm.entropy(**entropy_args))
 
 	return entropy

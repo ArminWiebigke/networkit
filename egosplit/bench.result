@@ -175,3 +175,69 @@ Ego_PLM_triangles_^2_norm        |   0.5896
 Ego_PLM_triangles_only           |   0.6567
 Ego_PLM_triangles_only_normed    |   0.6279
 Ego_PLM_triangles_only_^2_normed |   0.6478
+
+
+                   Graph | LFR_om_1 | LFR_om_2 | LFR_om_3 | LFR_om_4
+-----------------------------------------------------------------
+Algo                     |      nmi |      nmi |      nmi |      nmi
+-----------------------------------------------------------------
+Ego_PLM_triangles_only_0 |   0.7680 |   0.7092 |   0.6591 |   0.3543
+Ego_PLM_triangles_only_1 |   0.7680 |   0.7092 |   0.6591 |   0.3543
+Ego_PLM_triangles_only_2 |   0.7744 |   0.7118 |   0.6672 |   0.3651
+Ego_PLM_triangles_only_3 |   0.7766 |   0.7124 |   0.6387 |   0.3762
+Ego_PLM_triangles_only_4 |   0.7708 |   0.7107 |   0.6417 |   0.3853
+Ego_PLM_triangles_only_5 |   0.7717 |   0.7112 |   0.6538 |   0.3592
+
+                   Graph | LFR_om_1 | LFR_om_2 | LFR_om_3 | LFR_om_4
+-----------------------------------------------------------------
+Algo                     |      nmi |      nmi |      nmi |      nmi
+-----------------------------------------------------------------
+Ego_PLM_base             |   0.7751 |   0.7020 |   0.5580 |   0.1585
+Ego_PLM_triangles_only_1 |   0.7699 |   0.7246 |   0.6271 |   0.3779
+Ego_PLM_triangles_only_2 |   0.7850 |   0.7234 |   0.6368 |   0.4254
+Ego_PLM_triangles_only_3 |   0.7848 |   0.7298 |   0.6411 |   0.3921
+Ego_PLM_triangles_only_4 |   0.7827 |   0.7265 |   0.6271 |   0.3856
+Ego_PLM_triangles_only_5 |   0.7771 |   0.7201 |   0.6052 |   0.3686
+
+Algo                     |      nmi |      nmi |      nmi |      nmi |      nmi
+---------------------------------------------------------------------------
+Ego_PLM_base             |   0.7744 |   0.7022 |   0.5680 |   0.1799 |   0.0031
+Ego_PLM_triangles_only_1 |   0.7557 |   0.7082 |   0.6382 |   0.3567 |   0.0984
+Ego_PLM_triangles_only_2 |   0.7683 |   0.7112 |   0.6330 |   0.3810 |   0.0874
+Ego_PLM_triangles_only_4 |   0.7866 |   0.7051 |   0.6377 |   0.4008 |   0.0904
+Ego_PLM_triangles_only_6 |   0.7596 |   0.7093 |   0.6257 |   0.3069 |   0.0662
+Ego_PLM_triangles_1      |   0.6218 |   0.5571 |   0.6059 |   0.5039 |   0.1271
+Ego_PLM_triangles_2      |   0.6906 |   0.5594 |   0.6046 |   0.5262 |   0.2003
+Ego_PLM_triangles_4      |   0.6849 |   0.5513 |   0.5500 |   0.4319 |   0.1374
+Ego_PLM_triangles_6      |   0.7078 |   0.5452 |   0.5050 |   0.2861 |   0.0537
+
+
+Graph: LFR_om_3, Algo: ground_truth
+No cover: 239871.52097429798
+Cover entropy: 223404.52333890996
+Minimize: 235083.62327195678
+
+Graph: LFR_om_3, Algo: Ego_PLM_0.6_t_0.5
+No cover: 239871.52097429798
+Cover entropy: 301531.37630518666
+Minimize: 235118.4442118255
+
+Graph: LFR_om_3, Algo: Ego_PLM_0.7_t_0.5
+No cover: 239871.52097429798
+Cover entropy: 285472.7001098743
+Minimize: 235515.77708591276
+
+Graph: LFR_om_3, Algo: Ego_PLM_0.8_t_0.5
+No cover: 239871.52097429798
+Cover entropy: 300813.24315828196
+Minimize: 235645.2298658676
+
+Graph: LFR_om_3, Algo: Ego_PLM_0.9_t_0.5
+No cover: 239871.52097429798
+Cover entropy: 302720.2062967296
+Minimize: 235222.7114493324
+
+Graph: LFR_om_3, Algo: Ego_PLM_1.0_t_0.5
+No cover: 239871.52097429798
+Cover entropy: 295077.8130271357
+Minimize: 235491.85664470334

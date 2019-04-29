@@ -60,6 +60,30 @@ metric_names = {
 		"file_name": "time",
 		"ylim": 0,
 	},
+	"entropy": {
+		"description": "Entropy",
+		"y_val": "Entropy",
+		"file_name": "entropy",
+		"ylim": 0,
+	},
+	"entropy2": {
+		"description": "Entropy2",
+		"y_val": "Entropy",
+		"file_name": "entropy2",
+		"ylim": 0,
+	},
+	"entropy3": {
+		"description": "Entropy3",
+		"y_val": "Entropy",
+		"file_name": "entropy3",
+		"ylim": 0,
+	},
+	"entropy4": {
+		"description": "Entropy4",
+		"y_val": "Entropy",
+		"file_name": "entropy4",
+		"ylim": 0,
+	},
 }
 
 algo_sets = dict()

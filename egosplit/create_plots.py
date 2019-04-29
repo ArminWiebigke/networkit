@@ -1,9 +1,9 @@
-from egosplit.plot_scripts.comm_sizes import create_comm_sizes_plots
-from egosplit.plot_scripts.comms_per_node import create_node_comms_plots
-from egosplit.plot_scripts.egonet import create_egonet_plots
-from egosplit.plot_scripts.read_data import read_data
-from egosplit.plot_scripts.config import set_sns_style
-from egosplit.plot_scripts.base_plot import *
+from plot_scripts.comm_sizes import create_comm_sizes_plots
+from plot_scripts.comms_per_node import create_node_comms_plots
+from plot_scripts.egonet import create_egonet_plots
+from plot_scripts.read_data import read_data
+from plot_scripts.config import set_sns_style
+from plot_scripts.base_plot import *
 
 
 print("Reading results...")
@@ -15,7 +15,7 @@ plots = [
 	"metrics",
 	# "comm_sizes",
 	# "num_comms",
-	"ego_net_partitioning",
+	# "ego_net_partitioning",
 ]
 
 
@@ -24,11 +24,14 @@ plots = [
 # *****************************************************************************
 if "metrics" in plots:
 	metrics = [
-		'time',
+		# 'time',
 		'nmi',
 		# 'f1',
 		# 'f1_rev',
-		# 'entropy',
+		'entropy',
+		'entropy2',
+		'entropy3',
+		'entropy4',
 	]
 	for metric in metrics:
 		# break
@@ -36,9 +39,9 @@ if "metrics" in plots:
 			data=data["metrics"],
 			graphs="LFR_om",
 			xlabel="om",
-			algo_match="PLM",
-			add_algos=["Ego_Infomap_edges"],
-			remove_algo_part="_edges",
+			algo_match="",
+			# add_algos=["Ego_Infomap_edges"],
+			remove_algo_part="PLM_1.0_",
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",

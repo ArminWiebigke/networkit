@@ -7,15 +7,16 @@ from .evaluation.metrics import write_results_to_file, add_compact_results, \
 from .evaluation.ego_net_partition import analyse_ego_net_partitions
 from .evaluation.stream_to_gephi import stream_partition
 from .evaluation.cover_analysis import analyse_cover
-from .cover_benchmark import CoverBenchmark
+from .cover_benchmark import CoverBenchmark, MetricCache
 from .algorithms import *
 from .graph import BenchGraph, LFRGraph
+import egosplit.benchmarks.evaluation.benchmark_metric as bm
 
 
 def start_benchmarks():
 	iterations = 1
 	append_results = False
-	#append_results = True
+	append_results = True
 	evaluations = [
 		"metrics",
 		# "cover",
@@ -62,23 +63,30 @@ def print_result_summary(summary):
 
 def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 	result_dir = get_result_dir()
+	metric_caches = [MetricCache(b) for b in benchmarks]
 	if "metrics" in evaluations:
 		metrics = [
-			'time',
-			'f1',
-			'f1_rev',
-			'nmi',
-			'entropy',
+			bm.Time,
+			bm.NMI,
+			bm.Entropy,
+			bm.Entropy2,
+			bm.Entropy3,
+			bm.Entropy4,
+			bm.F1,
+			bm.F1_rev,
 		]
-		write_results_to_file(benchmarks, result_dir, metrics, append)
+		write_results_to_file(metric_caches, result_dir, metrics, append)
 		compact_metrics = [
-			# "time",
-			"nmi",
-			"entropy",
-			# "f1",
-			# "f1_rev",
+			# bm.Time,
+			bm.NMI,
+			bm.Entropy,
+			bm.Entropy2,
+			bm.Entropy3,
+			bm.Entropy4,
+			# bm.F1,
+			# bm.F1_rev,
 		]
-		add_compact_results(summary, benchmarks, compact_metrics)
+		add_compact_results(summary, metric_caches, compact_metrics)
 	if "cover" in evaluations:
 		analyse_cover(graphs, benchmarks, result_dir, append)
 	if "ego_nets" in evaluations:
@@ -107,7 +115,7 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 6):
+	for om in range(5, 6):
 		LFR_graph_args['om_' + str(om)] = {
 			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
@@ -140,7 +148,7 @@ def get_algos(storeEgoNets):
 	# partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
 	# partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
 	# partition_algos['PLM_refine'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
-	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
@@ -156,7 +164,7 @@ def get_algos(storeEgoNets):
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
 	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
 
 	return algos
 
@@ -290,4 +298,5 @@ def create_benchmarks(graphs, algos):
 def run_benchmarks(benchmarks):
 	for benchmark in benchmarks:
 		benchmark.run()
+
 

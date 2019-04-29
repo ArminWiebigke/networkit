@@ -4,18 +4,16 @@ from egosplit.benchmarks.evaluation.cover_analysis import *
 from egosplit.benchmarks.evaluation.output import create_line
 
 
-def write_results_to_file(benchmarks, result_dir, metrics, append):
+def write_results_to_file(benchmark_results, result_dir, metrics, append):
 	if not append:
-		print_headers(result_dir, metrics)
+		print_headers(result_dir, [m.get_name() for m in metrics])
 	result_file = open(result_dir + 'metrics.result', 'a')
-	for benchmark in benchmarks:
-		algo = benchmark.algo
-		graph_wrapper = benchmark.graph
+	for result in benchmark_results:
 		metric_values = []
 		for metric in metrics:
-			metric_values.append(benchmark.get_metric(metric))
+			metric_values.append(result.get_metric(metric))
 
-		line = create_line(algo.name, graph_wrapper.name, *metric_values)
+		line = create_line(result.get_algo_name(), result.get_graph_name(), *metric_values)
 		result_file.write(line)
 
 
@@ -41,21 +39,19 @@ def print_compact_results(results, result_dir):
 	print_results_compact(results, output_file)
 
 
-def add_compact_results(results, benchmarks, metrics):
-	for benchmark in benchmarks:
-		algo = benchmark.algo
-		graph = benchmark.graph
-		algo_name = algo.name
+def add_compact_results(results, benchmark_results, metrics):
+	for result in benchmark_results:
+		algo_name = result.get_algo_name()
 		if algo_name not in results.keys():
 			results[algo_name] = OrderedDict()
-		graph_name = graph.name
+		graph_name = result.get_graph_name()
 		if graph_name not in results[algo_name].keys():
 			d = OrderedDict()
 			for m in metrics:
-				d[m] = []
+				d[m.get_name()] = []
 			results[algo_name][graph_name] = d
 		for metric in metrics:
-			results[algo_name][graph_name][metric].append(benchmark.get_metric(metric))
+			results[algo_name][graph_name][metric.get_name()].append(result.get_metric(metric))
 	return results
 
 
