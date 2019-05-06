@@ -4,7 +4,7 @@ from networkit import none
 from egosplit.benchmarks.evaluation.output import *
 
 
-# TODO: refactor
+# Evaluate the partitioning of the ego-nets
 def analyse_ego_net_partitions(benchmarks, result_dir, append):
 	open_mode = 'w'
 	if append:
@@ -21,6 +21,7 @@ def analyse_ego_net_partitions(benchmarks, result_dir, append):
 		                          out_file_metrics)
 
 
+# Print the output file headers
 def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_metrics):
 	out_file_comm.write(create_line(
 		"algo",
@@ -58,18 +59,19 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 	))
 
 
+# Analyse the result of one benchmark run
 def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
                               out_metrics):
 	try:
 		ego_net_partitions = benchmark.algo.getEgoNetPartitions()
 	except AttributeError:
 		return
-	ground_truth = benchmark.graph.ground_truth
+	ground_truth = benchmark.get_ground_truth()
 	algo_name = benchmark.algo.name
 	graph_name = benchmark.graph.name
-	graph = benchmark.graph.graph
+	graph = benchmark.get_graph()
 	total_sums = defaultdict(lambda: 0)
-	for u in benchmark.graph.graph.nodes():
+	for u in graph.nodes():
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
 		# Remove all nodes that are not neighbors of the ego-node
@@ -160,6 +162,8 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			value,
 		))
 
+
+# Calculate the ego-net metrics
 def calc_metrics(sums):
 	def safe_div(a, b, default=0):
 		if b == 0:
@@ -174,13 +178,13 @@ def calc_metrics(sums):
 		"partition_exclusivity": (1 - safe_div(sums["part_incorrect_gt"],
 		                                              sums["partition_size"])) ** 4
 	}
-
 	a = metrics["community_cohesion"]
 	b = metrics["partition_exclusivity"]
 	metrics["ego_partitioning_score"] = 2 * a * b / (a + b)
 	return metrics
 
 
+# Count the number of nodes that don't share any communities with the ego-node
 def count_external_nodes(ground_truth, truth_communities, neighbors):
 	cnt = 0
 	for v in neighbors:

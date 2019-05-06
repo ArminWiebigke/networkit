@@ -3,6 +3,9 @@ from networkit.community import CoverF1Similarity
 
 
 class BenchmarkMetric:
+	"""This class represents a metric of a benchmark run. The main method get_value
+	takes a benchmark result and returns the metric value.
+	"""
 	def __init__(self):
 		raise NotImplementedError("This class can not be instanced!")
 
@@ -28,8 +31,8 @@ class Time(BenchmarkMetric):
 class NMI(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		return calc_NMI(benchmark.graph.graph, benchmark.algo.get_cover(),
-		                benchmark.graph.ground_truth)
+		return calc_NMI(benchmark.get_graph(), benchmark.get_cover(),
+		                benchmark.get_ground_truth())
 
 	@staticmethod
 	def get_name():
@@ -39,8 +42,8 @@ class NMI(BenchmarkMetric):
 class F1(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		return calc_F1(benchmark.graph.graph, benchmark.algo.get_cover(),
-		               benchmark.graph.ground_truth)
+		return calc_F1(benchmark.get_graph(), benchmark.get_cover(),
+		               benchmark.get_ground_truth())
 
 	@staticmethod
 	def get_name():
@@ -50,8 +53,8 @@ class F1(BenchmarkMetric):
 class F1_rev(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		return calc_F1(benchmark.graph.graph, benchmark.graph.ground_truth,
-		       benchmark.algo.get_cover())
+		return calc_F1(benchmark.get_graph(), benchmark.get_ground_truth(),
+		               benchmark.get_cover())
 
 	@staticmethod
 	def get_name():
@@ -61,8 +64,8 @@ class F1_rev(BenchmarkMetric):
 class Entropy(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		e = calc_entropy(benchmark.graph.graph, benchmark.algo.get_cover())
-		base = calc_entropy(benchmark.graph.graph, benchmark.graph.ground_truth)
+		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover())
+		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth())
 		return (base / e) ** 4
 
 	@staticmethod
@@ -73,9 +76,9 @@ class Entropy(BenchmarkMetric):
 class Entropy2(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		e = calc_entropy(benchmark.graph.graph, benchmark.algo.get_cover(),
+		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
 		                 deg_entropy=False)
-		base = calc_entropy(benchmark.graph.graph, benchmark.graph.ground_truth,
+		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
 		                    deg_entropy=False)
 		return (base / e) ** 4
 
@@ -87,9 +90,9 @@ class Entropy2(BenchmarkMetric):
 class Entropy3(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		e = calc_entropy(benchmark.graph.graph, benchmark.algo.get_cover(),
+		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
 		                 deg_entropy=False, degree_dl=False)
-		base = calc_entropy(benchmark.graph.graph, benchmark.graph.ground_truth,
+		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
 		                    deg_entropy=False, degree_dl=False)
 		return (base / e) ** 4
 
@@ -101,9 +104,9 @@ class Entropy3(BenchmarkMetric):
 class Entropy4(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		e = calc_entropy(benchmark.graph.graph, benchmark.algo.get_cover(),
+		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
 		                 deg_entropy=False, degree_dl=False, edges_dl=False)
-		base = calc_entropy(benchmark.graph.graph, benchmark.graph.ground_truth,
+		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
 		                    deg_entropy=False, degree_dl=False, edges_dl=False)
 		return (base / e) ** 4
 
@@ -112,6 +115,7 @@ class Entropy4(BenchmarkMetric):
 		return "entropy4"
 
 
+# Calculate the F1 score
 def calc_F1(graph, cover, refCover):
 	similarity = CoverF1Similarity(graph, cover, refCover).run()
 	return similarity.getUnweightedAverage()

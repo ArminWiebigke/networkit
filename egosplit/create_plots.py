@@ -15,7 +15,7 @@ plots = [
 	"metrics",
 	# "comm_sizes",
 	# "num_comms",
-	# "ego_net_partitioning",
+	"ego_net_partitioning",
 ]
 
 
@@ -28,10 +28,10 @@ if "metrics" in plots:
 		'nmi',
 		# 'f1',
 		# 'f1_rev',
-		'entropy',
-		'entropy2',
-		'entropy3',
-		'entropy4',
+		# 'entropy',
+		# 'entropy2',
+		# 'entropy3',
+		# 'entropy4',
 	]
 	for metric in metrics:
 		# break
@@ -41,7 +41,7 @@ if "metrics" in plots:
 			xlabel="om",
 			algo_match="",
 			# add_algos=["Ego_Infomap_edges"],
-			remove_algo_part="PLM_1.0_",
+			remove_algo_part="Ego_",
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
@@ -54,26 +54,27 @@ if "metrics" in plots:
 				"ylabel": metric_names[metric]["y_val"]
 			}
 		)
-		make_plot(
-			data=data["metrics"],
-			graphs="LFR_om",
-			xlabel="om",
-			algo_match="_triangles",
-			title=metric_names[metric]["description"] + ", extend(triangles)",
-			file_name="metrics/" + metric_names[metric]["file_name"] + "_triangles",
-			x="graph",
-			hue="algo",
-			plot_args={
-				"y": metric,
-			},
-			ax_set={
-				"ylim": metric_names[metric]["ylim"],
-				"ylabel": metric_names[metric]["y_val"]
-			}
-		)
+		# make_plot(
+		# 	data=data["metrics"],
+		# 	graphs="LFR_om",
+		# 	xlabel="om",
+		# 	algo_match="_triangles",
+		# 	title=metric_names[metric]["description"] + ", extend(triangles)",
+		# 	file_name="metrics/" + metric_names[metric]["file_name"] + "_triangles",
+		# 	x="graph",
+		# 	y=metric,
+		# 	hue="algo",
+		# 	plot_args={
+		# 	},
+		# 	ax_set={
+		# 		"ylim": metric_names[metric]["ylim"],
+		# 		"ylabel": metric_names[metric]["y_val"]
+		# 	}
+		# )
+
 	# metric = "nmi"
-	# x = {"name": "factor", "create_from": "algo", "substring": (18, 20)}
-	# hue = {"name": "PLM_gamma", "create_from": "algo", "substring": (8, 11)}
+	# x = {"name": "factor", "create_from": "algo", "str_start": "_f-", "str_end": "*"}
+	# hue = {"name": "exponent", "create_from": "algo", "str_start": "*e-", "str_end": ""}
 	# make_plot(
 	# 	data=data["metrics"],
 	# 	graphs="LFR_om",
@@ -81,9 +82,10 @@ if "metrics" in plots:
 	# 	title=metric_names[metric]["description"],
 	# 	file_name="2_dim_metrics/" + metric_names[metric]["file_name"],
 	# 	x=x,
+	# 	y=metric,
 	# 	hue=hue,
 	# 	plot_args={
-	# 		"y": metric,
+	#
 	# 	},
 	# 	ax_set={
 	# 		"ylim": metric_names[metric]["ylim"],
@@ -102,8 +104,8 @@ if "comm_sizes" in plots:
 		data=data["cover_comm_sizes"],
 		graphs="LFR_om_",
 		xlabel="",
-		algo_match="PLM_1.0_",
-		add_algos=["ground_truth"],
+		algo_match="",
+		# add_algos=["ground_truth"],
 		title="Community Sizes" + ", PLM(1.0)",
 		file_name="communities/" + "comm_sizes",
 		x="algo",
@@ -176,13 +178,14 @@ if "ego_net_partitioning" in plots:
 				y="value",
 				hue="algo",
 				plot_args={
-					"style": "metric_name",
+					# "style": "metric_name",
 				},
 				ax_set={
 					"ylim": (0, 1.05),
 				}
 			)
 
+	# Algo parameters on x-axis
 	for ego_metric in ego_metrics:
 		break
 		x = {"name": "factor", "create_from": "algo", "str_start": "_f-", "str_end": "*"}
@@ -205,7 +208,7 @@ if "ego_net_partitioning" in plots:
 
 	# Metrics per Ego-Net
 	for ego_metric in ego_metrics:
-		break
+		# break
 		for algo in algos:
 			make_plot(
 				data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
@@ -214,11 +217,11 @@ if "ego_net_partitioning" in plots:
 				algo_match=algo["filter"],
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/ego_metrics/" + ego_metric + algo["file"],
+				x="ego_net_size",
+				y="value",
+				hue="algo",
 				plot_args={
-					"x": "ego_net_size",
-					"y": "value",
-					"hue": "algo",
-					"style": "metric_name",
+					# "style": "metric_name",
 					"markersize": 3,
 				},
 				ax_set={

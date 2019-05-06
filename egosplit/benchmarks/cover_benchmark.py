@@ -3,6 +3,9 @@ from networkit.community import CoverF1Similarity
 
 
 class CoverBenchmark:
+	""" This class represents a benchmark instance, consisting of an input graph and the
+	algorithm used to create a cover.
+	"""
 	def __init__(self, algo, graph):
 		self.algo = algo
 		self.graph = graph
@@ -12,8 +15,19 @@ class CoverBenchmark:
 		self.algo.run_with_wrapper(self.graph)
 		print("Time: " + str(self.algo.get_time()) + "\n")
 
+	def get_graph(self):
+		return self.graph.graph
+
+	def get_ground_truth(self):
+		return self.graph.ground_truth
+
+	def get_cover(self):
+		return self.algo.get_cover()
+
 
 class MetricCache:
+	""" This class is used to cache metric results, so that they are only calculated once.
+	"""
 	def __init__(self, benchmark):
 		self.benchmark = benchmark
 		self.cached = {}

@@ -7,6 +7,7 @@ from .evaluation.metrics import write_results_to_file, add_compact_results, \
 from .evaluation.ego_net_partition import analyse_ego_net_partitions
 from .evaluation.stream_to_gephi import stream_partition
 from .evaluation.cover_analysis import analyse_cover
+from .evaluation.cleanup import cleanup
 from .cover_benchmark import CoverBenchmark, MetricCache
 from .algorithms import *
 from .graph import BenchGraph, LFRGraph
@@ -16,12 +17,13 @@ import egosplit.benchmarks.evaluation.benchmark_metric as bm
 def start_benchmarks():
 	iterations = 1
 	append_results = False
-	append_results = True
+	# append_results = True
 	evaluations = [
 		"metrics",
-		# "cover",
-		# "ego_nets",
+		"cover",
+		"ego_nets",
 		# "stream_to_gephi",
+		# "cleanup",
 	]
 	stream_to_gephi = "stream_to_gephi" in evaluations
 	store_ego_nets = "ego_nets" in evaluations \
@@ -63,36 +65,38 @@ def print_result_summary(summary):
 
 def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 	result_dir = get_result_dir()
-	metric_caches = [MetricCache(b) for b in benchmarks]
 	if "metrics" in evaluations:
+		metric_caches = [MetricCache(b) for b in benchmarks]
 		metrics = [
 			bm.Time,
 			bm.NMI,
-			bm.Entropy,
-			bm.Entropy2,
-			bm.Entropy3,
-			bm.Entropy4,
+			# bm.Entropy,
+			# bm.Entropy2,
+			# bm.Entropy3,
+			# bm.Entropy4,
 			bm.F1,
 			bm.F1_rev,
 		]
 		write_results_to_file(metric_caches, result_dir, metrics, append)
 		compact_metrics = [
-			# bm.Time,
+			bm.Time,
 			bm.NMI,
-			bm.Entropy,
-			bm.Entropy2,
-			bm.Entropy3,
-			bm.Entropy4,
+			# bm.Entropy,
+			# bm.Entropy2,
+			# bm.Entropy3,
+			# bm.Entropy4,
 			# bm.F1,
 			# bm.F1_rev,
 		]
 		add_compact_results(summary, metric_caches, compact_metrics)
 	if "cover" in evaluations:
-		analyse_cover(graphs, benchmarks, result_dir, append)
+		analyse_cover(benchmarks, result_dir, append)
 	if "ego_nets" in evaluations:
 		analyse_ego_net_partitions(benchmarks, result_dir, append)
 	if "stream_to_gephi" in evaluations:
 		stream_partition(graphs, benchmarks)
+	if "cleanup" in evaluations:
+		cleanup(benchmarks, result_dir)
 
 
 # ************************************************************************************
@@ -115,10 +119,10 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(5, 6):
+	for om in range(1, 7):
 		LFR_graph_args['om_' + str(om)] = {
-			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
-			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
+			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 20, 'maxc': 100,
+			't1': 2, 't2': 2, 'mu': 0.2, 'on': 1000, 'om': om}
 	# for mu_factor in range(0, 51, 5):
 	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
 	# 		'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
@@ -134,21 +138,21 @@ def get_graphs(iterations):
 # ************************************************************************************
 def get_algos(storeEgoNets):
 	algos = []
-	algos.append(GroundTruth())
+	# algos.append(GroundTruth())
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm())
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
 	partition_algos = OrderedDict()
-	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 	# partition_algos['PLM_0.6'] = [lambda g: PLM(g, False, 0.6, "none").run().getPartition()]
 	# partition_algos['PLM_0.8'] = [lambda g: PLM(g, False, 0.8, "none").run().getPartition()]
 	partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 	# partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
 	# partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
 	# partition_algos['PLM_refine'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
-	# partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
@@ -164,7 +168,7 @@ def get_algos(storeEgoNets):
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
 	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
 
 	return algos
 
@@ -183,13 +187,15 @@ def get_ego_parameters(storeEgoNets):
 	}
 	extend_standard = {
 		**standard,
-		"addNodesFactor": 8,
+		"addNodesFactor": 4,
 		"addNodesExponent": 0.6,
 		"processEgoNet": "extend",
 		"edgesBetweenNeigNeig": "Yes",
 		"extendRandom": "No",
 		"minNodeDegree": 0,
 		"triangleThreshold": 0,
+		"extendOverDirected": "No",
+		"keepOnlyTriangles": "No",
 	}
 	edge_scores_standard = {
 		**extend_standard,
@@ -203,7 +209,6 @@ def get_ego_parameters(storeEgoNets):
 		"edgesBetweenNeigNeig": "Yes",
 		"minNodeDegree": 0,
 		"minTriangles": 0,
-		"keepOnlyTriangles": "No",
 		"triangleThreshold": 0,
 	}
 
@@ -211,6 +216,10 @@ def get_ego_parameters(storeEgoNets):
 	ego_parameters['edges'] = {
 		**edge_scores_standard,
 	}
+	# ego_parameters['edges_dir'] = {
+	# 	**edge_scores_standard,
+	# 	"extendOverDirected": "Yes",
+	# }
 	# ego_parameters['triangles'] = {
 	# 	**triangles_standard,
 	# }

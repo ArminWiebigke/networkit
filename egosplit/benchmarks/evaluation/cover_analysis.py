@@ -4,7 +4,8 @@ from egosplit.benchmarks.cover_benchmark import *
 from egosplit.benchmarks.evaluation.output import create_line
 
 
-def analyse_cover(graphs, benchmarks, result_dir, append):
+# Analyse the result cover of a benchmark run
+def analyse_cover(benchmarks, result_dir, append):
 	if not append:
 		print_headers(result_dir)
 
@@ -12,6 +13,7 @@ def analyse_cover(graphs, benchmarks, result_dir, append):
 		count_benchmark_cover(result_dir, benchmark)
 
 
+# Print output file headers
 def print_headers(result_dir):
 	with open(result_dir + 'cover_num_comms.result', 'w') as f:
 		f.write(create_line('algo', 'graph', 'num_comms'))
@@ -21,6 +23,7 @@ def print_headers(result_dir):
 		f.write(create_line('algo', 'graph', 'num_comms'))
 
 
+# Count the number of communities and their sizes
 def count_benchmark_cover(result_dir, benchmark):
 	algo = benchmark.algo
 	graph = benchmark.graph
@@ -28,6 +31,7 @@ def count_benchmark_cover(result_dir, benchmark):
 	                  graph.graph, algo.get_cover())
 
 
+# Count the number of communities and their sizes
 def count_communities(result_dir, algo_name, graph_name, graph, cover):
 	# Number of communities
 	with open(result_dir + 'cover_num_comms.result', 'a') as f:

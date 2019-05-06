@@ -46,6 +46,7 @@
 #include "../../io/EdgeListReader.h"
 #include "../OLP.h"
 #include "../../io/CoverReader.h"
+#include "../SignificanceCleanup.h"
 
 namespace NetworKit {
 
@@ -806,6 +807,23 @@ TEST_F(CommunityGTest, testLPPotts) {
 	}
 //	std::cout << partition.subsetSizes() << std::endl;
 //	partition.subsetSizes();
+}
+
+
+TEST_F(CommunityGTest, testSignificanceCleanup) {
+	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
+	Graph G = gen.generate();
+
+	EgoSplitting detectionAlgo(G);
+	detectionAlgo.run();
+	Cover cover = detectionAlgo.getCover();
+	
+	SignificanceCleanup cleanup(G, cover);
+	cleanup.run();
+	Cover cleanedCover = cleanup.getCover();
+	
+	std::cout << cover.numberOfSubsets() << " -> " << cleanedCover.numberOfSubsets() << std::endl;
+
 }
 
 

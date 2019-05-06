@@ -4,6 +4,7 @@ from egosplit.benchmarks.evaluation.cover_analysis import *
 from egosplit.benchmarks.evaluation.output import create_line
 
 
+# Write the metric results to the output file, one line per benchmark run
 def write_results_to_file(benchmark_results, result_dir, metrics, append):
 	if not append:
 		print_headers(result_dir, [m.get_name() for m in metrics])
@@ -17,6 +18,7 @@ def write_results_to_file(benchmark_results, result_dir, metrics, append):
 		result_file.write(line)
 
 
+# Print output file headers
 def print_headers(result_dir, metrics):
 	with open(result_dir + 'metrics.result', 'w') as f:
 		f.write(create_line('algo', 'graph', *metrics))
@@ -34,11 +36,13 @@ def print_headers(result_dir, metrics):
 	# ego_file.close()
 
 
+# Print a summary of the metric results in a compact form (table)
 def print_compact_results(results, result_dir):
 	output_file = open(result_dir + "compact.results", "a")
 	print_results_compact(results, output_file)
 
 
+# Add benchmark results to the compact results
 def add_compact_results(results, benchmark_results, metrics):
 	for result in benchmark_results:
 		algo_name = result.get_algo_name()
@@ -52,9 +56,9 @@ def add_compact_results(results, benchmark_results, metrics):
 			results[algo_name][graph_name] = d
 		for metric in metrics:
 			results[algo_name][graph_name][metric.get_name()].append(result.get_metric(metric))
-	return results
 
 
+# Print the compact results to the standard output and the output file
 def print_results_compact(results, output_file):
 	algos = list(results.keys())
 	graphs = list(results[algos[0]].keys())
@@ -97,5 +101,6 @@ def print_results_compact(results, output_file):
 	output_file.write(output_str)
 
 
+# Convert a float to a string with a fixed number of decimals
 def fixed_decimals(val, decimals=3):
 	return str("{:.{decimals}f}").format(val, decimals=decimals)

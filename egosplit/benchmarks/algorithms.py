@@ -32,6 +32,9 @@ class ContextTimer(object):
 
 
 class CoverAlgorithm:
+	""" This class represents an algorithm that takes a graph and runs an overlapping
+	community detection, return a cover.
+	"""
 	def __init__(self):
 		self.timer = ContextTimer()
 		self.cover = None
@@ -64,6 +67,8 @@ class GroundTruth(CoverAlgorithm):
 	def run_with_wrapper(self, graph):
 		self.cover = graph.ground_truth
 
+	def run(self, graph):
+		raise NotImplementedError("Run method not implemented, use run_with wrapper!")
 
 
 class EgoSplitAlgorithm(CoverAlgorithm):
