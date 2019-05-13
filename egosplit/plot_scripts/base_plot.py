@@ -4,21 +4,26 @@ from .config import *
 from .utils import filter_data
 
 
-def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", file_name="", title="",
-              plot_args=None, ax_set=None, plot_type="line", add_algos=None, x=None, hue=None, y=None):
+def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
+              file_name="", title="",
+              plot_args=None, ax_set=None, plot_type="line", add_algos=None, x=None,
+              hue=None, y=None):
+	# Filter data
 	filtered_data = data.query("graph.str.contains(@graphs)").copy()
 	if algo_match is not None:
-		algo_list = list(filtered_data.query("algo.str.contains(@algo_match)").groupby("algo").mean()
-	                     .index.values)
+		f_data = filtered_data.query("algo.str.contains(@algo_match)")
+		algo_set = set(f_data.groupby("algo").mean().index.values)
 	else:
-		algo_list = []
+		algo_set = set()
 	if add_algos:
-		algo_list.extend(add_algos)
+		for algo in add_algos:
+			algo_set.add(algo)
+	algo_list = sorted(list(algo_set))
 	filtered_data.query("algo in @algo_list", inplace=True)
-
 	if len(filtered_data) is 0:
 		return
 
+	# Create new columns for x or hue if necessary
 	new_columns = []
 	if type(x) != str:
 		new_columns.append(x)
@@ -28,7 +33,8 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", f
 		for row in filtered_data.itertuples(index=True, name='Pandas'):
 			index = row.Index
 			from_string = filtered_data.loc[index, new_column["create_from"]]
-			start_idx = from_string.find(new_column["str_start"]) + len(new_column["str_start"])
+			start_idx = from_string.find(new_column["str_start"]) + len(
+				new_column["str_start"])
 			if new_column["str_end"] == "":
 				end_idx = len(from_string)
 			else:
@@ -39,12 +45,12 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", f
 			except ValueError:
 				pass
 			filtered_data.loc[index, new_column["name"]] = value
-
 	if type(x) != str:
 		x = x["name"]
 	if type(hue) != str:
 		hue = hue["name"]
 
+	# Set plot args
 	if plot_type == "line":
 		default_plot_args = {
 			"markers": True,
@@ -64,8 +70,15 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", f
 		"x": x,
 		"y": y,
 		"hue": hue,
+		# "sort": True,
 		**plot_args,
 	}
+	if plot_args["hue"] == "algo":
+		plot_args = {"hue_order": algo_list, **plot_args}
+		if plot_type == "line":
+			plot_args = {"style_order": algo_list, **plot_args}
+		if plot_type == "swarm":
+			plot_args = {"order": algo_list, **plot_args}
 
 	# Make one plot per graph if graph is not on the x-axis
 	if plot_args["x"] == "graph":
@@ -73,6 +86,7 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", f
 	else:
 		graph_list = filtered_data.groupby("graph").mean().index.values
 
+	# Create plots
 	for graph in graph_list:
 		if len(graph_list) == 1:
 			graph_data = filtered_data
@@ -105,74 +119,16 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="", f
 		ax.set(
 			**ax_set,
 		)
-		set_xticklabels(ax, xlabel)
+		fig.canvas.draw()
+		set_xticklabels(ax, xlabel + "_")
 		fig.suptitle(title + ", " + graph)
 		legend_handles, legend_labels = ax.get_legend_handles_labels()
 		if type(algo_match) == str and remove_algo_part == "":
 			remove_algo_part = algo_match
-		legend_labels = [l.replace(remove_algo_part, '') for l in legend_labels]
+		if isinstance(remove_algo_part, str):
+			remove_algo_part = [remove_algo_part]
+		for remove in remove_algo_part:
+			legend_labels = [l.replace(remove, '') for l in legend_labels]
 		set_layout(ax, legend_handles, legend_labels)
-		fig.savefig(file_prefix + file_name + "_" + graph + ".pdf")
-		plt.close(fig)
-
-
-def two_dim_algo_plot(data, graphs, algos, remove_algo_part="", file_name="", title="",
-                      plot_args=None, ax_set=None, plot_type="line", add_algos=None,
-                      x=None, hue=None):
-	filtered_data = filter_data(data, graphs, algos)
-	if len(filtered_data) is 0:
-		return
-
-	add_algos = add_algos or []
-	for algo in add_algos:
-		filtered_data = filtered_data.append(filter_data(data, graphs, [algo]))
-
-	for new_column in [x, hue]:
-		for row in filtered_data.itertuples(index=True, name='Pandas'):
-			index = row.Index
-			from_string = filtered_data.loc[index, new_column["create_from"]]
-			start_idx = from_string.find(new_column["str_start"]) + len(new_column["str_start"])
-			if new_column["str_end"] == "":
-				end_idx = len(from_string)
-			else:
-				end_idx = from_string.find(new_column["str_end"], start_idx)
-			value = from_string[start_idx:end_idx]
-			filtered_data.loc[index, new_column["name"]] = float(value)
-
-	graph_list = filtered_data.groupby("graph").mean().index.values
-
-	default_plot_args = {
-		"markers": True,
-		"linewidth": 2,
-		"ci": None,
-	}
-
-	plot_args = plot_args or {}
-	plot_args = {
-		**default_plot_args,
-		"x": x["name"],
-		"hue": hue["name"],
-		"style": hue["name"],
-		**plot_args,
-	}
-
-	for graph in graph_list:
-		graph_data = filtered_data.query("graph == @graph")
-		num_hues = len(filtered_data.groupby(hue["name"]).mean().index.values)
-		fig, ax = plt.subplots()
-		sns.lineplot(
-			**plot_args,
-			data=graph_data,
-			ax=ax,
-			palette=sns.light_palette("green", num_hues),
-		)
-
-		sns.despine(ax=ax)
-		ax_set = ax_set or {}
-		ax.set(
-			**ax_set,
-		)
-		fig.suptitle(title + ", " + graph)
-		set_layout(ax)
 		fig.savefig(file_prefix + file_name + "_" + graph + ".pdf")
 		plt.close(fig)

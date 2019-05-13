@@ -66,6 +66,7 @@ void EgoSplitting::init() {
 	parameters["addEgoNode"] = "No";
 	parameters["weightedEgoNet"] = "No";
 	parameters["edgesBetweenNeigNeig"] = "No";
+	parameters["partitionFromGroundTruth"] = "No";
 
 	// Parameters for weighted edges
 	parameters["weightFactor"] = "1";
@@ -83,7 +84,7 @@ void EgoSplitting::init() {
 
 
 	// Test parameters
-	parameters["processEgoNet"] = "extend";
+//	parameters["processEgoNet"] = "extend";
 	parameters["extendRandom"] = "No";
 	parameters["extendStrategy"] = "triangles";
 	parameters["scoreStrategy"] = "score_normed";
@@ -91,6 +92,7 @@ void EgoSplitting::init() {
 //	parameters["storeEgoNet"] = "Yes";
 	parameters["triangleThreshold"] = "0";
 	parameters["minNodeDegree"] = "2";
+	parameters["partitionFromGroundTruth"] = "Yes";
 }
 
 void EgoSplitting::run() {
@@ -248,11 +250,12 @@ void EgoSplitting::createEgoNets() {
 		Partition egoPartition;
 		if (parameters.at("weightedEgoNet") != "Yes")
 			egoGraph = Graph(egoGraph, false, egoGraph.isDirected());
-		if (egoGraph.numberOfEdges() > 0) {
+		if (parameters.at("partitionFromGroundTruth") == "Yes")
+			egoPartition = getGroundTruthPartition(egoGraph, nodeMapping, u);
+		else if (egoGraph.numberOfEdges() > 0) {
 			bool weighted = parameters.at("weightedEgoNet") == "Yes";
 			Graph egoCopy(egoGraph, weighted, egoGraph.isDirected());
-			egoPartition = localClusterAlgo(
-					egoCopy); // Python moves the graph so we need a copy
+			egoPartition = localClusterAlgo(egoCopy); // Python moves the graph so we need a copy
 		} else {
 			egoPartition = Partition(degree);
 			egoPartition.allToSingletons();
@@ -478,7 +481,7 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors,
 	/**********************************************************************************************
 	 **              Weight graph based on number of triangles for each edge                     **
 	 **********************************************************************************************/
-	 if (parameters["weightedEgoNet"] == "Yes")	{
+	 if (parameters.at("weightedEgoNet") == "Yes")	{
 		Graph egoWeightsGraph(egoGraph, true, false);
 		egoWeightsGraph.forEdges([&](node v, node w, edgeweight weight) {
 			egoWeightsGraph.setWeight(v, w, 0);
@@ -576,7 +579,7 @@ EgoSplitting::scoreEdgeCount(node u, const NodeMapping &neighbors) {
 		}
 	};
 	for (node v : directNeighbors) {
-		if (parameters["extendOverDirected"] == "Yes")
+		if (parameters.at("extendOverDirected") == "Yes")
 			directedEdges.forEdgesOf(v, work);
 		else
 			G.forEdgesOf(v, work);
@@ -779,6 +782,31 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 	for (auto &x : new_parameters) {
 		this->parameters[x.first] = x.second;
 	}
+}
+
+void EgoSplitting::setGroundTruth(const Cover &gt) {
+	this->groundTruth = gt;
+
+}
+
+Partition
+EgoSplitting::getGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const {
+	auto truthComms = groundTruth.subsetsOf(egoNode);
+	index subset = groundTruth.upperBound();
+	Partition part(subset + egoGraph.upperNodeIdBound());
+	egoGraph.forNodes([&](node v){
+		auto comms = groundTruth.subsetsOf(mapping.global(v));
+		std::vector<node> overlap(truthComms.size());
+		std::set_intersection(truthComms.begin(), truthComms.end(), comms.begin(), comms.end(),
+				overlap.begin());
+		if (!overlap.empty()) {
+			part.addToSubset(overlap[0], v);
+		} else {
+//			part.addToSubset(subset, v);
+//			++subset;
+		}
+	});
+	return part;
 }
 
 } /* namespace NetworKit */

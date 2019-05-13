@@ -38,6 +38,9 @@ class MetricCache:
 	def get_graph_name(self):
 		return self.benchmark.graph.name
 
+	def get_graph_id(self):
+		return self.benchmark.graph.id
+
 	def get_metric(self, metric):
 		if metric not in self.cached:
 			self.cached[metric] = metric.get_value(self.benchmark)

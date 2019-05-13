@@ -5,6 +5,9 @@ from networkit.community import EgoSplitting, OLP
 from networkit.stopwatch import Timer
 from networkit import graphio
 from egosplit.external import remove_small_communities, cleanUpOSLOM
+from egosplit.benchmarks.evaluation.cleanup import trim_comms,\
+	remove_small_comms, merge_overlap_comms, entropy_trim, merge_comms_entropy,\
+	merge_gt_comms, remove_comms_entropy
 
 home_path = os.path.expanduser("~")
 code_path = home_path + "/Code"
@@ -59,7 +62,7 @@ class CoverAlgorithm:
 class GroundTruth(CoverAlgorithm):
 	def __init__(self):
 		super().__init__()
-		self.name = "ground_truth"
+		self.name = "Ground_Truth"
 
 	def get_time(self):
 		return 0.0
@@ -82,6 +85,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.executionInfo = None
 		self.egoNetPartitions = None
 		self.parameters = parameters
+		self.ground_truth = None
 
 	def copy(self):
 		return EgoSplitAlgorithm(self._name, self.parameters, self.local_partition_algorithm,
@@ -91,22 +95,86 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	def name(self):
 		name = 'Ego_' + self._name
 		if self.clean_up != "":
-			name += "_clean_" + self.clean_up
+			name += "_" + self.clean_up
 		return name
 
 	@name.setter
 	def name(self, value):
 		self._name = value
 
+	def run_with_wrapper(self, graph):
+		self.ground_truth = graph.ground_truth
+		self.run(graph.graph)
+
+
 	def run(self, graph):
 		algo = EgoSplitting(graph, self.local_partition_algorithm,
 		                    self.global_partition_algorithm)
 		algo.setParameters(self.parameters)
+		if self.ground_truth:
+			algo.setGroundTruth(self.ground_truth)
 		with self.timer:
 			algo.run()
 			cover = algo.getCover()
 			if self.clean_up == "OSLOM":
 				cover = cleanUpOSLOM(graph, cover)
+			elif self.clean_up == "OSLOM_large":
+				cover = cleanUpOSLOM(graph, cover, "keep_good")
+			elif self.clean_up == "OSLOM_keep_1":
+				cover = cleanUpOSLOM(graph, cover, "keep_bad", 1)
+			elif self.clean_up == "OSLOM_keep_10":
+				cover = cleanUpOSLOM(graph, cover, "keep_bad", 10)
+			elif self.clean_up == "OSLOM_keep_25":
+				cover = cleanUpOSLOM(graph, cover, "keep_bad", 25)
+			elif self.clean_up == "OSLOM_merge":
+				cover = cleanUpOSLOM(graph, cover, "keep_bad")
+				cover = merge_overlap_comms(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = remove_comms_entropy(graph, cover)
+			elif self.clean_up == "trim":
+				cover = trim_comms(graph, self.ground_truth, cover)
+			elif self.clean_up == "trim_overl":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_overlap_comms(graph, cover)
+			elif self.clean_up == "trim_merge":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+			elif self.clean_up == "trim_merge_all":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = remove_comms_entropy(graph, cover)
+			elif self.clean_up == "trim_merge_overl":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+			elif self.clean_up == "tr_ol_mrg_ol":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+			elif self.clean_up == "trim_merge_gt":
+				cover = trim_comms(graph, self.ground_truth, cover)
+				cover = merge_gt_comms(graph, self.ground_truth, cover)
+			elif self.clean_up == "entropy":
+				cover = entropy_trim(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+			elif self.clean_up == "entropy_merge":
+				cover = entropy_trim(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = remove_comms_entropy(graph, cover)
+			elif self.clean_up == "entropy_all":
+				cover = entropy_trim(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = merge_comms_entropy(graph, cover)
+				cover = merge_overlap_comms(graph, cover)
+				cover = remove_comms_entropy(graph, cover)
+			elif self.clean_up != "":
+				raise RuntimeError("No valid cleanup option!")
 			self.cover = cover
 
 		self.executionInfo = algo.getExecutionInfo()

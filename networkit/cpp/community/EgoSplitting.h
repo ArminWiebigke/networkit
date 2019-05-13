@@ -85,6 +85,8 @@ public:
 
 	void setParameters(std::map<std::string, std::string> const &new_parameters);
 
+	void setGroundTruth(const Cover &gt);
+
 private:
 
 	const Graph &G;
@@ -101,6 +103,7 @@ private:
 	std::map<std::string, std::string> parameters;
 //	Graph edgeScoreGraph;
 	AdjacencyArray directedEdges;
+	Cover groundTruth;
 
 	void init();
 
@@ -144,6 +147,8 @@ private:
 	 */
 	void findTriangles(Graph graph, AdjacencyArray directedGraph,
 			std::function<void(node, node, node)> triangleFunc) const;
+
+	Partition getGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
 };
 
 } /* namespace NetworKit */

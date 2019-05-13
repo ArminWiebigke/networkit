@@ -1,4 +1,5 @@
 from egosplit.external import genLFR
+import datetime
 
 
 class BenchGraph:
@@ -6,11 +7,14 @@ class BenchGraph:
 	object, the name of the graph, its creation parameters and the created ground truth
 	cover are stored.
 	"""
+	global_id = 0
 	def __init__(self, graph, ground_truth, name, parameters=""):
 		self.graph = graph
 		self.ground_truth = ground_truth
 		self.name = name
 		self.parameters = parameters
+		self.id = "{}({})".format(datetime.datetime.now().isoformat(), self.global_id)
+		self.global_id += 1
 
 
 class LFRGraph(BenchGraph):

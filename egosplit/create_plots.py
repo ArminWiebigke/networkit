@@ -3,7 +3,8 @@ from plot_scripts.comms_per_node import create_node_comms_plots
 from plot_scripts.egonet import create_egonet_plots
 from plot_scripts.read_data import read_data
 from plot_scripts.config import set_sns_style
-from plot_scripts.base_plot import *
+from plot_scripts.base_plot import make_plot
+from plot_scripts.comm_sizes import metric_names
 
 
 print("Reading results...")
@@ -13,9 +14,9 @@ set_sns_style()
 print("Creating plots...")
 plots = [
 	"metrics",
-	# "comm_sizes",
+	"comm_sizes",
 	# "num_comms",
-	"ego_net_partitioning",
+	# "ego_net_partitioning",
 ]
 
 
@@ -24,7 +25,7 @@ plots = [
 # *****************************************************************************
 if "metrics" in plots:
 	metrics = [
-		# 'time',
+		'time',
 		'nmi',
 		# 'f1',
 		# 'f1_rev',
@@ -40,14 +41,16 @@ if "metrics" in plots:
 			graphs="LFR_om",
 			xlabel="om",
 			algo_match="",
-			# add_algos=["Ego_Infomap_edges"],
-			remove_algo_part="Ego_",
+			# add_algos=["OSLOM"],
+			remove_algo_part="Ego_PLM_Info_",
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
 			y=metric,
 			hue="algo",
 			plot_args={
+				"dashes": False,
+				# "markers": False,
 			},
 			ax_set={
 				"ylim": metric_names[metric]["ylim"],
@@ -98,20 +101,20 @@ if "metrics" in plots:
 # *                                  Comm sizes                               *
 # *****************************************************************************
 if "comm_sizes" in plots:
-	graphs = ["LFR_om_{}".format(i) for i in range(1, 6)]
 	make_plot(
 		plot_type="swarm",
 		data=data["cover_comm_sizes"],
 		graphs="LFR_om_",
 		xlabel="",
 		algo_match="",
-		# add_algos=["ground_truth"],
-		title="Community Sizes" + ", PLM(1.0)",
+		# add_algos=["Ground_Truth"],
+		remove_algo_part=["Ego_PLM_Info_"],
+		title="Community Sizes",
 		file_name="communities/" + "comm_sizes",
 		x="algo",
 		hue="algo",
+		y="comm_size",
 		plot_args={
-			"y": "comm_size",
 		},
 		ax_set={
 			"ylim": (0, 10),
@@ -125,20 +128,21 @@ if "comm_sizes" in plots:
 # *                            Number of communities                          *
 # *****************************************************************************
 if "num_comms" in plots:
-	graphs = ["LFR_om_{}".format(i) for i in range(1, 6)]
 	make_plot(
 		data=data["cover_num_comms"],
 		graphs="LFR_om",
 		xlabel="om",
-		algo_match="PLM_1.0_triangles",
-		add_algos=["ground_truth", "OSLOM", "Ego_PLM_1.0_base", "Ego_PLM_1.0_base_clean_OSLOM"],
-		remove_algo_part="PLM_1.0_",
+		algo_match="Ego_",
+		add_algos=["Ground_Truth"],
+		remove_algo_part="Ego_PLM_",
 		title="Number of communities" + ", PLM(1.0)",
 		file_name="communities/" + "num_comms",
 		x="graph",
 		y="num_comms",
 		hue="algo",
 		plot_args={
+			"dashes": False,
+			"markers": False,
 		},
 		ax_set={
 			"ylim": 0,
@@ -172,6 +176,7 @@ if "ego_net_partitioning" in plots:
 				graphs="LFR_om",
 				xlabel="om",
 				algo_match=algo["filter"],
+				remove_algo_part="Ego_",
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/metrics/" + ego_metric + algo["file"],
 				x="graph",
@@ -179,6 +184,8 @@ if "ego_net_partitioning" in plots:
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
+					"dashes": False,
+					# "markers": False,
 				},
 				ax_set={
 					"ylim": (0, 1.05),
@@ -197,9 +204,9 @@ if "ego_net_partitioning" in plots:
 			title="Ego-Net Metrics, " + ego_metric,
 			file_name="ego_partition/2_dim_metrics/" + ego_metric,
 			x=x,
+			y="value",
 			hue=hue,
 			plot_args={
-				"y": "value",
 			},
 			ax_set={
 				"ylim": (0, 1.05),
@@ -222,6 +229,8 @@ if "ego_net_partitioning" in plots:
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
+					"dashes": False,
+					# "markers": False,
 					"markersize": 3,
 				},
 				ax_set={
@@ -242,5 +251,4 @@ if "ego_net_partitioning" in plots:
 # create_partition_counts_plots(data)
 #
 # create_egonet_plots(data)
-# TODO: alles direkt hierhin
 # plt.show()

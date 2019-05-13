@@ -115,10 +115,18 @@ def set_sns_style():
 
 
 def set_xticklabels(ax, xlabel):
-	if xlabel is "om":
-		ax.set_xticklabels([str(i) for i in range(1, 6)])
-	elif xlabel is "mu":
-		ax.set_xticklabels([str(i) for i in range(0, 51, 5)])
+	labels = ax.get_xticklabels()
+	def cut_label(label, xlabel):
+		i = label.find(xlabel) + len(xlabel)
+		return label[i:]
+
+	labels = [cut_label(l.get_text(), xlabel) for l in labels]
+	ax.set_xticklabels(labels)
+	# print([x.get_text() for x in ax.get_xticklabels(which='both')])
+	# if xlabel is "om":
+	# 	ax.set_xticklabels([str(i) for i in range(1, 6)])
+	# elif xlabel is "mu":
+	# 	ax.set_xticklabels([str(i) for i in range(0, 51, 5)])
 
 
 def set_layout(ax, legend_handles=None, legend_labels=None):

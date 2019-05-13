@@ -14,26 +14,15 @@ def write_results_to_file(benchmark_results, result_dir, metrics, append):
 		for metric in metrics:
 			metric_values.append(result.get_metric(metric))
 
-		line = create_line(result.get_algo_name(), result.get_graph_name(), *metric_values)
+		line = create_line(result.get_algo_name(), result.get_graph_name(),
+		                   result.get_graph_id(), *metric_values)
 		result_file.write(line)
 
 
 # Print output file headers
 def print_headers(result_dir, metrics):
 	with open(result_dir + 'metrics.result', 'w') as f:
-		f.write(create_line('algo', 'graph', *metrics))
-	# with open(result_dir + 'execution_info.result', 'w') as f:
-	# 	f.write(create_line('algo', 'graph', 'info_name', 'value'))
-	# ego_file = open(result_dir + 'ego_timings.result', 'w')
-	# s = 21
-	# ego_file.write('create EgoNets'.ljust(s) + 'a) assign IDs'.ljust(s)
-	#                + 'b) find triangles'.ljust(s) + 'c) cluster EgoNet'.ljust(s)
-	#                + 'd) compact EgoNet'.ljust(s) + 'e) EgoNet subsets'.ljust(s)
-	#                + 'f) EgoNet subsetCnt'.ljust(s) + 'g) clean up'.ljust(s)
-	#                + 'split Personas'.ljust(s) + 'connect Personas'.ljust(s)
-	#                + 'Persona Clustering'.ljust(s) + 'create Cover'.ljust(s)
-	#                + '\n')
-	# ego_file.close()
+		f.write(create_line('algo', 'graph', 'graph_id', *metrics))
 
 
 # Print a summary of the metric results in a compact form (table)

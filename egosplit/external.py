@@ -34,7 +34,9 @@ def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + '/infomap/Infomap', '-s', str(random.randint(-2**31, 2**31)), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
+		seed = random.randint(-2**31, 2**31)
+		seed = 7645231
+		subprocess.call([code_path + '/infomap/Infomap', '-s', str(seed), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
 		                stdout=dev_null)
 		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
@@ -69,14 +71,14 @@ def clusterOSLOM(G):
 		return result
 
 
-def cleanUpOSLOM(G, cover):
+def cleanUpOSLOM(G, cover, clean="merge", runs=1):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
 		cover_filename = os.path.join(tempdir, 'cover.dat')
 		graphio.CoverWriter().write(cover, cover_filename)
-		subprocess.call([code_path + '/OSLOM2/oslom_undir', '-r', '0', '-hr', '0', '-uw',
-		                 '-f', graph_filename, '-hint', cover_filename], stdout=dev_null)
+		subprocess.call([code_path + '/OSLOM_clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
+		                 '-f', graph_filename, '-hint', cover_filename, '-clean', clean, '-cr', str(runs)])
 		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
 		return result
 
@@ -111,6 +113,7 @@ def clusterGCE(G, alpha = 1.5):
 # https://github.com/vtraag/leidenalg
 def partitionLeiden(G, partition_type_name):
 		graph_i = convertToIgraph(G)
+		checkIgraph(G, graph_i)
 		if partition_type_name == "modularity":
 			partition_type = leidenalg.ModularityVertexPartition
 		elif partition_type_name == "surprise":
@@ -139,14 +142,26 @@ def convertToIgraph(G):
 		return graph_i
 
 
+def checkIgraph(G, graph_i):
+	try:
+		for u in G.nodes():
+			assert sorted(G.neighbors(u)) == sorted(graph_i.neighbors(u))
+		assert G.numberOfEdges() == graph_i.ecount()
+		edge_list = graph_i.get_edgelist()
+		for e in graph_i.es:
+			assert G.hasEdge(e.source, e.target)
+	except AssertionError as err:
+		print("Igraph is not identical to networkit graph!")
+		raise err
+
+
 def convertLeidenPartition(G, la_partition):
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(len(la_partition) + 1)
-	for i in range(0, len(la_partition)):
-		for u in la_partition[i]:
+	for i, nodes in enumerate(la_partition):
+		for u in nodes:
+			assert G.hasNode(u)
 			if G.hasNode(u):
-				if partition.contains(u):
-					print("Error")
 				partition.addToSubset(i, u)
 	return partition
 
@@ -322,23 +337,6 @@ def calc_entropy(G, cover, **entropy_args):
 		no_cover_bm = OverlapBlockState(gtGraph, edge_property)
 		print("No cover:", no_cover_bm.entropy(**entropy_args))
 
-		# for source, target, edge_id in gtGraph.get_edges():
-		# 	set_a = set(cover.subsetsOf(source))
-		# 	set_b = set(cover.subsetsOf(target))
-		# 	overlap = set_a.intersection(set_b)
-		# 	if overlap:
-		# 		comm_a = list(overlap)[0]
-		# 		comm_b = comm_a
-		# 	else:
-		# 		# Nodes have no common community
-		# 		comm_a = list(set_a)[0]
-		# 		comm_b = list(set_b)[0]
-		# 		if source > target:
-		# 			comm_a, comm_b = comm_b, comm_a
-		# 		# comm_a, comm_b = -1, -1
-		# 		# comm_a, comm_b = 0, 0
-		# 	edge_property[gtGraph.edge(source, target)] = [comm_a, comm_b]
-
 		edge_property_b = gtGraph.new_edge_property("vector<int>")
 		for source, target, edge_id in gtGraph.get_edges():
 			set_a = set(cover.subsetsOf(source))
@@ -355,5 +353,4 @@ def calc_entropy(G, cover, **entropy_args):
 
 		# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
 		# print("Minimize:", min_bm.entropy(**entropy_args))
-
 	return entropy

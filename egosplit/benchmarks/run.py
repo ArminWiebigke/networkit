@@ -7,7 +7,7 @@ from .evaluation.metrics import write_results_to_file, add_compact_results, \
 from .evaluation.ego_net_partition import analyse_ego_net_partitions
 from .evaluation.stream_to_gephi import stream_partition
 from .evaluation.cover_analysis import analyse_cover
-from .evaluation.cleanup import cleanup
+from .evaluation.cleanup import cleanup_test
 from .cover_benchmark import CoverBenchmark, MetricCache
 from .algorithms import *
 from .graph import BenchGraph, LFRGraph
@@ -17,7 +17,7 @@ import egosplit.benchmarks.evaluation.benchmark_metric as bm
 def start_benchmarks():
 	iterations = 1
 	append_results = False
-	# append_results = True
+	#append_results = True
 	evaluations = [
 		"metrics",
 		"cover",
@@ -59,10 +59,11 @@ def get_result_dir():
 
 
 def print_result_summary(summary):
-	if (summary):
+	if summary:
 		print_compact_results(summary, get_result_dir())
 
 
+# TODO: Mehr output: GraphID, timestamp
 def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 	result_dir = get_result_dir()
 	if "metrics" in evaluations:
@@ -96,7 +97,7 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 	if "stream_to_gephi" in evaluations:
 		stream_partition(graphs, benchmarks)
 	if "cleanup" in evaluations:
-		cleanup(benchmarks, result_dir)
+		cleanup_test(benchmarks, result_dir)
 
 
 # ************************************************************************************
@@ -119,10 +120,10 @@ def get_graphs(iterations):
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
 	# LFR_graph_args['0.3'] = {'N': 1000, 'k': 10, 'maxk': 50, 'mu': 0.3, 'minc': 5,
 	# 					   'maxc': 50, 'on': 100, 'om': 2}
-	for om in range(1, 7):
+	for om in range(5, 6):
 		LFR_graph_args['om_' + str(om)] = {
-			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 20, 'maxc': 100,
-			't1': 2, 't2': 2, 'mu': 0.2, 'on': 1000, 'om': om}
+			'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
+			't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
 	# for mu_factor in range(0, 51, 5):
 	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
 	# 		'N': 1000, 'k': 20, 'maxk': 50, 'minc': 10, 'maxc': 50,
@@ -138,52 +139,66 @@ def get_graphs(iterations):
 # ************************************************************************************
 def get_algos(storeEgoNets):
 	algos = []
-	# algos.append(GroundTruth())
+	algos.append(GroundTruth())
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm())
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
 	partition_algos = OrderedDict()
-	partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM_0.6'] = [lambda g: PLM(g, False, 0.6, "none").run().getPartition()]
-	# partition_algos['PLM_0.8'] = [lambda g: PLM(g, False, 0.8, "none").run().getPartition()]
-	partition_algos['PLM_1.0'] = [lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
-	# partition_algos['PLM_1.2'] = [lambda g: PLM(g, False, 1.2, "none").run().getPartition()]
-	# partition_algos['PLM_1.4'] = [lambda g: PLM(g, False, 1.4, "none").run().getPartition()]
+	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+	# partition_algos['PLM_1.0'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
+	partition_algos['PLM_Info'] = [
+		lambda g: PLM(g, True, 1.0, "none").run().getPartition(),
+		lambda g: clusterInfomap(g)]
 	# partition_algos['PLM_refine'] = [lambda g: PLM(g, True, 1.0, "none").run().getPartition()]
-	partition_algos['LPPotts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+	# partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
 	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, "surprise")]
 	# partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, "modularity")]
-	# partition_algos['Surprise_PLM'] = [
-	# 	lambda g: partitionLeiden(g, "surprise"),
-	# 	lambda g: PLM(g, False, 1.0, "none").run().getPartition()]
 
-	for p_algos in partition_algos.values():
-		p_algos.append(lambda g: PLM(g, False, 1.0, "none").run().getPartition())
+	# for p_algos in partition_algos.values():
+	# 	p_algos.append(lambda g: PLM(g, True, 1.0, "none").run().getPartition())
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
 	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM_large")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM_keep_1")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM_keep_10")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM_keep_25")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="OSLOM_merge")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim")
+	#algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_overl")
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_merge_gt")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_merge")
+	#algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_merge_all")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_merge_overl")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="tr_ol_mrg_ol")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_remove")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="trim_ol_remove")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="entropy")
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="entropy_merge")
+	#algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up="entropy_all")
 
 	return algos
 
 
-def get_ego_parameters(storeEgoNets):
+def get_ego_parameters(store_ego_nets):
 	ego_parameters = OrderedDict()
 	standard = {
 		"weightFactor": 0,
 		"weightOffset": 1,
-		"storeEgoNet": "Yes" if storeEgoNets else "No",
+		"storeEgoNet": "Yes" if store_ego_nets else "No",
 		"addEgoNode": "No",
 		"processEgoNet": "none",
 		"addNodesFactor": 0,
 		"addNodesExponent": 0,
 		"weightedEgoNet": "No",
+		"partitionFromGroundTruth": "No",
 	}
 	extend_standard = {
 		**standard,
@@ -212,8 +227,12 @@ def get_ego_parameters(storeEgoNets):
 		"triangleThreshold": 0,
 	}
 
-	ego_parameters['base'] = standard
-	ego_parameters['edges'] = {
+	# ego_parameters['base'] = standard
+	# ego_parameters['gt'] = {
+	# 	**standard,
+	# 	"partitionFromGroundTruth": "Yes",
+	# }
+	ego_parameters[''] = {
 		**edge_scores_standard,
 	}
 	# ego_parameters['edges_dir'] = {
@@ -287,8 +306,9 @@ def create_egosplit_algorithms(partition_algos, ego_parameters, clean_up=""):
 	algos = []
 	for part_name in partition_algos:
 		for para_name, parameters in ego_parameters.items():
+			name = "{}{}{}".format(part_name, "_" if para_name else "", para_name)
 			algos.append(EgoSplitAlgorithm(
-				part_name + "_" + para_name,
+				name,
 				{key.encode("utf-8"): str(value).encode("utf-8")
 				 for (key, value) in parameters.items()},
 				*partition_algos[part_name],
@@ -307,5 +327,3 @@ def create_benchmarks(graphs, algos):
 def run_benchmarks(benchmarks):
 	for benchmark in benchmarks:
 		benchmark.run()
-
-

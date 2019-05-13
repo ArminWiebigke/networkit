@@ -728,14 +728,14 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-//    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
-//    Graph G = gen.generate();
+    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+    Graph G = gen.generate();
 //	EdgeListReader reader('\t', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 //	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
 //								 G);
-	EdgeListReader reader(' ', 0);
-	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
+//	EdgeListReader reader(' ', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
 
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
