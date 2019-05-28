@@ -1,10 +1,7 @@
-from plot_scripts.comm_sizes import create_comm_sizes_plots
-from plot_scripts.comms_per_node import create_node_comms_plots
-from plot_scripts.egonet import create_egonet_plots
-from plot_scripts.read_data import read_data
-from plot_scripts.config import set_sns_style
-from plot_scripts.base_plot import make_plot
-from plot_scripts.comm_sizes import metric_names
+from egosplit.plot_scripts.read_data import read_data
+from egosplit.plot_scripts.config import set_sns_style
+from egosplit.plot_scripts.base_plot import make_plot, PlotType
+from egosplit.plot_scripts.comm_sizes import metric_names
 
 
 print("Reading results...")
@@ -15,8 +12,8 @@ print("Creating plots...")
 plots = [
 	"metrics",
 	"comm_sizes",
-	# "num_comms",
-	# "ego_net_partitioning",
+	"num_comms",
+	"ego_net_partitioning",
 ]
 
 
@@ -27,8 +24,8 @@ if "metrics" in plots:
 	metrics = [
 		'time',
 		'nmi',
-		# 'f1',
-		# 'f1_rev',
+		'f1',
+		'f1_rev',
 		# 'entropy',
 		# 'entropy2',
 		# 'entropy3',
@@ -37,13 +34,14 @@ if "metrics" in plots:
 	for metric in metrics:
 		# break
 		make_plot(
+			# plot_type=PlotType.bar,
 			data=data["metrics"],
-			graphs="LFR_om",
+			graphs="",
 			xlabel="om",
-			algo_match="",
+			algo_match="Ego",
 			# add_algos=["OSLOM"],
-			remove_algo_part="Ego_PLM_Info_",
-			title=metric_names[metric]["description"],
+			remove_algo_part=["Ego_PLM_Info_", "Info_"],
+			title=metric_names[metric]["description"] + ", Clean up with OSLOM",
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
 			y=metric,
@@ -51,6 +49,7 @@ if "metrics" in plots:
 			plot_args={
 				"dashes": False,
 				# "markers": False,
+				"ci": "sd",
 			},
 			ax_set={
 				"ylim": metric_names[metric]["ylim"],
@@ -102,24 +101,28 @@ if "metrics" in plots:
 # *****************************************************************************
 if "comm_sizes" in plots:
 	make_plot(
-		plot_type="swarm",
+		plot_type=PlotType.swarm,
 		data=data["cover_comm_sizes"],
-		graphs="LFR_om_",
-		xlabel="",
+		graphs="",
+		# xlabel="om",
 		algo_match="",
 		# add_algos=["Ground_Truth"],
 		remove_algo_part=["Ego_PLM_Info_"],
-		title="Community Sizes",
+		title="Community Sizes" + ", Clean up with OSLOM",
 		file_name="communities/" + "comm_sizes",
-		x="algo",
+		one_plot_per_graph=True,
+		x="graph",
 		hue="algo",
 		y="comm_size",
 		plot_args={
+			# "size": 2.5,
+			"dodge": True,
 		},
 		ax_set={
-			"ylim": (0, 10),
+			# "ylim": (2, 8),
+			"ylim": 2,
 			"ylabel": "size (log2)",
-			"xticklabels": [""],
+			# "xticklabels": [""],
 		}
 	)
 
@@ -129,20 +132,21 @@ if "comm_sizes" in plots:
 # *****************************************************************************
 if "num_comms" in plots:
 	make_plot(
+		# plot_type=PlotType.bar,
 		data=data["cover_num_comms"],
-		graphs="LFR_om",
-		xlabel="om",
-		algo_match="Ego_",
-		add_algos=["Ground_Truth"],
-		remove_algo_part="Ego_PLM_",
+		graphs="",
+		# xlabel="om",
+		algo_match="",
+		# add_algos=["Ground_Truth"],
+		remove_algo_part=["Ego_PLM_"],
 		title="Number of communities" + ", PLM(1.0)",
 		file_name="communities/" + "num_comms",
 		x="graph",
 		y="num_comms",
 		hue="algo",
 		plot_args={
-			"dashes": False,
-			"markers": False,
+			# "dashes": False,
+			# "markers": False,
 		},
 		ax_set={
 			"ylim": 0,
@@ -172,11 +176,12 @@ if "ego_net_partitioning" in plots:
 		# break
 		for algo in algos:
 			make_plot(
+				# plot_type=PlotType.bar,
 				data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
-				graphs="LFR_om",
+				graphs="",
 				xlabel="om",
 				algo_match=algo["filter"],
-				remove_algo_part="Ego_",
+				remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_remove"],
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/metrics/" + ego_metric + algo["file"],
 				x="graph",
@@ -188,7 +193,8 @@ if "ego_net_partitioning" in plots:
 					# "markers": False,
 				},
 				ax_set={
-					"ylim": (0, 1.05),
+					# "ylim": (0, 1.05),
+					"ylim": 0,
 				}
 			)
 
@@ -218,23 +224,26 @@ if "ego_net_partitioning" in plots:
 		# break
 		for algo in algos:
 			make_plot(
+				plot_type=PlotType.bar,
 				data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
-				graphs="LFR_om",
+				graphs="",
 				# xlabel="om",
 				algo_match=algo["filter"],
+				remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_remove"],
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/ego_metrics/" + ego_metric + algo["file"],
-				x="ego_net_size",
+				x="num_comms",
 				y="value",
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
-					"dashes": False,
+					# "dashes": False,
 					# "markers": False,
-					"markersize": 3,
+					# "markersize": 3,
 				},
 				ax_set={
-					"ylim": (0, 1.05),
+					# "ylim": (0, 1.05),
+					"ylim": 0,
 				}
 			)
 
