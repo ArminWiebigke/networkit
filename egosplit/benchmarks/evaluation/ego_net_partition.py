@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import copy
 
 from networkit import none
 from egosplit.benchmarks.evaluation.output import *
@@ -48,6 +49,7 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 		"graph",
 		"node",
 		"ego_net_size",
+		"num_comms",
 		"metric_name",
 		"value",
 	))
@@ -63,7 +65,7 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
                               out_metrics):
 	try:
-		ego_net_partitions = benchmark.algo.getEgoNetPartitions()
+		ego_net_partitions = benchmark.algo.ego_net_partition_of(0)
 	except AttributeError:
 		return
 	ground_truth = benchmark.get_ground_truth()
@@ -75,7 +77,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
 		# Remove all nodes that are not neighbors of the ego-node
-		node_partition_map = ego_net_partitions[u]
+		node_partition_map = copy(benchmark.algo.ego_net_partition_of(u))
 		nodes = list(node_partition_map.keys())
 		for v in nodes:
 			if not graph.hasEdge(u, v):
@@ -83,11 +85,16 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 
 		partitions, best_communities, community_sizes = calculate_partition_properties(
 			ground_truth, truth_communities, node_partition_map)
+		truth_communities = set([c for c in truth_communities if community_sizes[c] > 0])
+		if not truth_communities:
+			continue
+		num_communities = len(truth_communities)
 		ego_sums = defaultdict(lambda: 0)
 		ego_sums["num_external_nodes"] = count_external_nodes(ground_truth, truth_communities, nodes)
+
+		# Are communities split into multiple partitions?
 		# TODO: Anzahl Communities, die eine Partition dominieren -> sinnvolle Personas
 		# TODO: +1 wenn p beste Part. von Com. c und c dominiert p (Optimalfall)
-		# Are communities split into multiple partitions?
 		result_list_comm = check_community_partitioning(
 			ground_truth, partitions, community_sizes, truth_communities)
 		ego_sums["num_comms"] = len(truth_communities)
@@ -134,6 +141,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 				graph_name,
 				u,
 				ego_net_size,
+				num_communities,
 				key,
 				value,
 			))
@@ -146,6 +154,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 				graph_name,
 				u,
 				ego_net_size,
+				num_communities,
 				key,
 				value,
 			))
@@ -170,17 +179,17 @@ def calc_metrics(sums):
 			return default
 		return a / b
 	metrics = {
-		"community_cohesion": (1 - sums["comm_incorrect"] / sums["comm_size"]) ** 4,
-		"parts_per_comm": sums["num_comms"] / sums["parts_per_comm"],
-		"comms_per_part": safe_div(sums["num_partitions"], sums["comms_per_part"], 1),
-		"merged_external_nodes": (1 - safe_div(sums["part_incorrect_ext"],
-		                                             sums["num_external_nodes"])) ** 4,
-		"partition_exclusivity": (1 - safe_div(sums["part_incorrect_gt"],
-		                                              sums["partition_size"])) ** 4
+		"community_cohesion": sums["comm_incorrect"] / sums["comm_size"],
+		"parts_per_comm": sums["parts_per_comm"] / sums["num_comms"],
+		"comms_per_part": safe_div(sums["comms_per_part"], sums["num_partitions"], 1),
+		"merged_external_nodes": safe_div(sums["part_incorrect_ext"],
+		                                             sums["num_external_nodes"]),
+		"partition_exclusivity": safe_div(sums["part_incorrect_gt"],
+		                                              sums["partition_size"]),
 	}
-	a = metrics["community_cohesion"]
-	b = metrics["partition_exclusivity"]
-	metrics["ego_partitioning_score"] = 2 * a * b / (a + b)
+	a = 1 - metrics["community_cohesion"]
+	b = 1 - metrics["partition_exclusivity"]
+	metrics["ego_partitioning_score"] = 1 - 2 * a * b / (a + b)
 	return metrics
 
 
@@ -224,15 +233,11 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 	max_community_cnts = {}
 	for c in truth_communities:
 		max_community_cnts[c] = 0
-	community_sizes = {}
-	for c in truth_communities:
-		community_sizes[c] = 0
+	community_sizes = defaultdict(lambda: 0)
 	best_communities = []  # for each partition: the ground truth community with the most nodes
-	community_cnts = []  # for each partition: number of nodes for each ground truth community
+	community_cnts = []    # for each partition: number of nodes for each ground truth community
 	for p_id, partition in enumerate(partitions):
-		community_cnts.append(dict())
-		for c in truth_communities:
-			community_cnts[p_id][c] = 0
+		community_cnts.append(defaultdict(lambda: 0))
 		for v in partition:
 			comms = truth_communities.intersection(ground_truth.subsetsOf(v))
 			for c in comms:

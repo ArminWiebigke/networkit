@@ -9,6 +9,8 @@ class BenchGraph:
 	"""
 	global_id = 0
 	def __init__(self, graph, ground_truth, name, parameters=""):
+		print("Graph '{}' with {} nodes and {} edges".format(name, graph.numberOfNodes(),
+		                                                   graph.numberOfEdges()))
 		self.graph = graph
 		self.ground_truth = ground_truth
 		self.name = name

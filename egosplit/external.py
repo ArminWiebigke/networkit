@@ -13,10 +13,12 @@ from networkit import graph
 from networkit import graphio
 from networkit import community
 from networkit import structures
+from networkit import none
 
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
+graphs_path = home_path + '/graphs'
 dev_null = open(os.devnull, 'w')
 
 
@@ -71,16 +73,36 @@ def clusterOSLOM(G):
 		return result
 
 
-def cleanUpOSLOM(G, cover, clean="merge", runs=1):
+def cleanUpOSLOM(G, cover, clean_bad='remove', runs=1, cleanup_strategy='both',
+                 check_minimality=False, simple_cleanup=True, max_extend=2, tolerance=0.1):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
 		cover_filename = os.path.join(tempdir, 'cover.dat')
 		graphio.CoverWriter().write(cover, cover_filename)
-		subprocess.call([code_path + '/OSLOM_clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
-		                 '-f', graph_filename, '-hint', cover_filename, '-clean', clean, '-cr', str(runs)])
+		bad_groups_filename = os.path.join(tempdir, 'bad_groups.txt')
+		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw', '-singlet',
+		          '-f', graph_filename, '-hint', cover_filename,
+		          '-t', str(tolerance),
+		          '-clean_bad', clean_bad,
+		          '-cr', str(runs),
+		          '-cu_strat', cleanup_strategy,
+		          '-max_extend', str(max_extend),
+		          '-bad_groups', bad_groups_filename
+		          ]
+		if check_minimality:
+			params.append('-min')
+		if not simple_cleanup:
+			params.append('-equiv_cup')
+		print(params)
+		subprocess.call(params)
 		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
-		return result
+		bad_groups_file = open(bad_groups_filename, 'r')
+		bad_groups = []
+		for group in bad_groups_file:
+			nodes = group.split(' ')[:-1]  # Last item is the newline character
+			bad_groups.append([int(u) for u in nodes])
+		return result, bad_groups
 
 
 # https://sites.google.com/site/aaronmcdaid/downloads
@@ -95,13 +117,15 @@ def clusterMOSES(G):
 
 
 # https://sites.google.com/site/greedycliqueexpansion/ (Use Ubuntu 9.10 binary)
-def clusterGCE(G, alpha = 1.5):
+def clusterGCE(G, alpha=1.5, min_clique=4):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.edgelist')
 		cover_filename = os.path.join(tempdir, 'cover.txt')
 		cover_file = open(cover_filename, 'x')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		subprocess.call([code_path + '/GCECommunityFinder/GCECommunityFinderUbuntu910', graph_filename, '4', '0.6', str(alpha), '.75'], stdout=cover_file)
+		subprocess.call([code_path + '/GCECommunityFinder/GCECommunityFinderUbuntu910',
+		                 graph_filename, str(min_clique), '0.6', str(alpha), '.75'],
+		                stdout=cover_file)
 		cover_file.close()
 		C = graphio.CoverReader().read(cover_filename, G)
 		# for u in G.nodes():
@@ -110,13 +134,29 @@ def clusterGCE(G, alpha = 1.5):
 		return C
 
 
+def covertCoverToPartition(G, cover):
+	partition = structures.Partition(G.upperNodeIdBound())
+	partition.setUpperBound(G.upperNodeIdBound())
+	singleton_idx = cover.upperBound()
+
+	for u in G.nodes():
+		comms = cover.subsetsOf(u)
+		if comms:
+			partition.addToSubset(comms.pop(), u)
+		else:
+			partition.addToSubset(singleton_idx, u)
+			singleton_idx += 1
+
+	return partition
+
+
 # https://github.com/vtraag/leidenalg
 def partitionLeiden(G, partition_type_name):
 		graph_i = convertToIgraph(G)
 		checkIgraph(G, graph_i)
-		if partition_type_name == "modularity":
+		if partition_type_name == 'modularity':
 			partition_type = leidenalg.ModularityVertexPartition
-		elif partition_type_name == "surprise":
+		elif partition_type_name == 'surprise':
 			partition_type = leidenalg.SurpriseVertexPartition
 		else:
 			raise RuntimeError
@@ -127,7 +167,7 @@ def partitionLeiden(G, partition_type_name):
 		# Convert to networkit.Partition
 		# partition_filename = os.path.join('./partition.dat')
 		# writeLeidenPartition(G, partition_i, partition_filename)
-		# partition = community.readCommunities(partition_filename, "edgelist-s0")
+		# partition = community.readCommunities(partition_filename, 'edgelist-s0')
 		# partition = community.PartitionReader().read(partition_filename)
 		# partition = readLeidenPartition(partition_filename)
 		return partition
@@ -151,7 +191,7 @@ def checkIgraph(G, graph_i):
 		for e in graph_i.es:
 			assert G.hasEdge(e.source, e.target)
 	except AssertionError as err:
-		print("Igraph is not identical to networkit graph!")
+		print('Igraph is not identical to networkit graph!')
 		raise err
 
 
@@ -181,7 +221,7 @@ def writeLeidenPartition(G, partition, filename):
 			raise RuntimeError
 		if len(pid) == 1:
 			file.write(str(pid[0]))
-		file.write("\n")
+		file.write('\n')
 
 
 # https://sites.google.com/site/andrealancichinetti/files
@@ -246,35 +286,54 @@ def calc_NMI(graph, cover, ref_cover):
 	return nmi_val
 
 
+def getFacebookGraph(name, clean=False):
+	f_graph = graphio.readMat(graphs_path + '/facebook100/{0}.mat'.format(name), key='A')
+	cover = structures.Cover(f_graph.upperNodeIdBound())
+	attributes = ['student_fac', 'gender', 'major_index', 'second_major', 'dorm', 'year',
+	              'high_school']
+	id_offset = 0
+	for attribute in attributes:
+		partition = getFacebookData(name, attribute)
+		cover.setUpperBound(cover.upperBound() + partition.upperBound())
+		for u in f_graph.nodes():
+			p_id = partition.subsetOf(u)
+			if p_id != none:
+				cover.addToSubset(id_offset + p_id, u)
+		id_offset = cover.upperBound()
+
+	if clean:
+		from egosplit.benchmarks.cleanup import remove_small_comms
+		cover = remove_small_comms(f_graph, cover)
+	return f_graph, cover
+
+
 def getFacebookData(name, attribute):
 	attribute_dict = {
-		'student_fac' : 0,
-		'gender' : 1,
-		'major_index' : 2,
-		'second_major' : 3,
-		'dorm' : 4,
-		'year' : 5,
-		'high_school' : 6,
-		}
+		'student_fac': 0,
+		'gender': 1,
+		'major_index': 2,
+		'second_major': 3,
+		'dorm': 4,
+		'year': 5,
+		'high_school': 6,
+	}
 
 	if attribute not in attribute_dict:
 		raise Exception('Attribute {0} not found'.format(attribute))
 
-	fileName = home_path + '/graphs/facebook100/{0}.mat'.format(name)
+	fileName = graphs_path + '/facebook100/{0}.mat'.format(name)
 	matlabObject = scipy.io.loadmat(fileName)
 	col = attribute_dict[attribute]
 	n = matlabObject['local_info'].shape[0]
 	P = structures.Partition(n)
-	for u, a in enumerate(matlabObject['local_info'][:,col]):
+	for u, a in enumerate(matlabObject['local_info'][:, col]):
 		a = max(0, a)
+		if a == 0:
+			continue
 		if a >= P.upperBound():
-			P.setUpperBound(a+1)
+			P.setUpperBound(a + 1)
 		P.addToSubset(a, u)
 	return P
-
-
-def getFacebookGraph(name):
-	return graphio.readMat(home_path + '/graphs/facebook100/{0}.mat'.format(name), key='A')
 
 
 def get_filename(filename, clean):
@@ -295,34 +354,34 @@ def remove_small_communities(filename):
 
 # https://snap.stanford.edu/data/
 def getAmazonGraph5000(clean=False):
-	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	filename = code_path + '/graphs/com-amazon.top5000.cmty.txt'
+	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	filename = graphs_path + '/com-amazon.top5000.cmty.txt'
 	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
 def getAmazonGraphAll(clean=False):
-	g = graphio.readGraph(code_path + '/graphs/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	filename = code_path + '/graphs/com-amazon.all.dedup.cmty.txt'
+	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	filename = graphs_path + '/com-amazon.all.dedup.cmty.txt'
 	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
 def getDBLPGraph():
-	g = graphio.readGraph(code_path + '/graphs/com-dblp.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(code_path + '/graphs/com-dblp.top5000.cmty.txt', g)
+	g = graphio.readGraph(graphs_path + '/com-dblp.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	c = graphio.CoverReader().read(graphs_path + '/com-dblp.top5000.cmty.txt', g)
 	return g, c
 
 
 def getLiveJournalGraph():
-	g = graphio.readGraph(code_path + '/graphs/com-lj.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(code_path + '/graphs/com-lj.top5000.cmty.txt', g)
+	g = graphio.readGraph(graphs_path + '/com-lj.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	c = graphio.CoverReader().read(graphs_path + '/com-lj.top5000.cmty.txt', g)
 	return g, c
 
 
 def getOrkutGraph():
-	g = graphio.readGraph(code_path + '/graphs/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(code_path + '/graphs/com-orkut.top5000.cmty.txt', g)
+	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	c = graphio.CoverReader().read(graphs_path + '/com-orkut.top5000.cmty.txt', g)
 	return g, c
 
 
@@ -331,13 +390,13 @@ def calc_entropy(G, cover, **entropy_args):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graphPath = os.path.join(tempdir, 'graph.txt')
 		graphio.writeGraph(G, graphPath, fileformat=graphio.Format.GraphML)
-		gtGraph = graph_tool.load_graph(graphPath, "graphml")
+		gtGraph = graph_tool.load_graph(graphPath, 'graphml')
 
-		edge_property = gtGraph.new_edge_property("vector<int>")
+		edge_property = gtGraph.new_edge_property('vector<int>')
 		no_cover_bm = OverlapBlockState(gtGraph, edge_property)
-		print("No cover:", no_cover_bm.entropy(**entropy_args))
+		print('No cover:', no_cover_bm.entropy(**entropy_args))
 
-		edge_property_b = gtGraph.new_edge_property("vector<int>")
+		edge_property_b = gtGraph.new_edge_property('vector<int>')
 		for source, target, edge_id in gtGraph.get_edges():
 			set_a = set(cover.subsetsOf(source))
 			set_b = set(cover.subsetsOf(target))
@@ -349,8 +408,8 @@ def calc_entropy(G, cover, **entropy_args):
 
 		block_state_b = OverlapBlockState(gtGraph, edge_property_b)
 		entropy = block_state_b.entropy(**entropy_args)
-		print("Cover entropy:", entropy)
+		print('Cover entropy:', entropy)
 
 		# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
-		# print("Minimize:", min_bm.entropy(**entropy_args))
+		# print('Minimize:', min_bm.entropy(**entropy_args))
 	return entropy

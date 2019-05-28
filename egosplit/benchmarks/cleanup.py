@@ -1,3 +1,4 @@
+from copy import copy
 from random import randint
 from collections import OrderedDict, defaultdict
 
@@ -7,9 +8,99 @@ from networkit import none
 from egosplit.external import calc_entropy
 
 
+def poss_combs(x):
+	return x * (x - 1) / 2
+
+
+# Merge highly connected partitions
+def partition_merge(G, input_partition):
+	# return input_partition
+	result = copy(input_partition)
+	continue_merge = True
+	while continue_merge:
+		continue_merge = False
+		print("Merge partitions")
+		partition_sets = [set() for _ in range(result.upperBound())]
+		for u in G.nodes():
+			part_id = result.subsetOf(u)
+			partition_sets[part_id].add(u)
+		partitions = [(i, p) for (i, p) in enumerate(partition_sets) if len(p) > 1]
+
+		cuts = [defaultdict(lambda: 0) for _ in range(result.upperBound())]
+		for u in G.nodes():
+			part_id = result.subsetOf(u)
+			for v in G.neighbors(u):
+				cuts[part_id][result.subsetOf(v)] += 1
+
+		partition_values = [defaultdict(lambda: 0.0) for _ in range(result.upperBound())]
+		for part_id, partition in partitions:
+			print(part_id, partition)
+			internal_degree = cuts[part_id][part_id] / 2
+			part_size = len(partition)
+			if part_size > 1:
+				internal_density = internal_degree / poss_combs(part_size)
+			else:
+				internal_density = 1
+			partition_values[part_id]["density"] = internal_density
+			partition_values[part_id]["edges"] = internal_degree
+			partition_values[part_id]["size"] = part_size
+
+		for id_a, part_a in partitions:
+			print(id_a)
+			print(partition_values[id_a])
+			density = partition_values[id_a]["density"]
+			for id_b, part_b in partitions:
+				print("\t", id_b)
+				if id_a == id_b:
+					continue
+				if cuts[id_a][id_b] <= 2:
+					continue
+
+				size_a = partition_values[id_a]["size"]
+				size_b = partition_values[id_b]["size"]
+				combined_size = size_a + size_b
+				edges_a = partition_values[id_a]["edges"]
+				edges_b = partition_values[id_b]["edges"]
+				cut = cuts[id_a][id_b]
+				combined_edges = edges_a + edges_b + cut
+				merge = False
+
+				cut_density = cut / (size_a * size_b)
+				# if cut_density / density > 0.8:
+				# 	merge = True
+
+				separate_density = (edges_a + edges_b) / (poss_combs(size_a) + poss_combs(size_b))
+				combined_density = combined_edges / poss_combs(combined_size)
+				print("\t\t{}-{}: {}".format(size_a, size_b, cut), cut_density, separate_density, combined_density, sep=", ")
+				if cut_density > 0.1:
+					merge = True
+
+				internal_degree_sum = partition_values[id_a]["edges"] + partition_values[id_b]["edges"]
+				combined_degree = internal_degree_sum + cuts[id_a][id_b]
+				combined_size = partition_values[id_a]["size"] + partition_values[id_b]["size"]
+				combined_density = combined_degree / (combined_size * (combined_size - 1))
+				# if cut_density / separate_density > 0.4:
+				# 	merge = True
+				# if combined_density / separate_density > 0.7:
+				# 	merge = True
+
+				# print("\t\t", cut, cut_density, density, partition_values[id_a]["size"], partition_values[id_b]["size"], sep=", ")
+				if merge:
+					# merge partitions
+					print("############### Merge {} and {} ################".format(id_a, id_b))
+					for u in part_b:
+						result.moveToSubset(id_a, u)
+					continue_merge = True
+				if continue_merge:
+					break
+			if continue_merge:
+				break
+	return result
+
+
 # Remove node from a community if this decreases the entropy.
 def entropy_trim(G, cover):
-	cover = cover.__copy__()
+	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 
 	entropy = calc_entropy(G, cover)
@@ -46,7 +137,7 @@ def entropy_trim(G, cover):
 
 # Remove communities if this decreases the entropy.
 def remove_comms_entropy(G, cover):
-	cover = cover.__copy__()
+	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 
 	entropy = calc_entropy(G, cover)
@@ -70,8 +161,89 @@ def remove_comms_entropy(G, cover):
 
 # TODO: Merge und Trim verbinden?
 # Merge communities together if they are strongly connected.
-def merge_comms_entropy(G, cover):
-	cover = cover.__copy__()
+# def merge_comms_entropy_from_cover(G, cover):
+# 	cover = copy(cover)
+# 	communities = get_community_vector(G, cover)
+# 	comm_sizes = [len(c) for c in communities]
+# 	size_map = cover.subsetSizeMap()
+# 	for i, c in enumerate(communities):
+# 		if len(c) == 0:
+# 			continue
+# 		assert(size_map[i] == comm_sizes[i])
+# 		assert(size_map[i] == len(c))
+# 	print(comm_sizes)
+# 	entropy = calc_entropy(G, cover)
+# 	for c_id, community in enumerate(communities):
+# 		max_comm_size = 50
+# 		if len(community) >= max_comm_size or len(community) == 0:  # Only for the specific LFR graph
+# 			continue
+# 		community_changed = True
+# 		while community_changed:
+# 			community_changed = False
+# 			cuts = community_cut(G, cover, comm_sizes, community, c_id)
+# 			iterations = 3
+# 			for cut_score, other_id in cuts:
+# 				assert(cut_score <= 2.0)
+# 				if cut_score < 0.07:  # Always useful?
+# 					break
+# 				if comm_sizes[other_id] > max_comm_size:
+# 					continue
+# 				if comm_sizes[other_id] < comm_sizes[c_id]:
+# 					print("Skip {} -> {} ({})".format(
+# 						comm_sizes[c_id], comm_sizes[other_id], cut_score))
+# 					continue
+# 				if iterations <= 0:
+# 					break
+# 				iterations -= 1
+# 				print(cut_score)
+# 				new_cover = copy(cover)
+# 				other_comm = communities[other_id]
+# 				for v in other_comm - community:
+# 					new_cover.addToSubset(c_id, v)
+# 				for v in other_comm:
+# 					new_cover.removeFromSubset(other_id, v)
+#
+# 				new_entropy = calc_entropy(G, new_cover)
+# 				overlap = len(communities[c_id].intersection(communities[other_id]))
+# 				overlap /= min(comm_sizes[c_id], comm_sizes[other_id])
+# 				if overlap >= 0.5:
+# 					out_file = open("./results/comm_overlap.out", 'a')
+# 					out_str = "IDs: {} {}, Sizes: {} {}, OL: {:.2f}, Score: {:.2f}, " \
+# 					          "Entr:{:.2f}\n"
+# 					out_file.write(out_str.format(
+# 						c_id, other_id, comm_sizes[c_id], comm_sizes[other_id],
+# 						overlap, cut_score, new_entropy - entropy
+# 					))
+# 					out_file.close()
+# 				if new_entropy < entropy:
+# 					print("\tMerge community with score {} #####".format(cut_score))
+# 					entropy = new_entropy
+# 					cover = new_cover
+# 					comm_sizes[c_id] = len(community.union(other_comm))
+# 					for u in other_comm:
+# 						community.add(u)
+# 					other_comm.clear()
+# 					comm_sizes[other_id] = 0
+# 					community_changed = True
+# 					break
+# 	return cover
+
+
+# Merge communities together if they are strongly connected.
+def merge_comms_entropy(G, cover, bad_groups):
+	cover = copy(cover)
+	good_comms = defaultdict(lambda: True)
+	good_group_bound = cover.upperBound()
+	bad_groups.sort(key=len)
+	cover.setUpperBound(good_group_bound + len(bad_groups))
+	bad_groups = list(enumerate(bad_groups, good_group_bound))
+
+	# Add bad groups to cover
+	for id, bad_group in bad_groups:
+		good_comms[id] = False
+		for u in bad_group:
+			cover.addToSubset(id, u)
+
 	communities = get_community_vector(G, cover)
 	comm_sizes = [len(c) for c in communities]
 	size_map = cover.subsetSizeMap()
@@ -83,8 +255,7 @@ def merge_comms_entropy(G, cover):
 	print(comm_sizes)
 	entropy = calc_entropy(G, cover)
 	for c_id, community in enumerate(communities):
-		max_comm_size = 50
-		if len(community) >= max_comm_size or len(community) == 0:  # Only for the specific LFR graph
+		if c_id < good_group_bound or len(community) == 0:
 			continue
 		community_changed = True
 		while community_changed:
@@ -92,18 +263,23 @@ def merge_comms_entropy(G, cover):
 			cuts = community_cut(G, cover, comm_sizes, community, c_id)
 			iterations = 3
 			for cut_score, other_id in cuts:
-				assert(cut_score <= 2.0)
-				if cut_score < 0.07:  # Always useful?
+				if cut_score < 0.1:  # Always useful?
 					break
-				if comm_sizes[other_id] < comm_sizes[c_id]:
-					print("Skip {} -> {} ({})".format(
-						comm_sizes[c_id], comm_sizes[other_id], cut_score))
+				if other_id < good_group_bound:
 					continue
+				if other_id >= c_id:
+					print("Skip {} -> {} ({})".format(c_id, other_id, cut_score))
+					continue
+				# if comm_sizes[other_id] < comm_sizes[c_id]:
+				# 	print("Skip {} -> {} ({})".format(
+				# 		comm_sizes[c_id], comm_sizes[other_id], cut_score))
+				# 	continue
 				if iterations <= 0:
 					break
+				print("{} -> {} ({})".format(c_id, other_id, cut_score))
 				iterations -= 1
 				print(cut_score)
-				new_cover = cover.__copy__()
+				new_cover = copy(cover)
 				other_comm = communities[other_id]
 				for v in other_comm - community:
 					new_cover.addToSubset(c_id, v)
@@ -124,6 +300,8 @@ def merge_comms_entropy(G, cover):
 					out_file.close()
 				if new_entropy < entropy:
 					print("\tMerge community with score {} #####".format(cut_score))
+					good_comms[c_id] = True
+					good_comms[other_id] = True
 					entropy = new_entropy
 					cover = new_cover
 					comm_sizes[c_id] = len(community.union(other_comm))
@@ -133,13 +311,19 @@ def merge_comms_entropy(G, cover):
 					comm_sizes[other_id] = 0
 					community_changed = True
 					break
+
+	# Remove bad groups that were never merged
+	for id, bad_group in bad_groups:
+		if not good_comms[id]:
+			for u in bad_group:
+				cover.removeFromSubset(id, u)
 	return cover
 
 
 # For each found community, calculate the best fitting ground truth community.
 # Then remove all nodes from the community that are not in the ground truth community.
 def trim_comms(G, ground_truth, cover):
-	cover = cover.__copy__()
+	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 	gt_communities = get_community_vector(G, ground_truth)
 
@@ -152,10 +336,9 @@ def trim_comms(G, ground_truth, cover):
 
 
 # Remove communities of size smaller than 5.
-def remove_small_comms(G, cover):
-	cover = cover.__copy__()
+def remove_small_comms(G, cover, min_size=5):
+	cover = copy(cover)
 
-	min_size = 5
 	communities = [set() for _ in range(cover.upperBound())]
 	for u in G.nodes():
 		for c in cover.subsetsOf(u):
@@ -173,7 +356,7 @@ def remove_small_comms(G, cover):
 # Merge all communities that have the same ground truth community as their best fitting
 # community.
 def merge_gt_comms(G, ground_truth, cover):
-	cover = cover.__copy__()
+	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 	gt_communities = get_community_vector(G, ground_truth)
 
@@ -194,7 +377,7 @@ def merge_gt_comms(G, ground_truth, cover):
 
 # Merge a community A into another community B if most nodes of A are already in B
 def merge_overlap_comms(G, cover):
-	cover = cover.__copy__()
+	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 	for a, comm_a in enumerate(communities):
 		candidates = []
@@ -205,7 +388,7 @@ def merge_overlap_comms(G, cover):
 			if not common_nodes:
 				continue
 			overlap = len(common_nodes) / min(len(comm_a), len(comm_b))
-			if overlap >= 1.0:
+			if overlap >= 0.8:
 				candidates.append((overlap, b))
 		# Merge with the community with the highest overlap
 		if candidates:
@@ -218,6 +401,17 @@ def merge_overlap_comms(G, cover):
 			for u in comm_b:
 				cover.removeFromSubset(b, u)
 			comm_b.clear()
+	return cover
+
+
+def add_communities(cover, comms):
+	cover = copy(cover)
+	comm_id = cover.upperBound()
+	cover.setUpperBound(comm_id + len(comms))
+	for comm in comms:
+		for u in comm:
+			cover.addToSubset(comm_id, u)
+		comm_id += 1
 	return cover
 
 
@@ -237,7 +431,7 @@ def test_entropy_cleanup(G, ground_truth, cover, result_dir):
 		"add_good",
 		"add_bad"
 	]:
-		cover_copy = cover.__copy__()
+		cover_copy = copy(cover)
 		communities = [set() for _ in range(cover_copy.upperBound())]
 		for u in G.nodes():
 			for c in cover_copy.subsetsOf(u):
@@ -346,8 +540,8 @@ def community_cut(G, cover, comm_sizes, community, c_id):
 	                    for comm, cut in cuts.items()
 	                    if cut > 0 and comm_sizes[comm] > 0
 	                    ], reverse=True)
-	print(c_id, "Comm size:", comm_sizes[c_id])
-	print([(cut, comm_sizes[comm], cut / (comm_sizes[comm] * comm_sizes[c_id]), comm) for comm, cut in cuts.items() if cut > 0])
+	# print(c_id, "Comm size:", comm_sizes[c_id])
+	# print([(cut, comm_sizes[comm], cut / (comm_sizes[comm] * comm_sizes[c_id]), comm) for comm, cut in cuts.items() if cut > 0])
 	print([(score, cuts[c], comm_sizes[c], c) for score, c in comm_cuts])
 	return comm_cuts
 
@@ -411,7 +605,7 @@ def find_best_gt_community(community, ground_truth_communitites):
 		return None, set()
 	# community = set(community)
 	best_score = 0.0
-	best_gt_comm = none
+	best_gt_comm_id = none
 	for i, gt_comm in enumerate(ground_truth_communitites):
 		if len(gt_comm) == 0:
 			continue
@@ -425,9 +619,12 @@ def find_best_gt_community(community, ground_truth_communitites):
 
 		if score > best_score:
 			best_score = score
-			best_gt_comm = i
+			best_gt_comm_id = i
 
-	return best_gt_comm, ground_truth_communitites[best_gt_comm]
+	best_comm = set()
+	if best_gt_comm_id != none:
+		best_comm = ground_truth_communitites[best_gt_comm_id]
+	return best_gt_comm_id, best_comm
 
 
 # Get the community with the lowest F1 score

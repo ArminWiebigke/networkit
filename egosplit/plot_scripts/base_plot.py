@@ -1,13 +1,23 @@
-import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-from .config import *
-from .utils import filter_data
+from enum import Enum
+
+from .config import set_xticklabels, set_layout, file_prefix
 
 
-def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
+class PlotType(Enum):
+	line = 1
+	bar = 2
+	swarm = 3
+	violin = 4
+
+
+# Create a plot
+def make_plot(data, graphs, algo_match="", xlabel=None, remove_algo_part="",
               file_name="", title="",
-              plot_args=None, ax_set=None, plot_type="line", add_algos=None, x=None,
-              hue=None, y=None):
+              plot_args=None, ax_set=None, plot_type=PlotType.line, add_algos=None, x=None,
+              hue=None, y=None, one_plot_per_graph=False):
 	# Filter data
 	filtered_data = data.query("graph.str.contains(@graphs)").copy()
 	if algo_match is not None:
@@ -18,16 +28,21 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
 	if add_algos:
 		for algo in add_algos:
 			algo_set.add(algo)
-	algo_list = sorted(list(algo_set))
+	gt = "Ground_Truth"
+	if gt in algo_set:
+		algo_set.remove(gt)
+		algo_list = sorted(list(algo_set)) + [gt]
+	else:
+		algo_list = sorted(list(algo_set))
 	filtered_data.query("algo in @algo_list", inplace=True)
 	if len(filtered_data) is 0:
 		return
 
-	# Create new columns for x or hue if necessary
+	# Create new data columns for x or hue if necessary
 	new_columns = []
-	if type(x) != str:
+	if type(x) != str and x:
 		new_columns.append(x)
-	if type(hue) != str:
+	if type(hue) != str and hue:
 		new_columns.append(hue)
 	for new_column in new_columns:
 		for row in filtered_data.itertuples(index=True, name='Pandas'):
@@ -45,22 +60,32 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
 			except ValueError:
 				pass
 			filtered_data.loc[index, new_column["name"]] = value
-	if type(x) != str:
+	if type(x) != str and x:
 		x = x["name"]
-	if type(hue) != str:
+	if type(hue) != str and hue:
 		hue = hue["name"]
 
 	# Set plot args
-	if plot_type == "line":
+	if plot_type == PlotType.line:
 		default_plot_args = {
 			"markers": True,
 			"linewidth": 2,
 			"ci": None,
 			"style": hue,
 		}
-	elif plot_type == "swarm":
+	elif plot_type == PlotType.swarm:
 		default_plot_args = {
 			"size": 2,
+		}
+	elif plot_type is PlotType.bar:
+		default_plot_args = {
+		}
+	elif plot_type is PlotType.violin:
+		default_plot_args = {
+			"scale": "count",
+			"linewidth": 1,
+			"inner": None,
+			"cut": 0,
 		}
 	else:
 		raise RuntimeError("No valid plot type!")
@@ -70,21 +95,20 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
 		"x": x,
 		"y": y,
 		"hue": hue,
-		# "sort": True,
 		**plot_args,
 	}
 	if plot_args["hue"] == "algo":
 		plot_args = {"hue_order": algo_list, **plot_args}
-		if plot_type == "line":
+		if plot_type is PlotType.line:
 			plot_args = {"style_order": algo_list, **plot_args}
-		if plot_type == "swarm":
+		elif plot_args["x"] == "algo" and plot_type is PlotType.swarm:
 			plot_args = {"order": algo_list, **plot_args}
 
 	# Make one plot per graph if graph is not on the x-axis
-	if plot_args["x"] == "graph":
-		graph_list = [graphs]
-	else:
+	if plot_args["x"] != "graph" or one_plot_per_graph:
 		graph_list = filtered_data.groupby("graph").mean().index.values
+	else:
+		graph_list = [graphs]
 
 	# Create plots
 	for graph in graph_list:
@@ -94,24 +118,24 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
 			graph_data = filtered_data.query("graph == @graph")
 
 		fig, ax = plt.subplots()
-		if plot_type == "line":
-			sns.lineplot(
-				**plot_args,
-				data=graph_data,
-				ax=ax,
-			)
-		elif plot_type == "swarm":
-			sns.swarmplot(
-				**plot_args,
-				data=graph_data,
-				ax=ax,
-			)
-		else:
-			raise RuntimeError("No valid plot type!")
+		plot_args = {
+			**plot_args,
+			"data": graph_data,
+			"ax": ax,
+		}
+		# Draw correct plot type
+		plot_functions = {
+			PlotType.line: sns.lineplot,
+			PlotType.bar: sns.barplot,
+			PlotType.swarm: sns.swarmplot,
+			PlotType.violin: sns.violinplot,
+		}
+		plot_functions[plot_type](**plot_args)
 
 		sns.despine(ax=ax)
 		ax_set = ax_set or {}
-		xlabel = xlabel or ax.get_xlabel()
+		old_xlabel = ax.get_xlabel()
+		xlabel = xlabel or old_xlabel
 		ax_set = {
 			"xlabel": xlabel,
 			**ax_set,
@@ -120,7 +144,8 @@ def make_plot(data, graphs, algo_match=None, xlabel=None, remove_algo_part="",
 			**ax_set,
 		)
 		fig.canvas.draw()
-		set_xticklabels(ax, xlabel + "_")
+		if xlabel != old_xlabel:
+			set_xticklabels(ax, xlabel + "_")
 		fig.suptitle(title + ", " + graph)
 		legend_handles, legend_labels = ax.get_legend_handles_labels()
 		if type(algo_match) == str and remove_algo_part == "":

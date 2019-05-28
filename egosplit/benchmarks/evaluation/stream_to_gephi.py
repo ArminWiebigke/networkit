@@ -48,7 +48,7 @@ def stream_partition(graphs, benchmarks):
 				if benchmark.graph is not graph \
 						or not isinstance(benchmark.algo, EgoSplitAlgorithm):
 					continue
-				egonet = benchmark.algo.getEgoNet(node_id)
+				egonet = benchmark.algo.ego_net_of(node_id)
 				if len(egonet.nodes()) == 0:
 					print("No egonet stored")
 					continue
@@ -72,7 +72,7 @@ def stream_partition(graphs, benchmarks):
 				neighbors = mark_direct_neighbors(graph.graph, egonet, node_id)
 				client.exportNodeValues(egonet, neighbors, "neighbors")
 
-				partition = benchmark.algo.getEgoNetPartitions()[node_id]
+				partition = benchmark.algo.ego_net_partition_of(node_id)
 				client.exportNodeValues(egonet, partition, benchmark.algo.name)
 
 				workspace_id += 1
