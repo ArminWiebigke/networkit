@@ -4657,7 +4657,7 @@ cdef class CommunityDetector(Algorithm):
 cdef extern from "cpp/community/PLP.h":
 	cdef cppclass _PLP "NetworKit::PLP"(_CommunityDetectionAlgorithm):
 		_PLP(_Graph _G, count updateThreshold, count maxIterations) except +
-		_PLP(_Graph _G, _Partition baseClustering, count updateThreshold) except +
+		_PLP(_Graph _G, _Partition baseClustering, count updateThreshold, count maxIterations) except +
 		count numberOfIterations() except +
 		vector[count] getTiming() except +
 
@@ -4691,11 +4691,10 @@ cdef class PLP(CommunityDetector):
 		"""
 		self._G = G
 
-
 		if baseClustering is None:
 			self._this = new _PLP(G._this, updateThreshold, maxIterations)
 		else:
-			self._this = new _PLP(G._this, baseClustering._this, updateThreshold)
+			self._this = new _PLP(G._this, baseClustering._this, updateThreshold, maxIterations)
 
 
 	def numberOfIterations(self):
@@ -4854,14 +4853,18 @@ cdef class CutClustering(CommunityDetector):
 cdef extern from "cpp/community/LPPotts.h":
 	cdef cppclass _LPPotts "NetworKit::LPPotts"(_CommunityDetectionAlgorithm):
 		_LPPotts(_Graph G, double alpha, count theta, count maxIterations, bool_t para) except +
+		_LPPotts(_Graph G, _Partition baseClustering, double alpha, count theta, count maxIterations, bool_t para) except +
 
 cdef class LPPotts(CommunityDetector):
 	"""
 	"""
 	def __cinit__(self, Graph G not None, double alpha = 0.3, theta = none, maxIterations = none,
-	    para = False):
+	    para = False, Partition baseClustering=None):
 		self._G = G
-		self._this = new _LPPotts(G._this, alpha, theta, maxIterations, para)
+		if baseClustering:
+			self._this = new _LPPotts(G._this, baseClustering._this, alpha, theta, maxIterations, para)
+		else:
+			self._this = new _LPPotts(G._this, alpha, theta, maxIterations, para)
 
 
 cdef extern from "cpp/community/OLP.h":
@@ -4915,7 +4918,7 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		map[string, double] getTimings() except +
 		map[string, double] getExecutionInfo() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
-		_Graph getEgoNet(node) except +
+		vector[_Graph] getEgoNets() except +
 		void setParameters(map[string, string]) except +
 		void setGroundTruth(_Cover) except +
 
@@ -4990,15 +4993,19 @@ cdef class EgoSplitting(Algorithm):
 	"""
 	Get the EgoNet graphs.
 	"""
-	def getEgoNet(self, node_id):
-		return Graph().setThis((<_EgoSplitting*>(self._this)).getEgoNet(node_id))
+	def getEgoNets(self):
+		cdef vector[_Graph] _egoNets
+		_egoNets = (<_EgoSplitting*>(self._this)).getEgoNets()
+		egoNets = []
+		for _graph in _egoNets:
+			egoNets.append(Graph().setThis(_graph))
+		return egoNets
 
 	"""
 	Set parameters of the algorithm.
 	"""
 	def setParameters(self, parameters):
 		(<_EgoSplitting*>(self._this)).setParameters(parameters)
-
 
 	"""
 	Set ground truth.

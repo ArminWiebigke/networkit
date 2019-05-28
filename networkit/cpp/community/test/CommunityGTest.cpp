@@ -740,9 +740,13 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
 //		PLP clustAlgo(G, 1, 20);
-		PLM clustAlgo(G, false, 1.0, "none");
-		clustAlgo.run();
-		return clustAlgo.getPartition();
+		PLM plm(G, false, 1.0, "none");
+		plm.run();
+		Partition plm_part = plm.getPartition();
+		LPPotts second(G, plm_part, 0.1, 1, 20);
+		second.run();
+		Partition second_part = second.getPartition();
+		return second_part;
 	};
 
 	G.removeSelfLoops();

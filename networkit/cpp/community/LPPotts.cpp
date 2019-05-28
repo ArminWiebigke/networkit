@@ -23,10 +23,12 @@ LPPotts::LPPotts(const Graph &G, double alpha, count theta, count maxIterations,
 		  maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
 }
 
-//LPPotts::LPPotts(const Graph &G, const Partition baseClustering, count theta)
-//        : CommunityDetectionAlgorithm(G, baseClustering),
-//          updateThreshold(theta) {
-//}
+LPPotts::LPPotts(const Graph &G, const Partition &baseClustering, double alpha, count theta,
+                 count maxIterations, bool parallelPropagation)
+		: CommunityDetectionAlgorithm(G, baseClustering), alpha(alpha), updateThreshold(theta),
+		  maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
+
+}
 
 void LPPotts::run() {
 	if (hasRun) {
@@ -91,8 +93,7 @@ void LPPotts::run() {
 				for (const auto &labelCount : neighborLabelCounts) {
 					label l = labelCount.first;
 					count local = labelCount.second;
-					labelWeights[l] =
-							local - alpha * (globalLabelCounts[l] - local);
+					labelWeights[l] = local - alpha * (globalLabelCounts[l] - local);
 				}
 
 				// Get best label
@@ -165,5 +166,6 @@ count LPPotts::numberOfIterations() {
 std::vector<count> LPPotts::getTiming() {
 	return this->timing;
 }
+
 
 } /* namespace NetworKit */

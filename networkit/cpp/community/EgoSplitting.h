@@ -75,13 +75,27 @@ public:
 	 */
 	std::string toString() const override;
 
+	/**
+	 * Get timings for the parts of the algorithm.
+	 * @return A map that maps the timer name to its value.
+	 */
 	std::map<std::string, double> getTimings();
 
+	/**
+	 * Get additional information about the execution.
+	 * @return A map that maps a name to a value.
+	 */
 	std::map<std::string, double> getExecutionInfo();
 
+	/**
+	 * Get the partitionings of the ego-nets. A partitioning maps a node to its partition ID.
+	 * @return A vector of the partitionings.
+	 */
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
 
 	Graph getEgoNet(node u);
+
+	std::vector<Graph> getEgoNets();
 
 	void setParameters(std::map<std::string, std::string> const &new_parameters);
 
@@ -137,7 +151,7 @@ private:
 	/**
 	 * Remove all edges adjacent to nodes with a low degree
 	 */
-	void removeLowDegreeEdges(Graph &egoGraph, count minDegree) const;
+	void removeLowDegreeNodes(Graph &egoGraph, count minDegree, count directNeighborsCnt) const;
 
 	void removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCnt) const;
 
@@ -148,7 +162,7 @@ private:
 	void findTriangles(Graph graph, AdjacencyArray directedGraph,
 			std::function<void(node, node, node)> triangleFunc) const;
 
-	Partition getGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
+	Partition createGroundTruthPartitioning(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
 };
 
 } /* namespace NetworKit */

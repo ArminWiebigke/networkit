@@ -16,7 +16,7 @@ CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph& G) : Algor
 	}
 }
 
-CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph& G, const Partition baseClustering) : Algorithm(), G(G), result(baseClustering) {
+CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph& G, const Partition& baseClustering) : Algorithm(), G(G), result(baseClustering) {
 }
 
 Partition CommunityDetectionAlgorithm::getPartition() {

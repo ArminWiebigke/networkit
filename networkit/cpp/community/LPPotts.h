@@ -41,14 +41,15 @@ public:
 	explicit LPPotts(const Graph &G, double alpha = 0.3, count theta = none,
 					 count maxIterations = 20, bool parallelPropagation = false);
 
-//	/**
-//	 * Constructor to the label propagation community detection algorithm.
-//	 *
-//	 * @param[in]	G	input graph
-//	 * @param[in]	baseClustering optional; the algorithm will start from the given clustering.
-//	 * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
-//	 */
-//	LPPotts(const Graph& G, const Partition baseClustering, count theta = none);
+	/**
+	 * Constructor to the label propagation community detection algorithm.
+	 *
+	 * @param[in]	G	input graph
+	 * @param[in]	baseClustering optional; the algorithm will start from the given clustering.
+	 * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
+	 */
+	LPPotts(const Graph& G, const Partition &baseClustering, double alpha = 0.3, count theta = none,
+	        count maxIterations = 20, bool parallelPropagation = false);
 
 	/**
 	 * Run the label propagation clustering algorithm.

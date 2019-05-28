@@ -65,7 +65,6 @@ void EgoSplitting::init() {
 	parameters["storeEgoNet"] = "No";
 	parameters["addEgoNode"] = "No";
 	parameters["weightedEgoNet"] = "No";
-	parameters["edgesBetweenNeigNeig"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
 
 	// Parameters for weighted edges
@@ -74,25 +73,30 @@ void EgoSplitting::init() {
 
 	// Parameters for ego-net extension
 	parameters["processEgoNet"] = "extend";
-	parameters["addNodesFactor"] = "1";
+	parameters["addNodesFactor"] = "4";
 	parameters["addNodesExponent"] = "0.6";
+	parameters["edgesBetweenNeigNeig"] = "Yes";
+	parameters["keepOnlyTriangles"] = "No";
+	parameters["minNodeDegree"] = "0";
+	parameters["triangleThreshold"] = "0";
 
 	// Parameters for edgeScores
 	parameters["scoreStrategy"] = "count";
 	parameters["extendRandom"] = "No";
-	parameters["keepOnlyTriangles"] = "No";
+	parameters["extendOverDirected"] = "No";
 
 
 	// Test parameters
-//	parameters["processEgoNet"] = "extend";
+	parameters["storeEgoNet"] = "Yes";
+	parameters["processEgoNet"] = "extend";
 	parameters["extendRandom"] = "No";
-	parameters["extendStrategy"] = "triangles";
-	parameters["scoreStrategy"] = "score_normed";
-	parameters["minTriangles"] = "2";
+	parameters["extendStrategy"] = "edgeScore";
+	parameters["scoreStrategy"] = "score^2_normed";
+//	parameters["minTriangles"] = "2";
 //	parameters["storeEgoNet"] = "Yes";
-	parameters["triangleThreshold"] = "0";
-	parameters["minNodeDegree"] = "2";
-	parameters["partitionFromGroundTruth"] = "Yes";
+//	parameters["triangleThreshold"] = "0";
+//	parameters["minNodeDegree"] = "2";
+//	parameters["partitionFromGroundTruth"] = "Yes";
 }
 
 void EgoSplitting::run() {
@@ -178,7 +182,7 @@ void EgoSplitting::createEgoNets() {
 
 	G.forNodes([&](node u) {
 		handler.assureRunning();
-		DEBUG("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
+		INFO("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
 
 		/******************************************************************************************
 		 **                                Add Neighbor Nodes                                    **
@@ -241,7 +245,6 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1c)    Extend EgoNet"] += timer.elapsedMicroseconds();
 
-
 		/******************************************************************************************
 		 **                                  Cluster EgoNet                                      **
 		 ******************************************************************************************/
@@ -251,7 +254,7 @@ void EgoSplitting::createEgoNets() {
 		if (parameters.at("weightedEgoNet") != "Yes")
 			egoGraph = Graph(egoGraph, false, egoGraph.isDirected());
 		if (parameters.at("partitionFromGroundTruth") == "Yes")
-			egoPartition = getGroundTruthPartition(egoGraph, nodeMapping, u);
+			egoPartition = createGroundTruthPartitioning(egoGraph, nodeMapping, u);
 		else if (egoGraph.numberOfEdges() > 0) {
 			bool weighted = parameters.at("weightedEgoNet") == "Yes";
 			Graph egoCopy(egoGraph, weighted, egoGraph.isDirected());
@@ -271,18 +274,18 @@ void EgoSplitting::createEgoNets() {
 		timer.start();
 		if (parameters.at("storeEgoNet") == "Yes") { // && u < 100
 			// Get EgoNet with gloabl node ids
-			egoNets[u] = Graph(G.upperNodeIdBound(), egoGraph.isWeighted());
+			Graph egoNetGraph = Graph(G.upperNodeIdBound(), egoGraph.isWeighted());
 			egoGraph.forEdges([&](node v, node w, edgeweight weight) {
-//			    std::cout << "Cpy " << weight << std::endl;
-				egoNets[u].addEdge(nodeMapping.global(v), nodeMapping.global(w), weight);
+				egoNetGraph.addEdge(nodeMapping.global(v), nodeMapping.global(w), weight);
 			});
-			for (node v : egoNets[u].nodes()) {
+			for (node v : egoNetGraph.nodes()) {
 				if (!egoGraph.hasNode(nodeMapping.local(v)))
-					egoNets[u].removeNode(v);
+					egoNetGraph.removeNode(v);
 			}
 			if (egoGraph.isWeighted())
-				egoNets[u].addEdge(egoNets[u].nodes()[0], egoNets[u].nodes()[1],
+				egoNetGraph.addEdge(egoNets[u].nodes()[0], egoNets[u].nodes()[1],
 				                   0.000001);
+			egoNets[u] = egoNetGraph;
 		}
 		timer.stop();
 		timings["1x)    Copy EgoNet"] += timer.elapsedMicroseconds();
@@ -296,6 +299,7 @@ void EgoSplitting::createEgoNets() {
 		for (node i : egoGraph.nodes()) {
 			egoNetPartitions[u].emplace(nodeMapping.global(i), egoPartition.subsetOf(i));
 		}
+		assert(egoNetPartitions[u].size() == egoGraph.numberOfNodes());
 		egoNetPartitionCounts[u] = egoPartition.numberOfSubsets();
 		timer.stop();
 		timings["1e)    EgoNet subsets"] += timer.elapsedMicroseconds();
@@ -453,7 +457,7 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors,
 
 
 	/**********************************************************************************************
-	 **                               Use only triangle edges                                    **
+	 **                         Use only triangle edges (optional)                               **
 	 **********************************************************************************************/
 	if (parameters.at("keepOnlyTriangles") == "Yes") {
 		AdjacencyArray directedEgoGraph(egoGraph);
@@ -477,9 +481,8 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors,
 	}
 
 
-
 	/**********************************************************************************************
-	 **              Weight graph based on number of triangles for each edge                     **
+	 **           Weight graph based on number of triangles for each edge (optional)             **
 	 **********************************************************************************************/
 	 if (parameters.at("weightedEgoNet") == "Yes")	{
 		Graph egoWeightsGraph(egoGraph, true, false);
@@ -498,9 +501,9 @@ EgoSplitting::extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors,
 	}
 
 	count minDegree = stoi(parameters.at("minNodeDegree"));
-	removeLowDegreeEdges(egoGraph, minDegree);
+	removeLowDegreeNodes(egoGraph, minDegree, directNeighborsCnt);
 	removeLowTriangleCntNodes(egoGraph, directNeighborsCnt); // TODO: Bevorzuge high degree nodes (?)
-	removeLowDegreeEdges(egoGraph, minDegree);
+	removeLowDegreeNodes(egoGraph, minDegree, directNeighborsCnt);
 }
 
 
@@ -522,8 +525,7 @@ EgoSplitting::removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCn
 		nodes_changed = 0;
 		findTriangles(egoGraph, directedEgoGraph, foundTriangleWork);
 		egoGraph.forNodesInRandomOrder([&](node v) {
-			if (v >= directNeighborsCnt
-			    && triangleCount[v] * 1.0 / egoGraph.degree(v) < triangleThreshold) {
+			if (v >= directNeighborsCnt && triangleCount[v] * 1.0 / egoGraph.degree(v) < triangleThreshold) {
 				++nodes_changed;
 				egoGraph.removeNode(v);
 			}
@@ -531,20 +533,21 @@ EgoSplitting::removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCn
 	}
 }
 
-void EgoSplitting::removeLowDegreeEdges(Graph &egoGraph, count minDegree) const {
-	if (stoi(parameters.at("minNodeDegree")) < 2)
+void EgoSplitting::removeLowDegreeNodes(Graph &egoGraph, count minDegree,
+                                        count directNeighborsCnt) const {
+	if (stoi(parameters.at("minNodeDegree")) <= 0)
 		return;
-	count nodes_changed = 1;
-	while (nodes_changed > 0) {
+	count nodes_changed;
+	do {
 		nodes_changed = 0;
 		egoGraph.forNodes([&](node v) {
-			if (egoGraph.degree(v) != 0 && egoGraph.degree(v) < minDegree) {
+			if (v >= directNeighborsCnt && egoGraph.degree(v) < minDegree) {
 				++nodes_changed;
 				egoGraph.removeNode(v);
-				egoGraph.restoreNode(v);
+//				egoGraph.restoreNode(v); // For direct neighbors?
 			}
 		});
-	}
+	} while (nodes_changed > 0);
 }
 
 double EgoSplitting::normalizeScore(node v, double score) const {
@@ -662,7 +665,8 @@ EgoSplitting::scoreTriangles(node u, const NodeMapping &neighbors,
 	std::vector<std::pair<node, double>> nodeScores;
 	nodeScores.reserve(secondNeighbors.size());
 	for (node v : secondNeighbors) {
-		double score = triangleCnts[v]; // TODO: Maybe use number of triangle edges as score?
+		double score = triangleCnts[v];
+		// TODO: Maybe use number of triangle edges as score?
 		// TODO: num_triangles / num_triangle_edges : Sinnvolle Metrik?
 		// TODO: teile durch Anzahl Kanten ins Egonet (Anzahl mitzählen)
 		// TODO: Gewichte Kanten mit Anzahl Triangles
@@ -757,6 +761,26 @@ void EgoSplitting::createCover() {
 	}
 }
 
+Partition
+EgoSplitting::createGroundTruthPartitioning(Graph &egoGraph, NodeMapping &mapping, node egoNode) const {
+	auto truthComms = groundTruth.subsetsOf(egoNode);
+	index subset = groundTruth.upperBound();
+	Partition part(subset + egoGraph.upperNodeIdBound());
+	egoGraph.forNodes([&](node v){
+		auto comms = groundTruth.subsetsOf(mapping.global(v));
+		std::vector<node> overlap(truthComms.size());
+		std::set_intersection(truthComms.begin(), truthComms.end(), comms.begin(), comms.end(),
+		                      overlap.begin());
+		if (!overlap.empty()) {
+			part.addToSubset(overlap[0], v);
+		} else {
+//			part.addToSubset(subset, v);
+//			++subset;
+		}
+	});
+	return part;
+}
+
 Cover EgoSplitting::getCover() {
 	return cover;
 }
@@ -769,12 +793,12 @@ std::map<std::string, double> EgoSplitting::getExecutionInfo() {
 	return executionInfo;
 }
 
-std::vector<std::unordered_map<node, index>> EgoSplitting::getEgoNetPartitions() {
-	return egoNetPartitions;
+std::vector<Graph> EgoSplitting::getEgoNets() {
+	return egoNets;
 }
 
-Graph EgoSplitting::getEgoNet(node u) {
-	return egoNets[u]; // TODO: only store some egoNets to save memory
+std::vector<std::unordered_map<node, index>> EgoSplitting::getEgoNetPartitions() {
+	return egoNetPartitions;
 }
 
 void
@@ -787,26 +811,6 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
 
-}
-
-Partition
-EgoSplitting::getGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const {
-	auto truthComms = groundTruth.subsetsOf(egoNode);
-	index subset = groundTruth.upperBound();
-	Partition part(subset + egoGraph.upperNodeIdBound());
-	egoGraph.forNodes([&](node v){
-		auto comms = groundTruth.subsetsOf(mapping.global(v));
-		std::vector<node> overlap(truthComms.size());
-		std::set_intersection(truthComms.begin(), truthComms.end(), comms.begin(), comms.end(),
-				overlap.begin());
-		if (!overlap.empty()) {
-			part.addToSubset(overlap[0], v);
-		} else {
-//			part.addToSubset(subset, v);
-//			++subset;
-		}
-	});
-	return part;
 }
 
 } /* namespace NetworKit */
