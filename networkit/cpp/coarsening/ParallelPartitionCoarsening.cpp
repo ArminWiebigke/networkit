@@ -48,7 +48,7 @@ void ParallelPartitionCoarsening::run() {
 			node sv = nodeToSuperNode[v];
 			localGraphs.at(t).increaseWeight(su, sv, ew);
 
-		}, G.numberOfEdges() > (1 << 20));
+		}, G.numberOfEdges() > (1u << 20u));
 
 
 		Aux::Timer timer2;

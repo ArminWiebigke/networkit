@@ -85,13 +85,13 @@ void EgoSplitting::init() {
 	parameters["extendRandom"] = "No";
 	parameters["extendOverDirected"] = "No";
 
-
 	// Test parameters
-	parameters["storeEgoNet"] = "Yes";
-	parameters["processEgoNet"] = "extend";
-	parameters["extendRandom"] = "No";
-	parameters["extendStrategy"] = "edgeScore";
-	parameters["scoreStrategy"] = "score^2_normed";
+	parameters["processEgoNet"] = "none";
+//	parameters["storeEgoNet"] = "Yes";
+//	parameters["processEgoNet"] = "extend";
+//	parameters["extendRandom"] = "No";
+//	parameters["extendStrategy"] = "edgeScore";
+//	parameters["scoreStrategy"] = "score^2_normed";
 //	parameters["minTriangles"] = "2";
 //	parameters["storeEgoNet"] = "Yes";
 //	parameters["triangleThreshold"] = "0";
@@ -254,7 +254,7 @@ void EgoSplitting::createEgoNets() {
 		if (parameters.at("weightedEgoNet") != "Yes")
 			egoGraph = Graph(egoGraph, false, egoGraph.isDirected());
 		if (parameters.at("partitionFromGroundTruth") == "Yes")
-			egoPartition = createGroundTruthPartitioning(egoGraph, nodeMapping, u);
+			egoPartition = createGroundTruthPartition(egoGraph, nodeMapping, u);
 		else if (egoGraph.numberOfEdges() > 0) {
 			bool weighted = parameters.at("weightedEgoNet") == "Yes";
 			Graph egoCopy(egoGraph, weighted, egoGraph.isDirected());
@@ -762,7 +762,7 @@ void EgoSplitting::createCover() {
 }
 
 Partition
-EgoSplitting::createGroundTruthPartitioning(Graph &egoGraph, NodeMapping &mapping, node egoNode) const {
+EgoSplitting::createGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const {
 	auto truthComms = groundTruth.subsetsOf(egoNode);
 	index subset = groundTruth.upperBound();
 	Partition part(subset + egoGraph.upperNodeIdBound());

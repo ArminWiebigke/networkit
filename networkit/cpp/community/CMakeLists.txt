@@ -36,6 +36,7 @@ networkit_add_module(community
     SampledGraphStructuralRandMeasure.cpp
     SampledNodeStructuralRandMeasure.cpp
     SignificanceCleanup.cpp
+    SLPA.cpp
     StablePartitionNodes.cpp
     )
 

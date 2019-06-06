@@ -88,12 +88,10 @@ public:
 	std::map<std::string, double> getExecutionInfo();
 
 	/**
-	 * Get the partitionings of the ego-nets. A partitioning maps a node to its partition ID.
-	 * @return A vector of the partitionings.
+	 * Get the partitions of the ego-nets. A partition maps a node to its partition ID.
+	 * @return A vector of the partitions.
 	 */
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
-
-	Graph getEgoNet(node u);
 
 	std::vector<Graph> getEgoNets();
 
@@ -162,7 +160,7 @@ private:
 	void findTriangles(Graph graph, AdjacencyArray directedGraph,
 			std::function<void(node, node, node)> triangleFunc) const;
 
-	Partition createGroundTruthPartitioning(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
+	Partition createGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
 };
 
 } /* namespace NetworKit */

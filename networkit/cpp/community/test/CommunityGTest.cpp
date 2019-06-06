@@ -47,6 +47,7 @@
 #include "../OLP.h"
 #include "../../io/CoverReader.h"
 #include "../SignificanceCleanup.h"
+#include "../SLPA.h"
 
 namespace NetworKit {
 
@@ -728,34 +729,35 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
-    Graph G = gen.generate();
-//	EdgeListReader reader('\t', 0);
-//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
-//								 G);
+//	ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+//	Graph G = gen.generate();
+	EdgeListReader reader('\t', 0);
+	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+								 G);
 //	EdgeListReader reader(' ', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
 
 	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
-//        LPPotts clustAlgo(G, 0.1, 1, 20);
-//		PLP clustAlgo(G, 1, 20);
-		PLM plm(G, false, 1.0, "none");
-		plm.run();
-		Partition plm_part = plm.getPartition();
-		LPPotts second(G, plm_part, 0.1, 1, 20);
-		second.run();
-		Partition second_part = second.getPartition();
-		return second_part;
+		SLPA algo(G);
+		algo.run();
+		return algo.getPartition();
+//		PLM plm(G, false, 1.0, "none");
+//		plm.run();
+//		Partition plm_part = plm.getPartition();
+//		LPPotts second(G, plm_part, 0.1, 1, 20);
+//		second.run();
+//		Partition second_part = second.getPartition();
+//		return second_part;
 	};
 
 	G.removeSelfLoops();
 	G.indexEdges();
 
-    EgoSplitting algo(G, clusterAlgo, clusterAlgo);
+	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
 	algo.run();
 	Cover cover = algo.getCover();
-	
+
 
 //	CoverF1Similarity sim(G, cover, C);
 //	sim.run();
@@ -768,6 +770,22 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 		return true;
 	};
 	EXPECT_TRUE(isProperCover(G, cover));
+}
+
+
+TEST_F(CommunityGTest, testSLPA) {
+	ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+	Graph G = gen.generate();
+//	EdgeListReader reader('\t', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+//								 G);
+//	EdgeListReader reader(' ', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
+
+	SLPA algo(G);
+	algo.run();
+	Cover cover = algo.getCover();
 }
 
 

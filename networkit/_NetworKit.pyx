@@ -5015,6 +5015,55 @@ cdef class EgoSplitting(Algorithm):
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
 
 
+cdef extern from "cpp/community/SLPA.h":
+	cdef cppclass _SLPA "NetworKit::SLPA"(_Algorithm):
+		_SLPA(_Graph _G, double threshold, count numIterations) except +
+		_SLPA(_Graph _G, _Partition basePartition, double threshold, count numIterations) except +
+		_Cover getCover() except +
+		_Partition getPartition() except +
+
+
+cdef class SLPA(Algorithm):
+	""" Speaker-listener Label Propagation Algorithm
+	"""
+
+	cdef Graph _G
+
+	def __cinit__(self, Graph G not None, double threshold=0.1, count numIterations=100, Partition basePartition=None):
+		"""
+		Constructor to the Parallel label propagation community detection algorithm.
+
+		Parameters
+		----------
+		G : networkit.Graph
+			The graph on which the algorithm has to run.
+		threshold : double
+			The threshold to deceide which labels are accepted.
+		numIterations : integer
+			The number of iterations the algorithm is run.
+		basePartition : networkit.Partition
+			If a base partition is provided, each node is initialized with its partition ID, else each
+			node is initialized with its own ID.
+		"""
+		self._G = G
+
+		if basePartition is None:
+			self._this = new _SLPA(G._this, threshold, numIterations)
+		else:
+			self._this = new _SLPA(G._this, basePartition._this, threshold, numIterations)
+
+	def getCover(self):
+		"""
+		Get the result cover.
+		"""
+		return Cover().setThis((<_SLPA*>(self._this)).getCover())
+
+	def getPartition(self):
+		"""
+		Get the result cover.
+		"""
+		return Partition().setThis((<_SLPA*>(self._this)).getPartition())
+
 
 cdef class DissimilarityMeasure:
 	""" Abstract base class for partition/community dissimilarity measures """
