@@ -144,7 +144,7 @@ TEST_F(CommunityDetectionBenchmark, benchEgoSplitting) {
 //	EdgeListReader reader('\t', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 
-	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
+	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
 //        LPPotts clustAlgo(G, 0.1, 1, 20);
         PLM clustAlgo(G);
 //		PLP clustAlgo(G, 1, 20);

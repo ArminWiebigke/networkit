@@ -73,7 +73,7 @@ def clusterOSLOM(G):
 		return result
 
 
-def cleanUpOSLOM(G, cover, clean_bad='remove', runs=1, cleanup_strategy='both',
+def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
                  check_minimality=False, simple_cleanup=True, max_extend=2, tolerance=0.1):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
@@ -84,14 +84,15 @@ def cleanUpOSLOM(G, cover, clean_bad='remove', runs=1, cleanup_strategy='both',
 		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw', '-singlet',
 		          '-f', graph_filename, '-hint', cover_filename,
 		          '-t', str(tolerance),
-		          '-clean_bad', clean_bad,
-		          '-cr', str(runs),
+		          '-cup_runs', str(runs),
 		          '-cu_strat', cleanup_strategy,
 		          '-max_extend', str(max_extend),
-		          '-bad_groups', bad_groups_filename
+		          '-bad_groups_file', bad_groups_filename
 		          ]
+		if merge_bad:
+			params.append('-merge_bad')
 		if check_minimality:
-			params.append('-min')
+			params.append('-check_min')
 		if not simple_cleanup:
 			params.append('-equiv_cup')
 		print(params)
@@ -239,14 +240,15 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 			with open('time_seed.dat', 'w') as f:
 				f.write(str(random.randint(0, 2**31)))
 			subprocess.call(map(str, args), stdout=dev_null)
+		except:
+			print("Error")
 		finally:
 			os.chdir(old_dir)
-
 		G = graphio.readGraph(os.path.join(tempdir, 'network.dat'), fileformat=graphio.Format.LFR)
-		if on == 0:
-			C = community.readCommunities(os.path.join(tempdir, 'community.dat'), format='edgelist-s1')
-		else:
-			C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, 'community.dat'), G)
+		# if on == 0:
+		# 	C = community.readCommunities(os.path.join(tempdir, 'community.dat'), format='edgelist-s1')
+		# else:
+		C = graphio.EdgeListCoverReader(1).read(os.path.join(tempdir, 'community.dat'), G)
 		return G, C
 
 

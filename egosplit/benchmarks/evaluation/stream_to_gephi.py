@@ -39,29 +39,33 @@ def extend_graph_to_node(graph, u):
 
 def stream_partition(graphs, benchmarks):
 	workspace_id = 1
-	for graph in graphs:
-		G = graph.graph
-		while True:
-			node_id = G.randomNode()
+	benchmarks_and_clients = []
+	for benchmark in benchmarks:
+		if not isinstance(benchmark.algo, EgoSplitAlgorithm):
+			continue
+		egonet = benchmark.algo.ego_net_of(0)
+		if len(egonet.nodes()) == 0:
+			print("No egonet stored")
+			continue
+		print(workspace_id)
+		client = gephi.streaming.GephiStreamingClient(
+			url='http://localhost:8080/workspace' + str(workspace_id))
+		benchmarks_and_clients.append((benchmark, client))
+		workspace_id += 1
 
-			for benchmark in benchmarks:
-				if benchmark.graph is not graph \
-						or not isinstance(benchmark.algo, EgoSplitAlgorithm):
-					continue
+	while True:
+		for graph in graphs:
+			node_id = graph.graph.randomNode()
+			for benchmark, client in benchmarks_and_clients:
 				egonet = benchmark.algo.ego_net_of(node_id)
-				if len(egonet.nodes()) == 0:
-					print("No egonet stored")
-					continue
 				egonet.indexEdges()
-				print(workspace_id)
-				client = gephi.streaming.GephiStreamingClient(
-					url='http://localhost:8080/workspace' + str(workspace_id))
 				client.exportGraph(egonet)
 
-				assert egonet.hasEdgeIds()
 				edge_weights = [0 for _ in range(egonet.upperEdgeIdBound())]
+
 				def set_weight(edge_id, weight):
 					edge_weights[edge_id] = weight
+
 				egonet.forEdges(lambda u, v, weight, edge_id: set_weight(edge_id, weight))
 				client.exportEdgeValues(egonet, edge_weights, "weight")
 
@@ -75,7 +79,6 @@ def stream_partition(graphs, benchmarks):
 				partition = benchmark.algo.ego_net_partition_of(node_id)
 				client.exportNodeValues(egonet, partition, benchmark.algo.name)
 
-				workspace_id += 1
 			command = input("Press Enter to proceed, or q + Enter to quit")
 			if command == "q":
 				break

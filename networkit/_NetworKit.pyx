@@ -4892,12 +4892,12 @@ cdef cppclass ClusteringFunctionWrapper:
 	void* callback
 	void setCallback(object callback):
 		this.callback = <void*>callback
-	_Partition cython_call_operator(_Graph& G) nogil:
+	_Partition cython_call_operator(const _Graph& G) nogil:
 		cdef bool_t error = False
 		cdef string message
 		with gil:
 			pyG = Graph()
-			pyG.setThis(G)
+			pyG.setThis(_Graph(G))
 
 			try:
 				pyP = (<object>callback)(pyG)
@@ -5013,6 +5013,44 @@ cdef class EgoSplitting(Algorithm):
 	def setGroundTruth(self, Cover groundTruth):
 		self._groundTruth = groundTruth
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
+
+
+cdef extern from "cpp/oslom/OslomCleanUp.h":
+	cdef cppclass _OslomCleanUp "NetworKit::OslomCleanUp"(_Algorithm):
+		_OslomCleanUp(_Graph G, _Cover C, vector[string] args) except +
+		_Cover getCover() except +
+
+cdef class OslomCleanUp(Algorithm):
+	"""
+	Constructor to the Ego-Splitting community detection algorithm.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		The graph on which the algorithm has to run.
+	C : networkit.Cover
+		The cover that should be cleaned up.
+	args : vector[string]
+		Options for the clean up.
+	"""
+
+	cdef Graph _G
+	cdef Cover _C
+
+	def __cinit__(self, Graph G not None, Cover C not None, args = None):
+		self._G = G
+		self._C = C
+
+		if args is None:
+			args = []
+
+		self._this = new _OslomCleanUp(G._this, C._this, args)
+
+	"""
+	Get the result of the algorithm.
+	"""
+	def getCover(self):
+		return Cover().setThis((<_OslomCleanUp*>(self._this)).getCover())
 
 
 cdef extern from "cpp/community/SLPA.h":

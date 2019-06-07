@@ -5,7 +5,7 @@ from networkit import none
 from egosplit.benchmarks.evaluation.output import *
 
 
-# Evaluate the partitioning of the ego-nets
+# Evaluate the partition of the ego-nets
 def analyse_ego_net_partitions(benchmarks, result_dir, append):
 	open_mode = 'w'
 	if append:
@@ -95,7 +95,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		# Are communities split into multiple partitions?
 		# TODO: Anzahl Communities, die eine Partition dominieren -> sinnvolle Personas
 		# TODO: +1 wenn p beste Part. von Com. c und c dominiert p (Optimalfall)
-		result_list_comm = check_community_partitioning(
+		result_list_comm = check_community_partition(
 			ground_truth, partitions, community_sizes, truth_communities)
 		ego_sums["num_comms"] = len(truth_communities)
 		for result in result_list_comm:
@@ -189,7 +189,7 @@ def calc_metrics(sums):
 	}
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]
-	metrics["ego_partitioning_score"] = 1 - 2 * a * b / (a + b)
+	metrics["ego_partition_score"] = 1 - 2 * a * b / (a + b)
 	return metrics
 
 
@@ -293,7 +293,7 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 # with the largest number of nodes from that community.
 # Don't count nodes that are in multiple communities and that are assigned to one of its
 # communities correctly.
-def check_community_partitioning(ground_truth, partitions, community_sizes, truth_communities):
+def check_community_partition(ground_truth, partitions, community_sizes, truth_communities):
 	result_list = []
 	best_partitions = {}
 	for c in truth_communities:

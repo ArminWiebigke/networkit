@@ -12,7 +12,7 @@ class CoverBenchmark:
 
 	def run(self):
 		print("\nGraph: " + self.graph.name + ", Algo: " + self.algo.name)
-		self.algo.run_with_wrapper(self.graph)
+		self.algo.run(self.graph)
 		print("Time: " + str(self.algo.get_time()) + "\n")
 
 	def get_graph(self):

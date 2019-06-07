@@ -20,6 +20,8 @@
 #include "../sparsification/LocalSimilarityScore.h"
 #include "../edgescores/TriangleEdgeScore.h"
 #include "../edgescores/EdgeScoreAsWeight.h"
+#include "../coarsening/ParallelPartitionCoarsening.h"
+#include "../graph/RandomMaximumSpanningForest.h"
 #include "EgoSplitting.h"
 #include "PLM.h"
 #include "CoverF1Similarity.h"
@@ -30,7 +32,7 @@ namespace NetworKit {
 
 EgoSplitting::EgoSplitting(const Graph &G)
 		: G(G) {
-	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
+	PartitionFunction clusterAlgo = [](const Graph &G) {
 		PLM algo(G, false, 1.0, "none");
 		algo.run();
 		return algo.getPartition();
@@ -41,13 +43,13 @@ EgoSplitting::EgoSplitting(const Graph &G)
 }
 
 EgoSplitting::EgoSplitting(const Graph &G,
-                           std::function<Partition(Graph &)> clusterAlgo)
-		: EgoSplitting(G, clusterAlgo, clusterAlgo) {
+                           PartitionFunction clusterAlgo)
+		: EgoSplitting(G, clusterAlgo, std::move(clusterAlgo)) {
 }
 
 EgoSplitting::EgoSplitting(const Graph &G,
-                           std::function<Partition(Graph &)> localClusterAlgo,
-                           std::function<Partition(Graph &)> globalClusterAlgo)
+                           PartitionFunction localClusterAlgo,
+                           PartitionFunction globalClusterAlgo)
 		: G(G),
 		  localClusterAlgo(std::move(localClusterAlgo)),
 		  globalClusterAlgo(std::move(globalClusterAlgo)) {
@@ -57,6 +59,7 @@ EgoSplitting::EgoSplitting(const Graph &G,
 void EgoSplitting::init() {
 	hasRun = false;
 	egoNets.resize(G.upperNodeIdBound());
+	personaEdges.resize(G.upperNodeIdBound());
 	egoNetPartitions.resize(G.upperNodeIdBound());
 	egoNetPartitionCounts.resize(G.upperNodeIdBound(), 0);
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
@@ -66,6 +69,13 @@ void EgoSplitting::init() {
 	parameters["addEgoNode"] = "No";
 	parameters["weightedEgoNet"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
+	parameters["connectPersonas"] = "Yes";
+	parameters["connectPersonasStrat"] = "spanning";
+	parameters["personaEdgeWeightFactor"] = "1";
+	parameters["normalizePersonaCut"] = "No";
+	parameters["normalizePersonaWeights"] = "unweighted";
+	parameters["maxPersonaEdges"] = "1";
+	parameters["iterationWeight"] = "No";
 
 	// Parameters for weighted edges
 	parameters["weightFactor"] = "1";
@@ -257,8 +267,8 @@ void EgoSplitting::createEgoNets() {
 			egoPartition = createGroundTruthPartition(egoGraph, nodeMapping, u);
 		else if (egoGraph.numberOfEdges() > 0) {
 			bool weighted = parameters.at("weightedEgoNet") == "Yes";
-			Graph egoCopy(egoGraph, weighted, egoGraph.isDirected());
-			egoPartition = localClusterAlgo(egoCopy); // Python moves the graph so we need a copy
+//			Graph egoCopy(egoGraph, weighted, egoGraph.isDirected());
+			egoPartition = localClusterAlgo(egoGraph); // Python moves the graph so we need a copy
 		} else {
 			egoPartition = Partition(degree);
 			egoPartition.allToSingletons();
@@ -266,6 +276,14 @@ void EgoSplitting::createEgoNets() {
 		egoPartition.compact();
 		timer.stop();
 		timings["1d)    Cluster EgoNet"] += timer.elapsedMicroseconds();
+
+
+		/******************************************************************************************
+		 **                                 Connect Personas                                     **
+		 ******************************************************************************************/
+		if (parameters.at("connectPersonas") == "Yes")
+			personaEdges[u] = connectEgoPartitionPersonas(egoGraph, egoPartition);
+
 
 
 		/******************************************************************************************
@@ -313,6 +331,114 @@ void EgoSplitting::createEgoNets() {
 		timer.stop();
 		timings["1f)    Clean up"] += timer.elapsedMicroseconds();
 	});
+}
+
+std::vector<std::tuple<index, index, edgeweight>>
+EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph, const Partition &egoPartition) {
+	std::vector<std::tuple<index, index, edgeweight >> edges;
+	// Contract graph
+	ParallelPartitionCoarsening coarsening(egoGraph, egoPartition);
+	coarsening.run();
+	Graph coarseGraph = coarsening.getCoarseGraph();
+	auto nodeMapping = coarsening.getCoarseToFineNodeMapping();
+	auto getPersonaIndex = [&](node u) {
+		return egoPartition.subsetOf(nodeMapping[u][0]);
+	};
+	auto addPersonaEdge = [&](node u, node v, edgeweight w = 1) {
+		index p_u = getPersonaIndex(u);
+		index p_v = getPersonaIndex(v);
+		if (p_u != p_v)
+			edges.emplace_back(p_u, p_v, w);
+	};
+	double spanSize;
+	{
+		// Get spanning forest
+		RandomMaximumSpanningForest span(coarseGraph);
+		span.run();
+		auto spanningForest = span.getMSF();
+		spanSize = spanningForest.numberOfEdges();
+	}
+
+	if (parameters.at("normalizePersonaCut") == "volume") {
+		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
+			double volume = coarseGraph.weight(u, u) + coarseGraph.weight(v, v);
+			edgeweight newWeight = w / volume;
+			coarseGraph.setWeight(u, v, newWeight);
+		});
+	} else if (parameters.at("normalizePersonaCut") == "density") {
+		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
+			double possibleEdges = nodeMapping[u].size() * nodeMapping[v].size();
+			double newWeight = w / possibleEdges;
+			coarseGraph.setWeight(u, v, newWeight);
+		});
+	}
+
+	std::basic_string<char> &strategy = parameters.at("connectPersonasStrat");
+	if (strategy == "spanning") {
+		// TODO: Better weights
+		// Every persona gets at most 'iterations' edges
+		count iterations = std::stoi(parameters.at("maxPersonaEdges"));
+		for (int i = 0; i < iterations; ++i) {
+			RandomMaximumSpanningForest span(coarseGraph);
+			span.run();
+			auto spanningForest = span.getMSF();
+			spanningForest.forEdges([&](node u, node v, edgeweight w) {
+				if (parameters.at("iterationWeight") == "Yes")
+					w = w / (i + 1);
+				addPersonaEdge(u, v, w);
+				coarseGraph.removeEdge(u, v);
+			});
+		}
+	} else if (strategy == "maxEdge") {
+		count iterations = std::stoi(parameters.at("maxPersonaEdges"));
+		for (int i = 0; i < iterations; ++i) {
+			std::vector<std::set<node>> edgeSets(coarseGraph.upperNodeIdBound());
+			coarseGraph.forNodes([&](node u) {
+				edgeweight maxWeight = 0.0;
+				node maxNode = none;
+				coarseGraph.forEdgesOf(u, [&](node, node v, edgeweight w) {
+					if (w > maxWeight) {
+						maxWeight = v;
+						maxNode = v;
+					}
+				});
+				if (maxNode == none)
+					return;
+				if (u > maxNode)
+					std::swap(u, maxNode);
+				edgeSets[u].insert(maxNode);
+			});
+			for (node u = 0; u < edgeSets.size(); ++u) {
+				for (auto v : edgeSets[u]) {
+					addPersonaEdge(u, v, coarseGraph.weight(u, v));
+					coarseGraph.removeEdge(u, v);
+				}
+			}
+		}
+	} else if (strategy == "all") {
+		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
+			addPersonaEdge(u, v, w);
+		});
+	} else {
+		throw std::runtime_error(strategy + " is no valid strategy to connect personas!");
+	}
+
+	if (parameters.at("normalizePersonaWeights") == "spanSize") {
+		edgeweight weightSum = 0.0;
+		for (auto &edge : edges)
+			weightSum += std::get<2>(edge);
+		weightSum /= spanSize; // Sum of edge weights == spanning tree size
+		for (auto &edge : edges) {
+			std::get<2>(edge) /= weightSum;
+		}
+	} else if (parameters.at("normalizePersonaWeights") == "unweighted") {
+		for (auto &edge : edges)
+			std::get<2>(edge) = 1;
+	} else if (parameters.at("normalizePersonaWeights") == "sameWeights") {
+		for (auto &edge : edges)
+			std::get<2>(edge) = spanSize / edges.size();
+	}
+	return edges;
 }
 
 void
@@ -686,13 +812,23 @@ void EgoSplitting::splitIntoPersonas() {
 		sum += egoNetPartitionCounts[i];
 	}
 	personaOffsets[G.upperNodeIdBound()] = sum;
-	personaGraph = Graph(sum);
+	personaGraph = Graph(sum, true);
+
 }
 
 void EgoSplitting::connectPersonas() {
 	auto getPersona = [&](node u, index i) {
 		return personaOffsets[u] + i;
 	};
+
+	// Connect personas of each node
+	double weightFactor = std::stod(parameters.at("personaEdgeWeightFactor"));
+	G.forNodes([&](node u){
+		for (auto edge : personaEdges[u]) {
+			personaGraph.addEdge(getPersona(u, std::get<0>(edge)), getPersona(u, std::get<1>(edge)),
+			                     std::get<2>(edge) * weightFactor);
+		}
+	});
 
 	G.forEdges([&](node u, node v, edgeweight weight) {
 		auto idx_u = egoNetPartitions[u].find(v);
@@ -705,7 +841,10 @@ void EgoSplitting::connectPersonas() {
 //	egoNetPartitions.clear();
 
 #ifndef NDEBUG
-	assert(personaGraph.numberOfEdges() == G.numberOfEdges());
+	count internalPersonaEdges = 0;
+	for (const auto& edges : personaEdges)
+		internalPersonaEdges += edges.size();
+	assert(personaGraph.numberOfEdges() == G.numberOfEdges() + internalPersonaEdges);
 	// check that no isolated nodes were added
 	auto numIsolatedNodes = [](const Graph &G) {
 		ConnectedComponents compsAlgo(G);

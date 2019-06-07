@@ -729,21 +729,22 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
-//	ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
-//	Graph G = gen.generate();
-	EdgeListReader reader('\t', 0);
-	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
-								 G);
+	ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+	Graph G = gen.generate();
+//	EdgeListReader reader('\t', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+//								 G);
 //	EdgeListReader reader(' ', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
 
-	std::function<Partition(Graph &)> clusterAlgo = [](Graph &G) {
-		SLPA algo(G);
-		algo.run();
-		return algo.getPartition();
-//		PLM plm(G, false, 1.0, "none");
-//		plm.run();
+	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
+//		SLPA algo(G);
+//		algo.run();
+//		return algo.getPartition();
+		PLM plm(G, false, 1.0, "none");
+		plm.run();
+		return plm.getPartition();
 //		Partition plm_part = plm.getPartition();
 //		LPPotts second(G, plm_part, 0.1, 1, 20);
 //		second.run();

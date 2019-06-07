@@ -13,7 +13,7 @@
 #include <ostream>
 
 #include "../Globals.h"
-#include "CommunityDetectionAlgorithm.h"
+#include "../base/Algorithm.h"
 #include "../structures/Cover.h"
 #include "../structures/AdjacencyArray.h"
 #include "../structures/NodeMapping.h"
@@ -25,6 +25,7 @@ namespace NetworKit {
  * https://dl.acm.org/citation.cfm?id=3098054
  */
 class EgoSplitting : public Algorithm {
+	using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:
 	/**
@@ -44,7 +45,7 @@ public:
 	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-	             std::function<Partition(Graph &)> clusterAlgo);
+	             PartitionFunction clusterAlgo);
 
 	/**
 	 * Construct an instance of this algorithm for the input graph.
@@ -54,8 +55,8 @@ public:
 	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-	             std::function<Partition(Graph &)> localClusterAlgo,
-	             std::function<Partition(Graph &)> globalClusterAlgo);
+	             PartitionFunction localClusterAlgo,
+	             PartitionFunction globalClusterAlgo);
 
 	/**
 	 * Detect communities.
@@ -102,8 +103,9 @@ public:
 private:
 
 	const Graph &G;
-	std::function<Partition(Graph &)> localClusterAlgo, globalClusterAlgo;
+	PartitionFunction localClusterAlgo, globalClusterAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: <global node ID, set ID in ego-net>
+	std::vector<std::vector<std::tuple<index, index, edgeweight>>> personaEdges; // for each node: edges between the personas
 	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
@@ -140,9 +142,9 @@ private:
 	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors);
 
 	std::vector<std::pair<node, double>>
-    scoreTriangles(node u, const NodeMapping &neighbors,
-                   std::vector<std::set<node>> &triangleEdges,
-                   Graph const &egoGraph);
+	scoreTriangles(node u, const NodeMapping &neighbors,
+	               std::vector<std::set<node>> &triangleEdges,
+	               Graph const &egoGraph);
 
 	double normalizeScore(node v, double score) const;
 
@@ -158,9 +160,13 @@ private:
 	 * Search for triangles and execute function for each found triangle
 	 */
 	void findTriangles(Graph graph, AdjacencyArray directedGraph,
-			std::function<void(node, node, node)> triangleFunc) const;
+	                   std::function<void(node, node, node)> triangleFunc) const;
 
 	Partition createGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
+
+	std::vector<std::tuple<index, index, edgeweight>> connectEgoPartitionPersonas(
+			const Graph &egoGraph,
+			const Partition &egoPartition);
 };
 
 } /* namespace NetworKit */

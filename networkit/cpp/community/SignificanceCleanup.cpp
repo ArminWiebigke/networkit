@@ -13,6 +13,7 @@ SignificanceCleanup::SignificanceCleanup(const Graph &G, const Cover &input)
 		: G(G), cover(input), Algorithm() {
 }
 
+// TODO: Use this?
 void SignificanceCleanup::run() {
 	std::vector<std::set<node>> communities(cover.upperBound());
 	G.forNodes([&](node u){
@@ -56,7 +57,6 @@ void SignificanceCleanup::cleanupCommunity(std::set<node> &community) {
 		else
 			community.erase(worstNode);
 	}
-
 }
 
 std::map<node, double> SignificanceCleanup::calculateRScores(

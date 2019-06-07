@@ -17,9 +17,12 @@ def partition_merge(G, input_partition):
 	# return input_partition
 	result = copy(input_partition)
 	continue_merge = True
+	# print(G.numberOfNodes())
+	# print(poss_combs(G.numberOfNodes()))
+	graph_density = G.numberOfEdges() / poss_combs(G.numberOfNodes())
+	# print(graph_density)  # TODO: This should be the density of the global graph instead
 	while continue_merge:
 		continue_merge = False
-		print("Merge partitions")
 		partition_sets = [set() for _ in range(result.upperBound())]
 		for u in G.nodes():
 			part_id = result.subsetOf(u)
@@ -34,7 +37,7 @@ def partition_merge(G, input_partition):
 
 		partition_values = [defaultdict(lambda: 0.0) for _ in range(result.upperBound())]
 		for part_id, partition in partitions:
-			print(part_id, partition)
+			# print(part_id, partition)
 			internal_degree = cuts[part_id][part_id] / 2
 			part_size = len(partition)
 			if part_size > 1:
@@ -46,11 +49,11 @@ def partition_merge(G, input_partition):
 			partition_values[part_id]["size"] = part_size
 
 		for id_a, part_a in partitions:
-			print(id_a)
-			print(partition_values[id_a])
+			# print(id_a)
+			# print(partition_values[id_a])
 			density = partition_values[id_a]["density"]
 			for id_b, part_b in partitions:
-				print("\t", id_b)
+				# print("\t", id_b)
 				if id_a == id_b:
 					continue
 				if cuts[id_a][id_b] <= 2:
@@ -66,28 +69,19 @@ def partition_merge(G, input_partition):
 				merge = False
 
 				cut_density = cut / (size_a * size_b)
-				# if cut_density / density > 0.8:
-				# 	merge = True
-
 				separate_density = (edges_a + edges_b) / (poss_combs(size_a) + poss_combs(size_b))
 				combined_density = combined_edges / poss_combs(combined_size)
-				print("\t\t{}-{}: {}".format(size_a, size_b, cut), cut_density, separate_density, combined_density, sep=", ")
-				if cut_density > 0.1:
-					merge = True
-
-				internal_degree_sum = partition_values[id_a]["edges"] + partition_values[id_b]["edges"]
-				combined_degree = internal_degree_sum + cuts[id_a][id_b]
-				combined_size = partition_values[id_a]["size"] + partition_values[id_b]["size"]
-				combined_density = combined_degree / (combined_size * (combined_size - 1))
-				# if cut_density / separate_density > 0.4:
+				merge = cut_density > 0.1
+				# if cut > edges_a or cut > edges_b:
+				# 	if combined_density > 1.5 * graph_density:
+				# 		merge = True
+				# if cut_density > graph_density:
 				# 	merge = True
-				# if combined_density / separate_density > 0.7:
-				# 	merge = True
+				# merge = cut / combined_edges > 0.2
 
-				# print("\t\t", cut, cut_density, density, partition_values[id_a]["size"], partition_values[id_b]["size"], sep=", ")
 				if merge:
-					# merge partitions
-					print("############### Merge {} and {} ################".format(id_a, id_b))
+					print("\t\t{}-{}: {}".format(size_a, size_b, cut), cut_density, separate_density, combined_density, graph_density, sep=", ")
+					# print("############### Merge {} and {} ################".format(id_a, id_b))
 					for u in part_b:
 						result.moveToSubset(id_a, u)
 					continue_merge = True
