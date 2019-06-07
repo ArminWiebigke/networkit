@@ -1,7 +1,6 @@
-from egosplit.plot_scripts.read_data import read_data
-from egosplit.plot_scripts.config import set_sns_style
-from egosplit.plot_scripts.base_plot import make_plot, PlotType
-from egosplit.plot_scripts.comm_sizes import metric_names
+from plot_scripts.read_data import read_data
+from plot_scripts.config import set_sns_style, metric_names
+from plot_scripts.base_plot import make_plot, PlotType
 
 
 print("Reading results...")
@@ -13,7 +12,7 @@ plots = [
 	"metrics",
 	"comm_sizes",
 	"num_comms",
-	"ego_net_partitioning",
+	# "ego_net_partition",
 ]
 
 
@@ -40,8 +39,8 @@ if "metrics" in plots:
 			xlabel="om",
 			algo_match="Ego",
 			# add_algos=["OSLOM"],
-			remove_algo_part=["Ego_PLM_Info_", "Info_"],
-			title=metric_names[metric]["description"] + ", Clean up with OSLOM",
+			remove_algo_part=["Ego_PLM_", "Ego_PLM-", "_remove"],
+			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
 			y=metric,
@@ -107,8 +106,8 @@ if "comm_sizes" in plots:
 		# xlabel="om",
 		algo_match="",
 		# add_algos=["Ground_Truth"],
-		remove_algo_part=["Ego_PLM_Info_"],
-		title="Community Sizes" + ", Clean up with OSLOM",
+		remove_algo_part=["Ego_PLM_", "Ego_PLM-"],
+		title="Community Sizes",
 		file_name="communities/" + "comm_sizes",
 		one_plot_per_graph=True,
 		x="graph",
@@ -120,7 +119,7 @@ if "comm_sizes" in plots:
 		},
 		ax_set={
 			# "ylim": (2, 8),
-			"ylim": 2,
+			# "ylim": 2,
 			"ylabel": "size (log2)",
 			# "xticklabels": [""],
 		}
@@ -145,8 +144,8 @@ if "num_comms" in plots:
 		y="num_comms",
 		hue="algo",
 		plot_args={
-			# "dashes": False,
-			# "markers": False,
+			"dashes": False,
+			"markers": False,
 		},
 		ax_set={
 			"ylim": 0,
@@ -155,13 +154,13 @@ if "num_comms" in plots:
 
 
 # *****************************************************************************
-# *                            Ego-Net partitioning                           *
+# *                             Ego-Net partition                             *
 # *****************************************************************************
-if "ego_net_partitioning" in plots:
+if "ego_net_partition" in plots:
 	ego_metrics = [
 		"community_cohesion",
 		"partition_exclusivity",
-		"ego_partitioning_score",
+		"ego_partition_score",
 		"merged_external_nodes",
 		"parts_per_comm",
 		"comms_per_part",
@@ -170,7 +169,7 @@ if "ego_net_partitioning" in plots:
 		# {"filter": "_edges", "title": "extend (edges)", "file": "_edges"},
 		# {"filter": "_triangles", "title": "extend (triangles)", "file": "_triangles"},
 		# {"filter": "Ego_PLM_1.0_", "title": "PLM(1.0)", "file": "_PLM_1.0"},
-		{"filter": "", "title": "", "file": ""},
+		{"filter": "Ego", "title": "", "file": ""},
 	]
 	for ego_metric in ego_metrics:
 		# break
@@ -181,7 +180,8 @@ if "ego_net_partitioning" in plots:
 				graphs="",
 				xlabel="om",
 				algo_match=algo["filter"],
-				remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_remove"],
+				# add_algos=["Ego_PLP_b", "Ego_PLP_e"],
+				remove_algo_part=["Ego_"],
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/metrics/" + ego_metric + algo["file"],
 				x="graph",

@@ -117,8 +117,11 @@ def set_sns_style():
 def set_xticklabels(ax, xlabel):
 	labels = ax.get_xticklabels()
 	def cut_label(label, xlabel):
-		i = label.find(xlabel) + len(xlabel)
-		return label[i:]
+		begin = label.find(xlabel) + len(xlabel)
+		end = label.find('_', begin)
+		if end == -1:
+			return label[begin:]
+		return label[begin:end]
 
 	labels = [cut_label(l.get_text(), xlabel) for l in labels]
 	ax.set_xticklabels(labels)
