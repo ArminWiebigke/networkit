@@ -43,7 +43,7 @@ auto read_networkit_cover(const NetworKit::Cover &cover) {
 }
 
 void set_up_stochastics(int log_max) {
-    Stochastics::init();
+	Stochastics::init(0);
     LogFactTable *table = LogFactTable::get_instance();
     table->set(log_max);
 }

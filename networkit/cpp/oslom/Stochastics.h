@@ -17,7 +17,7 @@ public:
 
 	Stochastics() = delete;
 
-	static void init();
+	static void init(int num_edges);
 
 	/**
 	 * r1 \in (a,b)
@@ -90,10 +90,35 @@ public:
 	                                     double minus_log_total, int number_of_neighs, int Nstar,
 	                                     double &boot_interval);
 
+	static double compute_simple_fitness(int kin_node, int kout_g, int ext_stubs, int degree_node,
+	                                     double &boot_interval);
+
 	static double compute_global_fitness_step(int kin_node, int kout_g, int tm, int degree_node,
 	                                          double minus_log_total, int number_of_neighs,
 	                                          int Nstar, double _step_);
 
+	/**
+	 * Calculate the stochastic significance of a node.
+	 * @param node_degree The total degree of the node.
+	 * @param k_in The number of edges between the group and the node.
+	 * @param gr_out The number of outgoing edges of the group.
+	 * @param ext_stubs The number of stubs in the rest of the graph.
+	 * @param ext_nodes The number of nodes that are not in the group.
+	 * @return The probability that a random node is as good as the selected node.
+	 */
+	static double calc_score(int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes);
+
+	/**
+	 * Compute the fitness score of a node.
+	 * @param kin_node Edges between node and group.
+	 * @param kout_g Stubs outgoing from the group.
+	 * @param tm Free stubs in the rest of the graph.
+	 * @param degree_node Degree of the node.
+	 * @param minus_log_total ???
+	 * @param number_of_neighs Number of external nodes that are connected to the group (neighbors).
+	 * @param Nstar External nodes = #G - #group - 1
+	 * @return
+	 */
 	static inline double
 	compute_global_fitness_ofive(int kin_node, int kout_g, int tm, int degree_node,
 	                             double minus_log_total, int number_of_neighs, int Nstar) {

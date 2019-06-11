@@ -87,7 +87,7 @@ void StaticNetwork::clear() {
     }
     vertices.clear();
     dim = 0;
-    oneM = 0;
+    total_stubs = 0;
 }
 
 // node_id -> (neighbor_id -> (edge_id, edge_weight))
@@ -186,13 +186,13 @@ bool StaticNetwork::set_graph(const std::string &file_name) {
                 int multiple_l = 1;
 
                 if (ds.size() >= 4) {
-                    if (paras->weighted == false) {
+                    if (!paras->weighted) {
                         if (ds[2] > 0.99) {
                             multiple_l = cast_int(ds[2]);
                         }
                     }
 
-                    if (paras->weighted == true) {
+                    if (paras->weighted) {
                         if (ds[2] > 0) {
                             w = ds[2];
                         } else {
@@ -229,7 +229,7 @@ bool StaticNetwork::set_graph(const std::string &file_name) {
                 }
             }
 
-        oneM = 0;
+        total_stubs = 0;
 
         for (int i = 0; i < dim; i++) {
             vertices[i]->links->freeze();
@@ -242,7 +242,7 @@ bool StaticNetwork::set_graph(const std::string &file_name) {
 
             vertices[i]->stub_number = stub_number_i;
             vertices[i]->strength = strength_i;
-            oneM += stub_number_i;
+            total_stubs += stub_number_i;
         }
     } else
         std::cerr << "File corrupted" << std::endl;
@@ -280,7 +280,7 @@ void StaticNetwork::set_graph(std::deque<std::deque<int>> &link_per_node,
         }
     }
 
-    oneM = 0;
+    total_stubs = 0;
 
     for (int i = 0; i < dim; i++) {
         vertices[i]->links->freeze();
@@ -293,7 +293,7 @@ void StaticNetwork::set_graph(std::deque<std::deque<int>> &link_per_node,
 
         vertices[i]->stub_number = stub_number_i;
         vertices[i]->strength = strength_i;
-        oneM += stub_number_i;
+        total_stubs += stub_number_i;
     }
 
     if (paras->weighted)
@@ -301,7 +301,7 @@ void StaticNetwork::set_graph(std::deque<std::deque<int>> &link_per_node,
 }
 
 int StaticNetwork::kin_m(const std::deque<int> &seq) {
-    if (seq.size() > double(oneM) / dim) {
+    if (seq.size() > double(total_stubs) / dim) {
         std::set<int> H;
         deque_numeric::deque_to_set(seq, H);
         return kin_m(H);
@@ -664,6 +664,6 @@ void StaticNetwork::print_degree_of_homeless(std::deque<int> &homel, std::ostrea
 
 }
 
-StaticNetwork::StaticNetwork() : dim(0), oneM(0) {
+StaticNetwork::StaticNetwork() : dim(0), total_stubs(0) {
     paras = Parameters::get_instance();
 }

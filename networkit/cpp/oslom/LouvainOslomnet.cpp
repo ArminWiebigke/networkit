@@ -41,13 +41,13 @@ oslomnet_louvain::unweighted_favorite_of(const int &node, int &new_label, int &s
         double fitness;
         if (module_label != vertex_label[node]) {
             fitness = Stochastics::topological_05(num_edges, module.kout,
-                                                 oneM - module.ktot,
+                                                 total_stubs - module.ktot,
                                                  vertices[node]->stub_number);
         } else {
             stubs_into_old = num_edges;
             int kout_prime = module.kout - vertices[node]->stub_number + 2 * stubs_into_old;
             fitness = Stochastics::topological_05(
-                    num_edges, kout_prime, oneM - module.ktot + vertices[node]->stub_number,
+                    num_edges, kout_prime, total_stubs - module.ktot + vertices[node]->stub_number,
                     vertices[node]->stub_number);
             fitness *= 0.999;        // to break possible ties
         }
@@ -75,7 +75,7 @@ void oslomnet_louvain::weighted_favorite_of(const int &node, int &fi, int &kp, i
         double to_fit;
         if (itM.first != vertex_label[node]) {
             to_fit = Stochastics::topological_05(itM.second.first, itOM->second.kout,
-                                                 oneM - itOM->second.ktot,
+                                                 total_stubs - itOM->second.ktot,
                                                  vertices[node]->stub_number);
             to_fit *= double(dim - itOM->second.nc + 1) / (
                     std::min(dim - itOM->second.nc, itOM->second.kout / itM.second.first + 1) + 1);
@@ -85,7 +85,7 @@ void oslomnet_louvain::weighted_favorite_of(const int &node, int &fi, int &kp, i
             kop = itM.second.first;
             int kout_prime = itOM->second.kout - vertices[node]->stub_number + 2 * kop;
             to_fit = Stochastics::topological_05(itM.second.first, kout_prime,
-                                                 oneM - itOM->second.ktot +
+                                                 total_stubs - itOM->second.ktot +
                                                  vertices[node]->stub_number,
                                                  vertices[node]->stub_number);
             to_fit *= double(dim - itOM->second.nc + 2) /

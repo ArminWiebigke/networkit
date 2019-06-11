@@ -490,10 +490,15 @@ edgeweight Graph::computeWeightedDegree(const node &v,
 	if (weighted) {
 		edgeweight sum = 0.0;
 		auto sumWeights = [&](const node u, const edgeweight w) { sum += w; };
-		if (inDegree) {
-			forInNeighborsOf(v, sumWeights);
+		if (directed) {
+			if (inDegree) {
+				forInNeighborsOf(v, sumWeights);
+			} else {
+				forNeighborsOf(v, sumWeights);
+			}
 		} else {
 			forNeighborsOf(v, sumWeights);
+			sum += weight(v, v);
 		}
 		return sum;
 	}

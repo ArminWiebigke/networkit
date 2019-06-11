@@ -584,7 +584,7 @@ int OslomNetGlobal::try_to_assign_homeless(ModuleCollection &Mcoll, bool anyway)
             /*cout<<"module: "<<*its<<" kin: "<<module_kin[*its]<<"  ktot: "<<module_ktot[*its]<<" kin h "<<kin_node<<endl;
             print_ri(Mcoll.modules[*its]);*/
             int kout_g = module_ktot[*its] - module_kin[*its];
-            int tm = oneM - module_ktot[*its];
+            int tm = total_stubs - module_ktot[*its];
             //double rh= compute_r_hyper(kin_node, kout_g, tm, vertices[itm->first]->stub_number);
             double kinw = vertices[itm.first]->kplus_w(Mcoll.modules[*its]);
             //double weight_part= log_together(kinw, kin_node);

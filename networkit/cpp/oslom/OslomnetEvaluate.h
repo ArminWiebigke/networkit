@@ -36,7 +36,7 @@ public:
 
     ~oslom_net_evaluate() = default;
 
-    double CUP_both(const std::deque<int> &_c_, std::deque<int> &gr_cleaned,
+    double CUP_both(const std::deque<int> &group_to_clean, std::deque<int> &cleaned_group,
                     int number_of_runs = -1);
 
     double CUP_check(const std::deque<int> &_c_, std::deque<int> &gr_cleaned,
@@ -50,20 +50,17 @@ public:
 
 private:
 
-    void erase_cgroup(int wnode);
+    void erase_from_cgroup(int wnode);
 
-    void insert_cgroup(int wnode);
+    void insert_into_cgroup(int node);
 
     bool erase_the_worst(int &wnode);
+
+    bool erase_the_worst();
 
     int set_maxbord();
 
     void set_cgroup_and_neighs(const std::deque<int> &G);
-
-    double
-    all_external_test(int kout_g, int tm, int Nstar, int nneighs, const double &max_r_one,
-                      const double &maxr_two, std::deque<int> &gr_cleaned, bool only_c,
-                      WeightedTabdeg &previous_tab_c);
 
     double CUP_from_list(CupDataStruct &a, std::deque<int> &gr_cleaned);
 
@@ -79,7 +76,7 @@ private:
                     int kin_cgroup_prev, int ktot_cgroup_prev, std::deque<int> &gr_cleaned,
                     bool only_c, int runs);
 
-    void initialize_for_evaluation(const std::deque<int> &_c_, WeightedTabdeg &previous_tab_c,
+    void initialize_for_evaluation(const std::deque<int> &eval_group, WeightedTabdeg &previous_tab_c,
                                    WeightedTabdeg &previous_tab_n, int &kin_cgroup_prev,
                                    int &ktot_cgroup_prev);
 

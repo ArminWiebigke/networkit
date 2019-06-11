@@ -119,15 +119,15 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.egoNetPartitions = algo.getEgoNetPartitions()
 		self.egoNets = algo.getEgoNets()
 
-	# Output timings
-	# timings = algo.getTimings()
-	# for name in sorted(timings.keys()):
-	# 	print(str(timings[name]/1000).rjust(9) + '  ' + name.decode('ASCII'))
-	# timings_str = ''
-	# for name in sorted(timings.keys()):
-	# 	timings_str += str(timings[name]/1000000).ljust(21)
-	# self.out_file.write(timings_str + '\n')
-	# print(timings_str)
+		# Output timings
+		timings = algo.getTimings()
+		for name in sorted(timings.keys()):
+			print(str(int(timings[name]/1000000)).rjust(7) + '  ' + name.decode('ASCII'))
+		timings_str = ''
+		for name in sorted(timings.keys()):
+			timings_str += str(timings[name]/1000000).ljust(21)
+		# self.out_file.write(timings_str + '\n')
+		print(timings_str)
 
 	# def getExecutionInfo(self):
 	# 	return self.executionInfo

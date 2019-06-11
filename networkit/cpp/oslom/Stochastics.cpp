@@ -1,7 +1,11 @@
+#include <cassert>
+
 #include "Stochastics.h"
 
-void Stochastics::init() {
+
+void Stochastics::init(int num_edges) {
     log_table = LogFactTable::get_instance();
+    log_table->set(num_edges * 2);
     paras = Parameters::get_instance();
 }
 
@@ -162,6 +166,26 @@ Stochastics::equivalent_check_gather(CupDataStruct &a, int &add_nodes, const dou
     }
 }
 
+
+double Stochastics::compute_simple_fitness(int kin_node, int kout_g, int ext_stubs, int degree_node,
+                                           double &boot_interval) {
+	boot_interval = (0.5 + 1e-6 * (ran4() - 0.5)) *
+	                hyper_table(kin_node, kout_g, ext_stubs, degree_node);
+	double topologic =
+			log_table->right_cumulative_function(degree_node, kout_g, ext_stubs, kin_node + 1) +
+			boot_interval;
+
+	//cout<<"----------> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node+1)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
+	//cout<<"<> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
+	if (paras->weighted)
+		throw std::runtime_error("Don't use weighted graphs!");
+	if (topologic > 1)
+		topologic = 1;
+	boot_interval = std::min(boot_interval, 1. - topologic);
+	boot_interval = std::min(boot_interval, topologic);
+	return std::max(topologic, 1e-100);
+}
+
 /**
  *
  * @param kin_node Edges from node to group.
@@ -182,48 +206,19 @@ double Stochastics::compute_global_fitness(int kin_node, int kout_g, int tm, int
 	/* which is true if the boot_interval is small enough	*/
 	boot_interval = (0.5 + 1e-6 * (ran4() - 0.5)) *
 	                hyper_table(kin_node, kout_g, tm, degree_node);
-	//    boot_interval = 1e-100;
 	double topologic =
 			log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node + 1) +
 			boot_interval;
 
 	//cout<<"----------> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node+1)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
 	//cout<<"<> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
-
-	if (!paras->weighted) {
-		if (topologic > 1)
-			topologic = 1;
-		boot_interval = std::min(boot_interval, 1. - topologic);
-		boot_interval = std::min(boot_interval, topologic);
-		return std::max(topologic, 1e-100);
-	}
-
-	topologic *= (Nstar + 1.) / (number_of_neighs + 1.);
-	boot_interval *= (Nstar + 1.) / (number_of_neighs + 1.);
-
-	if (topologic > 1) {
+	if (paras->weighted)
+		throw std::runtime_error("Don't use weighted graphs!");
+	if (topologic > 1)
 		topologic = 1;
-		boot_interval = 1e-100;
-    }
-
-    //cout<<"to: "<<topologic<<std::endl;
-    double weight_part = log_together(minus_log_total, kin_node);
-    //cout<<"we: "<<weight_part<<" - "<<minus_log_total<<std::endl;
-
-    if (topologic <= 1e-100 || weight_part <= 1e-100) {
-        boot_interval = 1e-100;
-        return 1e-100;
-    }
-
-    double _log_sum_ = -log(topologic * weight_part);
-    boot_interval *= weight_part * _log_sum_;
-
-    double global_score = log_together(_log_sum_, 2);
-
-    boot_interval = std::min(boot_interval, 1. - global_score);
-    boot_interval = std::min(boot_interval, global_score);
-
-    return global_score;
+	boot_interval = std::min(boot_interval, 1. - topologic);
+	boot_interval = std::min(boot_interval, topologic);
+	return std::max(topologic, 1e-100);
 }
 
 double Stochastics::compute_global_fitness_step(int kin_node, int kout_g, int tm, int degree_node,
@@ -232,21 +227,9 @@ double Stochastics::compute_global_fitness_step(int kin_node, int kout_g, int tm
     double topologic =
             log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node + 1) +
             _step_ * (hyper_table(kin_node, kout_g, tm, degree_node));
-
-    if (!paras->weighted)
-        return std::max(topologic, 1e-100);
-
-    topologic *= (Nstar + 1.) / (number_of_neighs + 1.);
-
-    if (topologic > 1)
-        topologic = 1;
-
-    double weight_part = log_together(minus_log_total, kin_node);
-
-    if (topologic <= 1e-100 || weight_part <= 1e-100)
-        return 1e-100;
-
-    return log_together(-log(topologic * weight_part), 2);
+	if (paras->weighted)
+		throw std::runtime_error("Don't use weighted graphs!");
+	return std::max(topologic, 1e-100);
 }
 
 double Stochastics::compute_global_fitness_randomized_short(int kin_node, int kout_g, int tm,
@@ -270,6 +253,18 @@ double Stochastics::compute_global_fitness_randomized_short(int kin_node, int ko
 
     return std::min(topologic, weight_part);
 }
+
+// TODO: Are the stubs of the node included in ext_stubs (should they be?), also ext_nodes
+double Stochastics::calc_score(int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes) {
+	assert(gr_out <= ext_stubs);
+	double boot_interval;
+	double r_score = Stochastics::compute_simple_fitness(k_in, gr_out, ext_stubs,
+	                                                     node_degree, boot_interval);
+	double ordered_stat = Stochastics::order_statistics_left_cumulative(ext_nodes,
+	                                                                    ext_nodes, r_score);
+	return ordered_stat;
+}
+
 
 LogFactTable *Stochastics::log_table;
 Parameters *Stochastics::paras;

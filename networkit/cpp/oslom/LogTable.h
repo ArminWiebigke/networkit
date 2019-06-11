@@ -34,9 +34,9 @@ public:
     //void set_small_tab_right_hyper(int, int);
 
     inline double log_hyper(int kin_node, int kout_g, int tm, int degree_node) {
-        return log_choose(kout_g, kin_node) +
-               log_choose(tm - kout_g, degree_node - kin_node) -
-               log_choose(tm, degree_node);
+        return log_choose(kout_g, kin_node)
+               + log_choose(tm - kout_g, degree_node - kin_node)
+               - log_choose(tm, degree_node);
     };
 
     inline double hyper(int kin_node, int kout_g, int tm, int degree_node) {

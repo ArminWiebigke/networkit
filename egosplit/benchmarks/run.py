@@ -5,6 +5,7 @@ import egosplit.benchmarks.evaluation.benchmark_metric as bm
 
 from networkit.stopwatch import clockit
 from networkit.community import PLM, PLP, LPPotts, SLPA
+from networkit import setLogLevel
 from ..external import *
 from .evaluation.metrics import write_results_to_file, add_compact_results, \
 	print_compact_results
@@ -133,7 +134,7 @@ def get_graphs(iterations):
 	# 		't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
 
 	for minc in [60]:
-		for om in range(1, 6):
+		for om in range(1, 8):
 			for mu in [0.25]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
@@ -168,6 +169,7 @@ def get_graphs(iterations):
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 20, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
 
+
 	# # Scale mixing factor
 	# for mu_factor in range(0, 71, 10):
 	# 	om = 4
@@ -178,6 +180,7 @@ def get_graphs(iterations):
 	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
 	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
 	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
+
 	# LFR_graph_args['a'] = {
 	# 	'N': 1000, 'k': 10, 'maxk': 50, 'minc': 20, 'maxc': 100,
 	# 	't1': 2, 't2': 1, 'mu': 0.3, 'on': 500, 'om': 5}
@@ -259,12 +262,12 @@ def get_ego_parameters(store_ego_nets):
 		'normalizePersonaCut': 'No',
 		'personaEdgeWeightFactor': 1,
 		'normalizePersonaWeights': 'unweighted',
-		'iterationWeight': 'No'
+		'iterationWeight': 'No',
 	}
 	extend_standard = {
 		**standard,
-		'addNodesFactor': 4,
-		'addNodesExponent': 0.6,
+		'addNodesFactor': 2,
+		'addNodesExponent': 0.8,
 		'processEgoNet': 'extend',
 		'edgesBetweenNeigNeig': 'Yes',
 		'extendRandom': 'No',
@@ -272,11 +275,20 @@ def get_ego_parameters(store_ego_nets):
 		'triangleThreshold': 0,
 		'extendOverDirected': 'No',
 		'keepOnlyTriangles': 'No',
+		'scoreStrategy': 'score',
+		'extendFromPartitionIterations': '1',
 	}
 	edge_scores_standard = {
 		**extend_standard,
 		'extendStrategy': 'edgeScore',
-		'scoreStrategy': 'score^2_normed',
+	}
+	significance_scores_standard = {
+		**edge_scores_standard,
+		'extendFromPartitionIterations': '2',
+		'extendStrategySecond': 'significance',
+		'maxSignificance': 0.1,
+		'signOnlyNeighs': "No",
+		'sortGroupsDensity': "No",
 	}
 	triangles_standard = {
 		**extend_standard,
@@ -285,7 +297,8 @@ def get_ego_parameters(store_ego_nets):
 		'minTriangles': 0,
 	}
 
-	# ego_parameters['b'] = standard
+	# TODO: Nochmal die gewichteten Persona Connections testen
+	ego_parameters['b'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
@@ -293,6 +306,43 @@ def get_ego_parameters(store_ego_nets):
 	ego_parameters['e'] = {
 		**edge_scores_standard,
 	}
+	# ego_parameters['s'] = {
+	# 	**significance_scores_standard,
+	# }
+	# ego_parameters['twice'] = {
+	# 	**significance_scores_standard,
+	# 	'extendFromPartitionIterations': '2',
+	# 	'extendStrategySecond': 'edgeScore',
+	# }
+	# ego_parameters['sign-0.01'] = {
+	# 	**significance_scores_standard,
+	# 	'maxSignificance': 0.01,
+	# }
+	ego_parameters['sign-0.1'] = {
+		**significance_scores_standard,
+		'maxSignificance': 0.1,
+	}
+	# ego_parameters['sign-0.3'] = {
+	# 	**significance_scores_standard,
+	# 	'maxSignificance': 0.3,
+	# }
+	# ego_parameters['base-sign-0.1'] = {
+	# 	**extend_standard,
+	# 	'extendStrategy': 'none',
+	# 	'extendFromPartitionIterations': '2',
+	# 	'extendStrategySecond': 'significance',
+	# 	'maxSignificance': 0.1,
+	# 	'signOnlyNeighs': "No",
+	# }
+	# ego_parameters['cut'] = {
+	# 	**edge_scores_standard,
+	# 	'connectPersonasStrat': 'spanning',
+	# 	'maxPersonaEdges': 1,
+	# 	'normalizePersonaCut': 'No',
+	# 	'personaEdgeWeightFactor': 1,
+	# 	'normalizePersonaWeights': 'spanSize',
+	# 	'iterationWeight': 'No'
+	# }
 	# ego_parameters['spanMulti'] = {
 	# 	**edge_scores_standard,
 	# 	'connectPersonas': 'Yes',
@@ -323,21 +373,21 @@ def get_ego_parameters(store_ego_nets):
 	# 	'maxPersonaEdges': 1,
 	# 	'normalizePersonaCut': 'density',
 	# }
-	# ego_parameters['volume'] = {
+	# ego_parameters['all_volume'] = {
 	# 	**edge_scores_standard,
 	# 	'connectPersonas': 'Yes',
 	# 	'connectPersonasStrat': 'all',
 	# 	'normalizePersonaCut': 'volume',
 	# 	'normalizePersonaWeights': 'spanSize',
 	# }
-	# ego_parameters['density'] = {
+	# ego_parameters['all_density'] = {
 	# 	**edge_scores_standard,
 	# 	'connectPersonas': 'Yes',
 	# 	'connectPersonasStrat': 'all',
 	# 	'normalizePersonaCut': 'density',
 	# 	'normalizePersonaWeights': 'spanSize',
 	# }
-	# ego_parameters['cut'] = {
+	# ego_parameters['all_cut'] = {
 	# 	**edge_scores_standard,
 	# 	'connectPersonas': 'Yes',
 	# 	'connectPersonasStrat': 'all',

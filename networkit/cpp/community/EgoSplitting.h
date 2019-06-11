@@ -17,6 +17,7 @@
 #include "../structures/Cover.h"
 #include "../structures/AdjacencyArray.h"
 #include "../structures/NodeMapping.h"
+#include "../auxiliary/Timer.h"
 
 namespace NetworKit {
 
@@ -111,8 +112,8 @@ private:
 	Graph personaGraph; // graph with the split personas
 	Partition personaPartition;
 	Cover cover; // the result of the algorithm
-	std::map<std::string, double> timings;
-	std::map<std::string, double> executionInfo;
+	mutable std::map<std::string, double> timings;
+	mutable std::map<std::string, double> executionInfo;
 	std::vector<Graph> egoNets;
 	std::map<std::string, std::string> parameters;
 //	Graph edgeScoreGraph;
@@ -131,20 +132,24 @@ private:
 
 	void createCover();
 
-	void extendEgoNet(Graph &egoGraph, node u, NodeMapping &neighbors, count extendNodeCnt);
+	Partition partitionEgoNet(node u, const Graph &egoGraph, const NodeMapping &nodeMapping) const;
 
-	Graph weightedEdgesGraph(Graph const &inputGraph);
+	void extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
+	                  Partition &basePartition) const;
 
-	void
-	consensusWeighting(Graph &egoGraph, node u, const NodeMapping &nodeMapping,
-	                   count extendNodeCnt);
+	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors) const;
 
-	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors);
+	std::vector<std::pair<node, double>> scoreTriangles(node u, const NodeMapping &neighbors,
+	                                                    std::vector<std::set<node>> &triangleEdges,
+	                                                    Graph const &egoGraph) const;
 
 	std::vector<std::pair<node, double>>
-	scoreTriangles(node u, const NodeMapping &neighbors,
-	               std::vector<std::set<node>> &triangleEdges,
-	               Graph const &egoGraph);
+	scoreSignificance(node u, const NodeMapping &egoMapping, Graph const &egoGraph,
+	                  const Partition &basePartition) const;
+
+	std::vector<std::pair<node, double>>
+	calcSignficance(node externalNode, const Graph &coarseGraph, const NodeMapping &coarseMapping,
+			const std::vector<count> &coarseSizes) const;
 
 	double normalizeScore(node v, double score) const;
 
@@ -162,14 +167,21 @@ private:
 	void findTriangles(Graph graph, AdjacencyArray directedGraph,
 	                   std::function<void(node, node, node)> triangleFunc) const;
 
-	Partition createGroundTruthPartition(Graph &egoGraph, NodeMapping &mapping, node egoNode) const;
+	/**
+	 * Create a perfect partition from the ground truth.
+	 */
+	Partition createGroundTruthPartition(const Graph &egoGraph, const NodeMapping &mapping,
+	                                     node egoNode) const;
 
+	/**
+	 * Connect the personas of a node. Returns a list of edges between the persona indexes.
+	 */
 	std::vector<std::tuple<index, index, edgeweight>> connectEgoPartitionPersonas(
-			const Graph &egoGraph,
-			const Partition &egoPartition);
+			const Graph &egoGraph, const Partition &egoPartition) const;
+
+	void addTime(Aux::Timer &timer, const std::string& name) const;
 };
 
 } /* namespace NetworKit */
-
 
 #endif /* EGOSPLITTING_H */

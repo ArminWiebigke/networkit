@@ -76,11 +76,18 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 	for u in graph.nodes():
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
+		ego_sums = defaultdict(lambda: 0)
+
 		# Remove all nodes that are not neighbors of the ego-node
 		node_partition_map = copy(benchmark.algo.ego_net_partition_of(u))
 		nodes = list(node_partition_map.keys())
+		ego_sums["extended_ego_net_size"] = len(nodes)
+		ego_sums["external_nodes_extended"] = count_external_nodes(
+			ground_truth, truth_communities, nodes)
+		num_extended_nodes = 0
 		for v in nodes:
 			if not graph.hasEdge(u, v):
+				num_extended_nodes += 1
 				del node_partition_map[v]
 
 		partitions, best_communities, community_sizes = calculate_partition_properties(
@@ -89,8 +96,10 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		if not truth_communities:
 			continue
 		num_communities = len(truth_communities)
-		ego_sums = defaultdict(lambda: 0)
-		ego_sums["num_external_nodes"] = count_external_nodes(ground_truth, truth_communities, nodes)
+		ego_sums["extended_nodes"] = num_extended_nodes
+		ego_sums["external_nodes"] = count_external_nodes(
+			ground_truth, truth_communities, node_partition_map.keys())
+		ego_sums["ego_net_size"] = ego_net_size
 
 		# Are communities split into multiple partitions?
 		# TODO: Anzahl Communities, die eine Partition dominieren -> sinnvolle Personas
@@ -161,6 +170,8 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		for key, value in ego_sums.items():
 			total_sums[key] += value
 
+		# TODO: Count external nodes -> Good extension?
+
 	total_metrics = calc_metrics(total_sums)
 
 	for key, value in total_metrics.items():
@@ -183,9 +194,12 @@ def calc_metrics(sums):
 		"parts_per_comm": sums["parts_per_comm"] / sums["num_comms"],
 		"comms_per_part": safe_div(sums["comms_per_part"], sums["num_partitions"], 1),
 		"merged_external_nodes": safe_div(sums["part_incorrect_ext"],
-		                                             sums["num_external_nodes"]),
+		                                             sums["external_nodes"]),
 		"partition_exclusivity": safe_div(sums["part_incorrect_gt"],
 		                                              sums["partition_size"]),
+		"extended_nodes": safe_div(sums["extended_nodes"], sums["ego_net_size"]),
+		"external_nodes": safe_div(sums["external_nodes_extended"],
+		                                    sums["extended_ego_net_size"]),
 	}
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]

@@ -12,7 +12,7 @@ plots = [
 	"metrics",
 	"comm_sizes",
 	"num_comms",
-	# "ego_net_partition",
+	"ego_net_partition",
 ]
 
 
@@ -46,7 +46,7 @@ if "metrics" in plots:
 			y=metric,
 			hue="algo",
 			plot_args={
-				"dashes": False,
+				# "dashes": False,
 				# "markers": False,
 				"ci": "sd",
 			},
@@ -164,6 +164,8 @@ if "ego_net_partition" in plots:
 		"merged_external_nodes",
 		"parts_per_comm",
 		"comms_per_part",
+		"extended_nodes",
+		"external_nodes",
 	]
 	algos = [
 		# {"filter": "_edges", "title": "extend (edges)", "file": "_edges"},
@@ -189,7 +191,7 @@ if "ego_net_partition" in plots:
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
-					"dashes": False,
+					# "dashes": False,
 					# "markers": False,
 				},
 				ax_set={
@@ -224,7 +226,7 @@ if "ego_net_partition" in plots:
 		# break
 		for algo in algos:
 			make_plot(
-				plot_type=PlotType.bar,
+				# plot_type=PlotType.bar,
 				data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
 				graphs="",
 				# xlabel="om",
@@ -232,7 +234,7 @@ if "ego_net_partition" in plots:
 				remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_remove"],
 				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
 				file_name="ego_partition/ego_metrics/" + ego_metric + algo["file"],
-				x="num_comms",
+				x="ego_net_size",
 				y="value",
 				hue="algo",
 				plot_args={

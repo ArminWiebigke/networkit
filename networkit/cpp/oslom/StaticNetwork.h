@@ -47,7 +47,7 @@ public:
 
     int size() { return dim; };
 
-    double stubs() { return oneM; };
+    double stubs() { return total_stubs; };
 
     int kin_m(const std::deque<int> &);
 
@@ -105,13 +105,15 @@ protected:
         int id_num;       // id
         double strength;  // sum of the weights
         int stub_number;  // number of stubs
-        Wsarray *links;   // array with label of neighbor, multiple links, sm of the weights towards it
-        // links->l[i] = label of neighbor i, links->w[i] = number of edges, sum of weights to the neighbor i
-        std::deque<double> original_weights;
+
+	    // links->l[i] = label of neighbor i, links->w[i] = number of edges, sum of weights to the neighbor i
+	    Wsarray *links;   // array with label of neighbor, multiple links, sm of the weights towards it
+
+	    std::deque<double> original_weights;
     };
 
     int dim;   // number of nodes
-    int oneM;  // number of stubs
+    int total_stubs;  // number of stubs
 
     std::deque<vertex *> vertices;
 

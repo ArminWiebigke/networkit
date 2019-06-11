@@ -53,7 +53,8 @@ def stream_partition(graphs, benchmarks):
 		benchmarks_and_clients.append((benchmark, client))
 		workspace_id += 1
 
-	while True:
+	keep_streaming = True
+	while keep_streaming:
 		for graph in graphs:
 			node_id = graph.graph.randomNode()
 			for benchmark, client in benchmarks_and_clients:
@@ -81,5 +82,5 @@ def stream_partition(graphs, benchmarks):
 
 			command = input("Press Enter to proceed, or q + Enter to quit")
 			if command == "q":
+				keep_streaming = False
 				break
-			workspace_id = 1

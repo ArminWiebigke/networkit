@@ -13,11 +13,22 @@ namespace NetworKit {
 NodeMapping::NodeMapping(const NetworKit::Graph &G)
 		: globalToLocal(G.upperNodeIdBound(), none) {}
 
-void NodeMapping::addNode(NetworKit::node u) {
+bool NodeMapping::addNode(NetworKit::node u) {
 	if (!isMapped(u)) {
 		globalToLocal[u] = localToGlobal.size();
 		localToGlobal.push_back(u);
+		return true;
 	}
+	return false;
+}
+
+void NodeMapping::addDummy() {
+	localToGlobal.push_back(none);
+}
+
+void NodeMapping::addMapping(node global, node local) {
+	globalToLocal[global] = local;
+	localToGlobal[local] = global;
 }
 
 node NodeMapping::local(NetworKit::node globalNode) const {
