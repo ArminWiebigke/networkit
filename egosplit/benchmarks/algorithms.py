@@ -127,7 +127,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		for name in sorted(timings.keys()):
 			timings_str += str(timings[name]/1000000).ljust(21)
 		# self.out_file.write(timings_str + '\n')
-		print(timings_str)
+		# print(timings_str)
 
 	# def getExecutionInfo(self):
 	# 	return self.executionInfo

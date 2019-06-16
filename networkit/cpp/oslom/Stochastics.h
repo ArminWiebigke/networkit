@@ -106,7 +106,8 @@ public:
 	 * @param ext_nodes The number of nodes that are not in the group.
 	 * @return The probability that a random node is as good as the selected node.
 	 */
-	static double calc_score(int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes);
+	static double calc_score(int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes,
+	                         int position = 0);
 
 	/**
 	 * Compute the fitness score of a node.

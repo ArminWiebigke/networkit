@@ -71,8 +71,6 @@ void EgoSplitting::init() {
 	parameters["storeEgoNet"] = "No";
 	parameters["addEgoNode"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
-	parameters["extendFromPartitionIterations"] = "2";
-	parameters["extendStrategySecond"] = "significance";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -88,15 +86,19 @@ void EgoSplitting::init() {
 	parameters["weightOffset"] = "0";
 
 	// Parameters for ego-net extension
-	parameters["processEgoNet"] = "extend";
-	parameters["extendRandom"] = "No";
 	parameters["extendOverDirected"] = "No";
-	parameters["addNodesFactor"] = "4";
-	parameters["addNodesExponent"] = "0.6";
+	parameters["addNodesFactor"] = "1";
+	parameters["addNodesExponent"] = "0.8";
 	parameters["edgesBetweenNeigNeig"] = "Yes";
-	parameters["keepOnlyTriangles"] = "No";
 	parameters["minNodeDegree"] = "0";
 	parameters["triangleThreshold"] = "0";
+
+	// Parameters for significance extension
+	parameters["extendPartitionIterations"] = "2";
+	parameters["extendStrategySecond"] = "significance";
+	parameters["maxSignificance"] = "0.1";
+	parameters["orderedStatPos"] = "0.1";
+	parameters["sortGroups"] = "No";
 
 	// Parameters for edgeScores
 	parameters["extendStrategy"] = "edgeScore";
@@ -108,7 +110,6 @@ void EgoSplitting::init() {
 //	parameters["processEgoNet"] = "extend";
 //	parameters["extendStrategy"] = "significance";
 //	parameters["scoreStrategy"] = "score";
-	parameters["maxSignificance"] = "0.1";
 
 }
 
@@ -246,12 +247,6 @@ void EgoSplitting::createEgoNets() {
 		addTime(timer, "12    Neighbor Triangle Search");
 
 		/*
-		 * TODO: Zwei mal partitionieren:
-		 * Beim ersten Partitionieren: Extende maximal (niedrieger Wert?) viele Knoten, einfach nur
-		 * nach Score sortiert.
-		 * Beim zweiten Partitionieren: Extende nur Knoten, die zu einer Partition oder zu einer
-		 * Vereinigung von Partitionen signifikant sind. (oder maximal viele)
-		 *
 		 * TODO: Vereinigung von Partitionen überprüfen:
 		 * Verbinde nur Partitionen die auch verbunden sind.
 		 * Sortiere nach Anzahl Kanten. Überprüfe Partitionen wie folgt, Abbruch falls ein Kandidat
@@ -259,7 +254,6 @@ void EgoSplitting::createEgoNets() {
 		 * Berechne Sig. für erste Part.
 		 * Berechne Sig. für nächste Part., füge sie in sortierte Liste der Sig.en an Stelle x ein.
 		 * Berechne Sig. für Vereinigung der x besten Part.
-		 *
 		 *
 		 */
 
@@ -270,14 +264,20 @@ void EgoSplitting::createEgoNets() {
 		Graph egoGraphBase(egoGraph);
 		NodeMapping nodeMappingBase(nodeMapping);
 		Partition egoPartition;
-		count extendIterations = std::stoi(parameters.at("extendFromPartitionIterations"));
+		count extendIterations = std::stoi(parameters.at("extendPartitionIterations"));
+		if (extendIterations < 1)
+			throw std::runtime_error("ExtendIterations < 1!");
+		INFO("Extend for " + std::to_string(extendIterations) + " iterations");
 		for (count i = 0; i < extendIterations; ++i) {
+			std::string extendStrategy = parameters.at("extendStrategy");
 			if (i > 0) {
+				extendStrategy = parameters.at("extendStrategySecond");
 				egoGraph = egoGraphBase;
 				nodeMapping = nodeMappingBase;
 			}
+			INFO("Extend ego-net with strategy " + extendStrategy);
 
-			extendEgoNet(u, egoGraph, nodeMapping, egoPartition);
+			extendEgoNet(u, egoGraph, nodeMapping, egoPartition, extendStrategy);
 			addTime(timer, "15)    Extend EgoNet");
 
 			egoPartition = partitionEgoNet(u, egoGraph, nodeMapping);
@@ -474,24 +474,13 @@ void EgoSplitting::findTriangles(Graph graph, AdjacencyArray directedGraph,
 
 void
 EgoSplitting::extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
-                           Partition &basePartition) const {
-	if (parameters.at("processEgoNet") == "none") {
-		// nothing to do
+                           Partition &basePartition, const std::string &extendStrategy) const {
+	if (extendStrategy == "none")
 		return;
-	} else if (parameters.at("processEgoNet") == "extend") {
-		// continue below
-	} else {
-		throw std::runtime_error("Missing strategy to extend ego-net");
-	}
 
 	Aux::Timer timer;
 	timer.start();
-	double addNodesFactor = std::stod(parameters.at("addNodesFactor"));
-	double addNodesExponent = std::stod(parameters.at("addNodesExponent"));
-	count extendNodeCnt = std::ceil(
-			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	const count directNeighborsCnt = nodeMapping.nodeCount();
-	std::vector<std::pair<node, double>> nodeScores; // node and its score
 	bool useBasePartition = basePartition.numberOfSubsets() > 0;
 	if (!useBasePartition) {
 		basePartition = Partition(egoGraph.upperNodeIdBound());
@@ -499,13 +488,11 @@ EgoSplitting::extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
 	}
 	addTime(timer, "150    Setup");
 
+
 	/**********************************************************************************************
 	 **                           Get node candidates with scores                                **
 	 **********************************************************************************************/
-	std::string extendStrategy = parameters.at("extendStrategy");
-	if (useBasePartition)
-		extendStrategy = parameters.at("extendStrategySecond");
-
+	std::vector<std::pair<node, double>> nodeScores; // node and its score
 	std::vector<std::set<node>> triangleEdges;
 	if (extendStrategy == "edgeScore")
 		nodeScores = scoreEdgeCount(u, nodeMapping);
@@ -514,7 +501,8 @@ EgoSplitting::extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
 	else if (extendStrategy == "significance")
 		nodeScores = scoreSignificance(u, nodeMapping, egoGraph, basePartition);
 	else
-		throw std::runtime_error(extendStrategy + " is not a valid strategy to extend Ego-Net!");
+		throw std::runtime_error(extendStrategy
+		                         + " is not a valid strategy to extend the Ego-Net!");
 
 #ifndef NDEBUG
 	std::set<node> candidates;
@@ -535,42 +523,28 @@ EgoSplitting::extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
 		}
 	}
 	addTime(timer, "151 Get candidates " + extendStrategy);
-	// TODO: Use only nodes with score > 0.1 (or something), use all nodes with score > 0.5
-	// TODO: Score needs to be normalized to (0, 1) for this to work
 
 
 	/**********************************************************************************************
 	 **                                  Add nodes to result                                     **
 	 **********************************************************************************************/
-	std::vector<node> nodesToAdd;
-	if (parameters.at("extendRandom") == "Yes") {
-		// Take nodes randomly, the chance to pick a node is proportional to its score
-		std::vector<double> random_weights;
-		for (auto pair : nodeScores)
-			random_weights.push_back(pair.second);
+	double addNodesFactor = std::stod(parameters.at("addNodesFactor"));
+	double addNodesExponent = std::stod(parameters.at("addNodesExponent"));
+	count extendNodeCnt = std::ceil(
+			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 
-		for (index i = 0; i < extendNodeCnt && !nodeScores.empty(); ++i) {
-			std::discrete_distribution<index> dist(random_weights.begin(),
-			                                       random_weights.end());
-			index random_node = dist(Aux::Random::getURNG());
-			nodesToAdd.push_back(random_node);
-			nodeScores[random_node] = nodeScores.back();
-			nodeScores.pop_back();
-			random_weights[random_node] = random_weights.back();
-			random_weights.pop_back();
-		}
-	} else {
-		// Take the nodes with the best scores
-		std::sort(nodeScores.begin(), nodeScores.end(),
-		          [](std::pair<node, double> a, std::pair<node, double> b) {
-			          return a.second > b.second;
-		          });
-		if (nodeScores.size() > extendNodeCnt)
-			nodeScores.resize(extendNodeCnt);
-		for (auto pair : nodeScores) {
-			nodesToAdd.push_back(pair.first);
-		}
+	// Take the nodes with the best scores
+	std::vector<node> nodesToAdd;
+	std::sort(nodeScores.begin(), nodeScores.end(),
+	          [](std::pair<node, double> a, std::pair<node, double> b) {
+		          return a.second > b.second;
+	          });
+	if (nodeScores.size() > extendNodeCnt)
+		nodeScores.resize(extendNodeCnt);
+	for (auto pair : nodeScores) {
+		nodesToAdd.push_back(pair.first);
 	}
+
 	for (node v : nodesToAdd) {
 		nodeMapping.addNode(v);
 		egoGraph.addNode();
@@ -603,65 +577,9 @@ EgoSplitting::extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
 	}
 	addTime(timer, "155 Add edges");
 
-
-	/**********************************************************************************************
-	 **                         Use only triangle edges (optional)                               **
-	 **********************************************************************************************/
-	if (parameters.at("keepOnlyTriangles") == "Yes") {
-		AdjacencyArray directedEgoGraph(egoGraph);
-		auto foundTriangleWork = [&](node v, node w, node x) {
-			node v_loc = nodeMapping.local(v);
-			node w_loc = nodeMapping.local(w);
-			node x_loc = nodeMapping.local(x);
-			if (v_loc >= directNeighborsCnt || w_loc >= directNeighborsCnt)
-				onlyNeighborsGraph.addEdge(v, w);
-			if (w_loc >= directNeighborsCnt || x_loc >= directNeighborsCnt)
-				onlyNeighborsGraph.addEdge(w, x);
-			if (x_loc >= directNeighborsCnt || v_loc >= directNeighborsCnt)
-				onlyNeighborsGraph.addEdge(x, v);
-		};
-		findTriangles(egoGraph, directedEgoGraph, foundTriangleWork);
-		egoGraph = onlyNeighborsGraph;
-//		for (node v : nodesToAdd) {
-//			for (node w : triangleEdges[v])
-//				egoGraph.addEdge(neighbors.local(v), neighbors.local(w), 1);
-//		}
-	}
-
 	count minDegree = stoi(parameters.at("minNodeDegree"));
 	removeLowDegreeNodes(egoGraph, minDegree, directNeighborsCnt);
-	removeLowTriangleCntNodes(egoGraph,
-	                          directNeighborsCnt); // TODO: Bevorzuge high degree nodes (?)
-	removeLowDegreeNodes(egoGraph, minDegree, directNeighborsCnt);
 	addTime(timer, "157 Remove low degree nodes");
-}
-
-
-void
-EgoSplitting::removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCnt) const {
-	double triangleThreshold = std::stod(parameters.at("triangleThreshold"));
-	if (triangleThreshold <= 0)
-		return;
-	AdjacencyArray directedEgoGraph(egoGraph);
-	count nodes_changed = 1;
-	std::vector<count> triangleCount(egoGraph.upperNodeIdBound(), 0);
-	std::vector<int> currentNeighbors(G.upperNodeIdBound(), 0);
-	auto foundTriangleWork = [&](node v, node w, node x) {
-		++triangleCount[v];
-		++triangleCount[w];
-		++triangleCount[x];
-	};
-	while (nodes_changed > 0) {
-		nodes_changed = 0;
-		findTriangles(egoGraph, directedEgoGraph, foundTriangleWork);
-		egoGraph.forNodesInRandomOrder([&](node v) {
-			if (v >= directNeighborsCnt &&
-			    triangleCount[v] * 1.0 / egoGraph.degree(v) < triangleThreshold) {
-				++nodes_changed;
-				egoGraph.removeNode(v);
-			}
-		});
-	}
 }
 
 void EgoSplitting::removeLowDegreeNodes(Graph &egoGraph, count minDegree,
@@ -685,7 +603,7 @@ double EgoSplitting::normalizeScore(node v, double score) const {
 	std::string scoreStrategy = parameters.at("scoreStrategy");
 	if (scoreStrategy == "constant")
 		return 1.0;
-	if (scoreStrategy == "score")
+	if (scoreStrategy == "score" || scoreStrategy == "none")
 		return score * 1.0;
 	if (scoreStrategy == "score_normed")
 		return score * 1.0 / G.degree(v);
@@ -835,7 +753,6 @@ EgoSplitting::scoreSignificance(node u, const NodeMapping &egoMapping, Graph con
 	});
 
 	addTime(timer, "151s0    Coarsening");
-	// TODO: "Remove" egoNode from graph for calculation
 
 	// Insert a node that represents all external nodes (that are not candidates)
 	node externalNode = coarseGraph.addNode();
@@ -856,7 +773,7 @@ EgoSplitting::scoreSignificance(node u, const NodeMapping &egoMapping, Graph con
 		return egoMapping.isMapped(x);
 	};
 	auto countEdges = [&](node v, node w, edgeweight weight) {
-		if (!isDirectNeighbor(w)) {
+		if (!isDirectNeighbor(w) && w != u) {
 			assert(!coarseMapping.isMapped(w));
 			if (edgeScores[w].empty())
 				candidates.insert(w);
@@ -869,7 +786,6 @@ EgoSplitting::scoreSignificance(node u, const NodeMapping &egoMapping, Graph con
 		else
 			G.forEdgesOf(v, countEdges);
 	}
-	candidates.erase(u); // Remove egoNode as candidate
 
 	// Füge Kandidaten in Graph ein
 	for (node v : candidates) {
@@ -905,13 +821,30 @@ EgoSplitting::scoreSignificance(node u, const NodeMapping &egoMapping, Graph con
 	count missingEdges = numEgoEdges - totalWeight;
 	coarseGraph.addEdge(externalNode, externalNode, missingEdges);
 
-	return calcSignficance(externalNode, coarseGraph, coarseMapping, coarseSizes);
+	auto scores = calcSignficance(externalNode, coarseGraph, coarseMapping, coarseSizes, 0);
+
+	// Run a second time
+	for (auto pair : scores) {
+		node v = coarseMapping.local(pair.first);
+		coarseGraph.increaseWeight(externalNode, externalNode, coarseGraph.weightedDegree(v));
+		coarseGraph.removeNode(v);
+	}
+	double orderedStatPosition = std::stod(parameters.at("orderedStatPos")) * scores.size();
+	auto scores_2 = calcSignficance(externalNode, coarseGraph, coarseMapping, coarseSizes,
+	                                orderedStatPosition);
+	for (auto pair : scores_2)
+		scores.emplace_back(pair.first,
+		                    pair.second - 0.5); // TODO: make sure that this score is low and > 0
+
+	return scores;
 }
+
 
 std::vector<std::pair<node, double>>
 EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
                               const NodeMapping &coarseMapping,
-                              const std::vector<count> &coarseSizes) const {
+                              const std::vector<count> &coarseSizes,
+                              double orderedStatPosition) const {
 	Aux::Timer timer;
 	timer.start();
 	/* Calculate score for each candidate */
@@ -919,6 +852,8 @@ EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
 	std::vector<std::pair<count, node>> candidatesSorted;
 //	nodes_and_edges.reserve(candidates.size());
 	for (node v = externalNode + 1; v < coarseGraph.upperNodeIdBound(); ++v) {
+		if (!coarseGraph.hasNode(v))
+			continue;
 		count edgesIntoEgo = coarseGraph.weightedDegree(v);
 		candidatesSorted.emplace_back(edgesIntoEgo, coarseMapping.global(v));
 	}
@@ -934,65 +869,106 @@ EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
 	}
 	addTime(timer, "151s8    Discard candidates");
 
-	std::vector<count> group_total(externalNode);
-	std::vector<count> group_outgoing(externalNode);
-	std::vector<count> external_stubs(externalNode);
-	std::vector<count> external_nodes(externalNode);
+	std::vector<count> groupTotal(externalNode);
+	std::vector<count> groupOutgoing(externalNode);
+	std::vector<count> externalStubs(externalNode);
+	std::vector<count> externalNodes(externalNode);
 	for (count p = 0; p < externalNode; ++p) {
 		if (!coarseGraph.hasNode(p))
 			continue;
 
-		group_total[p] = (int) coarseGraph.weightedDegree(p);
-		group_outgoing[p] = coarseGraph.weightedDegree(p) - 2 * (int) coarseGraph.weight(p, p);
-		external_stubs[p] = G.numberOfEdges() * 2 - group_total[p];
-		external_nodes[p] = G.numberOfNodes() - coarseSizes[p];
+		groupTotal[p] = (int) coarseGraph.weightedDegree(p);
+		groupOutgoing[p] = coarseGraph.weightedDegree(p) - 2 * (int) coarseGraph.weight(p, p);
+		externalStubs[p] = G.numberOfEdges() * 2 - groupTotal[p];
+		externalNodes[p] = G.numberOfNodes() - coarseSizes[p];
 	}
 
+	index statPosInt = (int) std::floor(orderedStatPosition);
+	double statPosWeight = orderedStatPosition - statPosInt;
+	if (parameters.at("useSignInterpol") == "No")
+		statPosWeight = 0.0;
+
 	std::vector<std::pair<node, double>> nodeScores;
-	double max_significance = std::stod(parameters.at("maxSignificance"));
+	double maxSignificance = std::stod(parameters.at("maxSignificance"));
 	for (auto pair : candidatesSorted) {
 		node v = pair.second;
 		addTime(timer, "151sg    Loop");
-		count node_degree = G.degree(v);
-		node loc_v = coarseMapping.local(v);
+		count nodeDegree = G.degree(v);
+		node vLoc = coarseMapping.local(v);
 		addTime(timer, "151s9    Get degree and local");
 		// TODO: Check group merge
 		std::vector<std::pair<double, node>> groupEdges;
-		auto groups = coarseGraph.neighbors(loc_v);
+		auto groups = coarseGraph.neighbors(vLoc);
 		for (node p : groups) {
 			if (p >= externalNode)
 				continue;
-			edgeweight numEdges = coarseGraph.weight(loc_v, p);
+			edgeweight numEdges = coarseGraph.weight(vLoc, p);
 			groupEdges.emplace_back(numEdges, p);
 			assert(numEdges <= coarseSizes[p]);
 		}
 		std::sort(groupEdges.rbegin(), groupEdges.rend());
 
+
+		auto calc_score = [&](int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes,
+		                      int position) {
+			assert(gr_out <= ext_stubs);
+			double boot_interval;
+			double r_score = Stochastics::compute_simple_fitness(k_in, gr_out, ext_stubs,
+			                                                     node_degree, boot_interval);
+			addTime(timer, "151sc    Calc r-score");
+			double ordered_stat = Stochastics::order_statistics_left_cumulative(
+					ext_nodes, ext_nodes - position, r_score);
+			addTime(timer, "151sd    Calc ordered statistics");
+			return ordered_stat;
+		};
+
+		auto calcSigScore = [&](count kTot, count kIn, count gOut,
+		                        count extStubs, count extNodes) {
+			// TODO: boot_interval anschauen
+			// TODO: Reuse ordered statistics if externalNodes very similar (less than 1% difference)
+
+			double significance;
+			if (statPosWeight != 0) {
+				double s1 = calc_score(kTot, kIn, gOut, extStubs, extNodes, statPosInt);
+				double s2 = calc_score(kTot, kIn, gOut, extStubs, extNodes,
+				                       statPosInt + 1);
+				if (s1 == 0 || s2 == 0)
+					significance = 0;
+				else
+					significance = std::exp((1 - statPosWeight) * std::log(s1)
+					                        + statPosWeight * std::log(s2));
+			} else {
+				significance = calc_score(kTot, kIn, gOut, extStubs, extNodes, statPosInt);
+			}
+			return significance;
+		};
 		auto addIfSignificant = [&](double significance) {
-			if (significance <= max_significance) {
+			if (significance <= maxSignificance) {
 				double score = 1 - significance;
-				score = normalizeScore(v, score);
 				nodeScores.emplace_back(v, score);
 				return true;
 			}
 			return false;
 		};
+
+		// Check significance to single groups
+		std::vector<double> groupSigs(externalNode);
 		bool added = false;
 		count counter = 0;
 		for (auto it : groupEdges) {
 			if (++counter > 3)
 				break;
-			addTime(timer, "151sg    Loop");
 			count numEdges = (int) it.first;
 			node p = it.second;
-			addTime(timer, "151sa    Get num edges");
+			addTime(timer, "151sg    Loop");
 			if (numEdges < 3)
 				break;
-			double significance =
-					Stochastics::calc_score(node_degree, (int) numEdges, group_outgoing[p],
-					                        external_stubs[p], external_nodes[p]);
+
+			double significance = calcSigScore(nodeDegree, (int) numEdges, groupOutgoing[p],
+			                                   externalStubs[p], externalNodes[p]);
+			groupSigs[p] = significance;
 			added = addIfSignificant(significance);
-			addTime(timer, "151sc    Calc significance");
+			addTime(timer, "151sh    Add if significant");
 			if (added)
 				break;
 		}
@@ -1000,23 +976,25 @@ EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
 			continue;
 
 		// TODO: Nimm nicht den besten sondern den x-besten (z.B. 10% von EgoNet) für die
-		// Ordered Statistics. Besser als maxSignificance zu skalieren.
+		//       Ordered Statistics. Besser als maxSignificance zu skalieren.
+		// TODO: Nicht schrittweise
+		// TODO: erst pos=0, dann extende x nodes, dann pos=0.1*x
 
 		auto it = groupEdges.begin();
 		node bestGroup = it->second;
 		std::set<node> mergedGroups{bestGroup};
-		count group_total_stubs = group_total[bestGroup];
-		count group_out_stubs = group_outgoing[bestGroup];
-		count ext_stubs = external_stubs[bestGroup];
-		count ext_nodes = external_nodes[bestGroup];
+		count groupTotalStubs = groupTotal[bestGroup];
+		count groupOutStubs = groupOutgoing[bestGroup];
+		count extStubs = externalStubs[bestGroup];
+		count extNodes = externalNodes[bestGroup];
 		count numEdges = (int) it->first;
 
 		auto check = [&]() {
 			// Check
-			count ext_nodes_check = G.numberOfNodes();
+			count extNodesCheck = G.numberOfNodes();
 			for (node w : mergedGroups)
-				ext_nodes_check -= coarseSizes[w];
-			assert(ext_nodes == ext_nodes_check);
+				extNodesCheck -= coarseSizes[w];
+			assert(extNodes == extNodesCheck);
 			count group_out_stubs_check = 0;
 			count group_total_stubs_check = 0;
 			for (node w : mergedGroups) {
@@ -1028,10 +1006,10 @@ EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
 						group_total_stubs_check += (int) weight;
 				});
 			}
-			assert(group_total_stubs_check == group_total_stubs);
-			assert(group_out_stubs == group_out_stubs_check);
+			assert(group_total_stubs_check == groupTotalStubs);
+			assert(groupOutStubs == group_out_stubs_check);
 			count ext_stubs_check = 2 * G.numberOfEdges() - group_total_stubs_check;
-			assert(ext_stubs_check == ext_stubs);
+			assert(ext_stubs_check == extStubs);
 
 			assert(ext_stubs_check >= group_out_stubs_check);
 
@@ -1056,44 +1034,52 @@ EgoSplitting::calcSignficance(node externalNode, const Graph &coarseGraph,
 			});
 			assert(sum == g_in + g_out + ext);
 			assert(g_out <= ext);
-			assert(g_out == group_out_stubs);
-			assert(ext == ext_stubs);
+			assert(g_out == groupOutStubs);
+			assert(ext == extStubs);
 			return true;
 		};
 
 		assert(check());
-		if (parameters.at("sortGroupsDensity") == "Yes") {
+		if (parameters.at("sortGroups") == "density") {
 			std::sort(groupEdges.begin(), groupEdges.end(), [&](std::pair<double, node> a,
 			                                                    std::pair<double, node> b) {
 				return (a.first / coarseSizes[a.second]) > b.first / coarseSizes[b.second];
 			});
+		} else if (parameters.at("sortGroups") == "significance") {
+			std::sort(groupEdges.begin(), groupEdges.end(), [&](std::pair<double, node> a,
+			                                                    std::pair<double, node> b) {
+				return (groupSigs[a.second]) > groupSigs[b.second];
+			});
 		}
 
+		// Merge groups
+		// TODO: merged groups have to be connected
 		for (++it; it < groupEdges.end(); ++it) {
 			node group = it->second;
 			// Merge group
-			ext_stubs -= group_total[group];
-			group_total_stubs += group_total[group];
-			group_out_stubs += group_outgoing[group];
+			extStubs -= groupTotal[group];
+			groupTotalStubs += groupTotal[group];
+			groupOutStubs += groupOutgoing[group];
 			for (node w : mergedGroups) {
-				group_out_stubs -= 2 * (int) coarseGraph.weight(w, group); // internal stubs
+				groupOutStubs -= 2 * (int) coarseGraph.weight(w, group); // internal stubs
 			}
-			ext_nodes -= coarseSizes[group];
+			extNodes -= coarseSizes[group];
 			numEdges += (int) it->first;
 			mergedGroups.insert(group);
+			addTime(timer, "151sg    Merge groups");
 
 			assert(check());
 
 			// Calculate new significance
-			double significance =
-					Stochastics::calc_score(node_degree, numEdges, group_out_stubs,
-					                        ext_stubs, ext_nodes);
+			double significance = calcSigScore(nodeDegree, numEdges, groupOutStubs,
+			                                   extStubs, extNodes);
 			added = addIfSignificant(significance);
+			addTime(timer, "151sh    Add if significant");
 			if (added) {
-				std::cout << mergedGroups.size() << " merged groups " << nodeScores.back().second
-				          << " (" << numEdges << "/" << node_degree << ") -> "
-				          << G.numberOfNodes() - ext_nodes
-				          << std::endl;
+//				std::cout << mergedGroups.size() << " merged groups " << nodeScores.back().second
+//				          << " (" << numEdges << "/" << nodeDegree << ") -> "
+//				          << G.numberOfNodes() - extNodes
+//				          << std::endl;
 				break;
 			}
 			if (mergedGroups.size() == 4)

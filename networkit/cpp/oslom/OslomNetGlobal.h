@@ -30,7 +30,7 @@ public:
 
 private:
 
-	void try_add_good_group(std::deque<int> &group, double &b_score,
+	bool try_add_good_group(std::deque<int> &group, double &b_score,
 	                        const std::deque<int> &original_group,
 	                        IntMatrix &good_modules, std::deque<double> &bscores_good,
 	                        IntMatrix &bad_groups);

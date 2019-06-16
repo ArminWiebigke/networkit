@@ -135,7 +135,7 @@ private:
 	Partition partitionEgoNet(node u, const Graph &egoGraph, const NodeMapping &nodeMapping) const;
 
 	void extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
-	                  Partition &basePartition) const;
+	                  Partition &basePartition, const std::string &extendStrategy) const;
 
 	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors) const;
 
@@ -148,8 +148,9 @@ private:
 	                  const Partition &basePartition) const;
 
 	std::vector<std::pair<node, double>>
-	calcSignficance(node externalNode, const Graph &coarseGraph, const NodeMapping &coarseMapping,
-			const std::vector<count> &coarseSizes) const;
+	calcSignficance(node externalNode, const Graph &coarseGraph,
+	                const NodeMapping &coarseMapping,
+	                const std::vector<count> &coarseSizes, double orderedStatPosition) const;
 
 	double normalizeScore(node v, double score) const;
 
@@ -157,8 +158,6 @@ private:
 	 * Remove all edges adjacent to nodes with a low degree
 	 */
 	void removeLowDegreeNodes(Graph &egoGraph, count minDegree, count directNeighborsCnt) const;
-
-	void removeLowTriangleCntNodes(Graph &egoGraph, count directNeighborsCnt) const;
 
 
 	/**

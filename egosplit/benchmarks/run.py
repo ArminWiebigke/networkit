@@ -127,14 +127,9 @@ def get_graphs(iterations):
 
 	LFR_graph_args = OrderedDict()
 
-	# # GCE paper
-	# for om in range(1, 6):
-	# 	LFR_graph_args['om_' + str(om)] = {
-	# 		'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
-	# 		't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
-
+	# TODO: Graphs with different community sizes, e.g. 10-100
 	for minc in [60]:
-		for om in range(1, 8):
+		for om in range(2, 5):
 			for mu in [0.25]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
@@ -142,6 +137,12 @@ def get_graphs(iterations):
 				LFR_graph_args['mu_{}_om_{}'.format(mu, om)] = {
 					'N': 2000, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
 					't1': 2, 't2': 2, 'mu': mu, 'on': 2000, 'om': om}
+
+	# # GCE paper
+	# for om in range(1, 6):
+	# 	LFR_graph_args['om_' + str(om)] = {
+	# 		'N': 2000, 'k': 18 * om, 'maxk': 120, 'minc': 60, 'maxc': 100,
+	# 		't1': 2, 't2': 2, 'mu': 0.2, 'on': 2000, 'om': om}
 	# for om in range(1, 7):
 	# 	k = 12 * om
 	# 	LFR_graph_args['om_{}'.format(om)] = {
@@ -171,19 +172,16 @@ def get_graphs(iterations):
 
 
 	# # Scale mixing factor
-	# for mu_factor in range(0, 71, 10):
+	# for mu_factor in range(40, 51, 10):
 	# 	om = 4
 	# 	mu = 0.01 * mu_factor
-	# 	k = om * 10  # Number of neighbors per community independent of mixing factor
+	# 	k = om * 15  # Number of neighbors per community independent of mixing factor
 	# 	k /= (1 - mu)
 	# 	maxk = 1.5 * k  # Scale max degree with average degree
 	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
-	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
+	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
 
-	# LFR_graph_args['a'] = {
-	# 	'N': 1000, 'k': 10, 'maxk': 50, 'minc': 20, 'maxc': 100,
-	# 	't1': 2, 't2': 1, 'mu': 0.3, 'on': 500, 'om': 5}
 	create_LFR_graphs(graphs, LFR_graph_args, iterations)
 	for graph in graphs:
 		graph.graph.indexEdges()
@@ -251,32 +249,29 @@ def get_ego_parameters(store_ego_nets):
 		'weightOffset': 1,
 		'storeEgoNet': 'Yes' if store_ego_nets else 'No',
 		'addEgoNode': 'No',
-		'processEgoNet': 'none',
+		'extendStrategy': 'none',
+		'extendPartitionIterations': 1,
 		'addNodesFactor': 0,
 		'addNodesExponent': 0,
-		'weightedEgoNet': 'No',
 		'partitionFromGroundTruth': 'No',
 		'connectPersonas': 'Yes',
+		'normalizePersonaCut': 'No',
 		'connectPersonasStrat': 'spanning',
 		'maxPersonaEdges': 1,
-		'normalizePersonaCut': 'No',
 		'personaEdgeWeightFactor': 1,
 		'normalizePersonaWeights': 'unweighted',
 		'iterationWeight': 'No',
 	}
 	extend_standard = {
 		**standard,
-		'addNodesFactor': 2,
-		'addNodesExponent': 0.8,
-		'processEgoNet': 'extend',
+		'extendPartitionIterations': 1,
+		'addNodesFactor': 1,
+		'addNodesExponent': 1,
 		'edgesBetweenNeigNeig': 'Yes',
-		'extendRandom': 'No',
 		'minNodeDegree': 2,
-		'triangleThreshold': 0,
 		'extendOverDirected': 'No',
 		'keepOnlyTriangles': 'No',
 		'scoreStrategy': 'score',
-		'extendFromPartitionIterations': '1',
 	}
 	edge_scores_standard = {
 		**extend_standard,
@@ -284,11 +279,12 @@ def get_ego_parameters(store_ego_nets):
 	}
 	significance_scores_standard = {
 		**edge_scores_standard,
-		'extendFromPartitionIterations': '2',
+		'extendPartitionIterations': 2,
 		'extendStrategySecond': 'significance',
 		'maxSignificance': 0.1,
-		'signOnlyNeighs': "No",
-		'sortGroupsDensity': "No",
+		'sortGroups': "significance",
+		'orderedStatPos': 0.05,
+		'useSignInterpol': 'No',
 	}
 	triangles_standard = {
 		**extend_standard,
@@ -309,19 +305,31 @@ def get_ego_parameters(store_ego_nets):
 	# ego_parameters['s'] = {
 	# 	**significance_scores_standard,
 	# }
-	# ego_parameters['twice'] = {
-	# 	**significance_scores_standard,
-	# 	'extendFromPartitionIterations': '2',
-	# 	'extendStrategySecond': 'edgeScore',
-	# }
-	# ego_parameters['sign-0.01'] = {
-	# 	**significance_scores_standard,
-	# 	'maxSignificance': 0.01,
-	# }
-	ego_parameters['sign-0.1'] = {
+	ego_parameters['sign-0.0'] = {
 		**significance_scores_standard,
-		'maxSignificance': 0.1,
+		'orderedStatPos': 0.00,
 	}
+	ego_parameters['sign'] = {
+		**significance_scores_standard,
+		'useSignInterpol': 'No',
+	}
+	ego_parameters['sign_interpol'] = {
+		**significance_scores_standard,
+		'useSignInterpol': 'Yes',
+	}
+	# ego_parameters['sign-x3'] = {
+	# 	**significance_scores_standard,
+	# 	'extendPartitionIterations': 4,
+	# }
+	# ego_parameters['b-sign-0.1'] = {
+	# 	**extend_standard,
+	# 	'extendStrategy': 'none',
+	# 	'extendPartitionIterations': 2,
+	# 	'extendStrategySecond': 'significance',
+	# 	'maxSignificance': 0.1,
+	# 	'sortGroupsDensity': "No",
+	# 	'orderedStatPos': 0.1,
+	# }
 	# ego_parameters['sign-0.3'] = {
 	# 	**significance_scores_standard,
 	# 	'maxSignificance': 0.3,
@@ -329,7 +337,7 @@ def get_ego_parameters(store_ego_nets):
 	# ego_parameters['base-sign-0.1'] = {
 	# 	**extend_standard,
 	# 	'extendStrategy': 'none',
-	# 	'extendFromPartitionIterations': '2',
+	# 	'extendPartitionIterations': '2',
 	# 	'extendStrategySecond': 'significance',
 	# 	'maxSignificance': 0.1,
 	# 	'signOnlyNeighs': "No",

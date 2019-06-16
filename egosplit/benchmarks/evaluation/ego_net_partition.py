@@ -15,10 +15,12 @@ def analyse_ego_net_partitions(benchmarks, result_dir, append):
 	out_file_ego_metrics = open(result_dir + 'ego_net_ego_metrics.result', open_mode)
 	out_file_metrics = open(result_dir + 'ego_net_metrics.result', open_mode)
 	if not append:
-		print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_metrics)
+		print_headers(out_file_comm, out_file_part, out_file_ego_metrics,
+		              out_file_metrics)
 
 	for benchmark in benchmarks:
-		analyse_ego_net_partition(benchmark, out_file_comm, out_file_part, out_file_ego_metrics,
+		analyse_ego_net_partition(benchmark, out_file_comm, out_file_part,
+		                          out_file_ego_metrics,
 		                          out_file_metrics)
 
 
@@ -170,7 +172,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		for key, value in ego_sums.items():
 			total_sums[key] += value
 
-		# TODO: Count external nodes -> Good extension?
+	# TODO: Count external nodes -> Good extension?
 
 	total_metrics = calc_metrics(total_sums)
 
@@ -189,17 +191,20 @@ def calc_metrics(sums):
 		if b == 0:
 			return default
 		return a / b
+
 	metrics = {
 		"community_cohesion": sums["comm_incorrect"] / sums["comm_size"],
 		"parts_per_comm": sums["parts_per_comm"] / sums["num_comms"],
 		"comms_per_part": safe_div(sums["comms_per_part"], sums["num_partitions"], 1),
+		# "merged_external_nodes": safe_div(sums["part_incorrect_ext"],
+		#                                   sums["external_nodes"]),
 		"merged_external_nodes": safe_div(sums["part_incorrect_ext"],
-		                                             sums["external_nodes"]),
+		                                  sums["partition_size"]),
 		"partition_exclusivity": safe_div(sums["part_incorrect_gt"],
-		                                              sums["partition_size"]),
+		                                  sums["partition_size"]),
 		"extended_nodes": safe_div(sums["extended_nodes"], sums["ego_net_size"]),
 		"external_nodes": safe_div(sums["external_nodes_extended"],
-		                                    sums["extended_ego_net_size"]),
+		                           sums["extended_ego_net_size"]),
 	}
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]
@@ -249,7 +254,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 		max_community_cnts[c] = 0
 	community_sizes = defaultdict(lambda: 0)
 	best_communities = []  # for each partition: the ground truth community with the most nodes
-	community_cnts = []    # for each partition: number of nodes for each ground truth community
+	community_cnts = []  # for each partition: number of nodes for each ground truth community
 	for p_id, partition in enumerate(partitions):
 		community_cnts.append(defaultdict(lambda: 0))
 		for v in partition:
@@ -288,13 +293,15 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 						community_in_partition[c] = True
 				else:
 					external_comms_cnt += 1
-		num_communities = 1 + len(community_in_partition)  # TODO: Overlapping nodes count multiple times
+		num_communities = 1 + len(
+			community_in_partition)  # TODO: Overlapping nodes count multiple times
 		result_list.append({
 			'partition_size': partition_size,
 			'wrong_nodes': gt_comms_cnt + external_comms_cnt,
 			'wrong_nodes_gt': gt_comms_cnt,
 			'wrong_nodes_external': external_comms_cnt,
-			'wrong_percentage': 100 * (gt_comms_cnt + external_comms_cnt) / partition_size,
+			'wrong_percentage': 100 * (
+						gt_comms_cnt + external_comms_cnt) / partition_size,
 			'wrong_percentage_gt': 100 * gt_comms_cnt / partition_size,
 			'wrong_percentage_external': 100 * external_comms_cnt / partition_size,
 			'num_communities': num_communities,
@@ -307,7 +314,8 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 # with the largest number of nodes from that community.
 # Don't count nodes that are in multiple communities and that are assigned to one of its
 # communities correctly.
-def check_community_partition(ground_truth, partitions, community_sizes, truth_communities):
+def check_community_partition(ground_truth, partitions, community_sizes,
+                              truth_communities):
 	result_list = []
 	best_partitions = {}
 	for c in truth_communities:

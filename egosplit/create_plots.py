@@ -46,7 +46,7 @@ if "metrics" in plots:
 			y=metric,
 			hue="algo",
 			plot_args={
-				# "dashes": False,
+				"dashes": False,
 				# "markers": False,
 				"ci": "sd",
 			},
@@ -191,7 +191,7 @@ if "ego_net_partition" in plots:
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
-					# "dashes": False,
+					"dashes": False,
 					# "markers": False,
 				},
 				ax_set={
@@ -239,7 +239,7 @@ if "ego_net_partition" in plots:
 				hue="algo",
 				plot_args={
 					# "style": "metric_name",
-					# "dashes": False,
+					"dashes": False,
 					# "markers": False,
 					# "markersize": 3,
 				},

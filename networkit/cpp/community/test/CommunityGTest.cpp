@@ -733,11 +733,11 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 //	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 //	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
 //								 G);
-	EdgeListReader reader(' ', 0);
-	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
-//	Aux::Random::setSeed(234769, false);
-//	ClusteredRandomGraphGenerator gen(100, 10, 0.5, 0.1);
-//	Graph G = gen.generate();
+//	EdgeListReader reader(' ', 0);
+//	Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
+	Aux::Random::setSeed(234769, false);
+	ClusteredRandomGraphGenerator gen(100, 10, 0.5, 0.1);
+	Graph G = gen.generate();
 
 	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
 //		SLPA algo(G);
