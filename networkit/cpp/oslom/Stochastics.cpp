@@ -166,52 +166,56 @@ Stochastics::equivalent_check_gather(CupDataStruct &a, int &add_nodes, const dou
 	}
 }
 
+/**
+ * Compute the probability that a node from the null model has k_in or more edges into the group.
+ * @param k_in Edges from node to group
+ * @param gr_out Outgoing stubs of the group
+ * @param ext_stubs Stubs in the graph, excluding the node and the group
+ * @param k_degree Degree of the node
+ * @param boot_interval
+ * @return
+ */
+double Stochastics::compute_simple_fitness(int k_in, int gr_out, int ext_stubs, int k_degree) {
+	// External stubs in the hypergeometric distribution are all open stubs, excluding the stubs of
+	// the node, so all possible target stubs.
+	// In the null model however, the external stubs are all stubs of the nodes of
+	// G without the group and the node. So we have to add the stubs going out of the group.
+	ext_stubs += gr_out;
+	double topologic = log_table->right_cumulative_function(k_degree, gr_out, ext_stubs, k_in);
 
-double Stochastics::compute_simple_fitness(int kin_node, int kout_g, int ext_stubs, int degree_node,
-                                           double &boot_interval) {
-	boot_interval = (0.5 + 1e-6 * (ran4() - 0.5)) *
-	                hyper_table(kin_node, kout_g, ext_stubs, degree_node);
-	double topologic =
-			log_table->right_cumulative_function(degree_node, kout_g, ext_stubs, kin_node + 1) +
-			boot_interval;
-
-	//cout<<"----------> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node+1)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
-	//cout<<"<> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
 	if (paras->weighted)
 		throw std::runtime_error("Don't use weighted graphs!");
 	if (topologic > 1)
 		topologic = 1;
-	boot_interval = std::min(boot_interval, 1. - topologic);
-	boot_interval = std::min(boot_interval, topologic);
 	return std::max(topologic, 1e-100);
 }
 
 /**
  *
- * @param kin_node Edges from node to group.
- * @param kout_g Outgoing stubs of the group.
+ * @param k_in Edges from node to group.
+ * @param gr_out Outgoing stubs of the group.
  * @param tm External stubs. Stubs from (G - {group and node})
- * @param degree_node Degree of the node
+ * @param k_degree Degree of the node
  * @param minus_log_total ???
  * @param number_of_neighs ???
  * @param Nstar Number of external nodes (#G - #group - 1)
  * @param boot_interval (out): Half the domain of the fitness (?)
  * @return
  */
-double Stochastics::compute_global_fitness(int kin_node, int kout_g, int tm, int degree_node,
+double Stochastics::compute_global_fitness(int k_in, int gr_out, int tm, int k_degree,
                                            double minus_log_total, int number_of_neighs, int Nstar,
                                            double &boot_interval) {
-	/* kin_node is referred to the node and not to the module */
+	/* k_in is referred to the node and not to the module */
 	/* boot_interval is half the domain of the fitness. We assume that also in the weighted case the fitness can be linearized */
 	/* which is true if the boot_interval is small enough	*/
 	boot_interval = (0.5 + 1e-6 * (ran4() - 0.5)) *
-	                hyper_table(kin_node, kout_g, tm, degree_node);
+			hypergeom_dist(k_in, gr_out, tm, k_degree);
 	double topologic =
-			log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node + 1) +
+			log_table->right_cumulative_function(k_degree, gr_out, tm, k_in + 1) +
 			boot_interval;
 
-	//cout<<"----------> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node+1)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
-	//cout<<"<> "<<log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node)<<"  boot_interval "<<boot_interval<<" kin_node: "<<kin_node<<" / "<<degree_node<<std::endl;
+	//cout<<"----------> "<<log_table->right_cumulative_function(k_degree, gr_out, tm, k_in+1)<<"  boot_interval "<<boot_interval<<" k_in: "<<k_in<<" / "<<k_degree<<std::endl;
+	//cout<<"<> "<<log_table->right_cumulative_function(k_degree, gr_out, tm, k_in)<<"  boot_interval "<<boot_interval<<" k_in: "<<k_in<<" / "<<k_degree<<std::endl;
 	if (paras->weighted)
 		throw std::runtime_error("Don't use weighted graphs!");
 	if (topologic > 1)
@@ -221,33 +225,33 @@ double Stochastics::compute_global_fitness(int kin_node, int kout_g, int tm, int
 	return std::max(topologic, 1e-100);
 }
 
-double Stochastics::compute_global_fitness_step(int kin_node, int kout_g, int tm, int degree_node,
+double Stochastics::compute_global_fitness_step(int k_in, int gr_out, int tm, int k_degree,
                                                 double minus_log_total, int number_of_neighs,
                                                 int Nstar, double _step_) {
 	double topologic =
-			log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node + 1) +
-			_step_ * (hyper_table(kin_node, kout_g, tm, degree_node));
+			log_table->right_cumulative_function(k_degree, gr_out, tm, k_in + 1) +
+			_step_ * (hypergeom_dist(k_in, gr_out, tm, k_degree));
 	if (paras->weighted)
 		throw std::runtime_error("Don't use weighted graphs!");
 	return std::max(topologic, 1e-100);
 }
 
-double Stochastics::compute_global_fitness_randomized_short(int kin_node, int kout_g, int tm,
-                                                            int degree_node,
+double Stochastics::compute_global_fitness_randomized_short(int k_in, int gr_out, int tm,
+                                                            int k_degree,
                                                             double minus_log_total) {
 	// this function is used in try_to_assign_homeless.
 	// the usual problem is that we don't know the number of neighbors of the module.
 	// this could be taken in account with some more thinking...
 
-	double b2 = log_table->right_cumulative_function(degree_node, kout_g, tm,
-	                                                 kin_node + 1);
+	double b2 = log_table->right_cumulative_function(k_degree, gr_out, tm,
+	                                                 k_in + 1);
 
-	double topologic = b2 + 0.5 * (hyper_table(kin_node, kout_g, tm, degree_node));
+	double topologic = b2 + 0.5 * (hypergeom_dist(k_in, gr_out, tm, k_degree));
 
 	if (!paras->weighted)
 		return std::max(topologic, 1e-100);
 
-	double weight_part = log_together(minus_log_total, kin_node);
+	double weight_part = log_together(minus_log_total, k_in);
 
 	if (topologic <= 1e-100 || weight_part <= 1e-100)
 		return 1e-100;
@@ -260,7 +264,7 @@ double Stochastics::calc_score(int node_degree, int k_in, int gr_out, int ext_st
 	assert(gr_out <= ext_stubs);
 	double boot_interval;
 	double r_score = Stochastics::compute_simple_fitness(k_in, gr_out, ext_stubs,
-	                                                     node_degree, boot_interval);
+	                                                     node_degree);
 	double ordered_stat = Stochastics::order_statistics_left_cumulative(ext_nodes,
 	                                                                    ext_nodes - position,
 	                                                                    r_score);

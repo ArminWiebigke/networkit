@@ -856,20 +856,20 @@ OslomNetGlobal::clean_up(const std::vector<std::deque<int>> &modules, int upper_
 	IntMatrix bad_groups;
 
 	std::cout << modules.size() << " groups found" << std::endl;
-	for (size_t gr_id = 0; gr_id < modules.size(); gr_id++) {
+	for (const auto & module : modules) {
 		std::deque<int> group;
 //        std::cout << "processing group number " << gr_id << " size: " << modules[gr_id].size()
 //                  << std::endl;
 		double bcu = 0.0;
 		if (paras->cleanup_strategy == "both")
-			bcu = CUP_both(modules[gr_id], group);
+			bcu = CUP_both(module, group);
 		else if (paras->cleanup_strategy == "check")
-			bcu = CUP_check(modules[gr_id], group);
+			bcu = CUP_check(module, group);
 		else
 			throw std::runtime_error("No cleanup strategy!");
 //        std::cout << modules[gr_id].size() << " -> " << group.size() << std::endl;
 
-		try_add_good_group(group, bcu, modules[gr_id], good_modules, bscores_good, bad_groups);
+		try_add_good_group(group, bcu, module, good_modules, bscores_good, bad_groups);
 	}
 	print_seperator_line();
 

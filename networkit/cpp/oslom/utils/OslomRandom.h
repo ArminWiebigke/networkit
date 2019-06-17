@@ -10,6 +10,9 @@ double ran2(long *idum);
 
 double ran4(bool t, long s);
 
+/**
+ * @return a random value in the interval [0, 1]
+ */
 double ran4();
 
 void srand4();

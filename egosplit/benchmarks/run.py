@@ -107,9 +107,9 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 		cleanup_test(benchmarks, result_dir)
 
 
-# ************************************************************************************
-# *                             Input graphs                                         *
-# ************************************************************************************
+# ****************************************************************************************
+# *                                  Input graphs                                        *
+# ****************************************************************************************
 def get_graphs(iterations):
 	graphs = []
 	# graphs.append(BenchGraph(*getAmazonGraph5000(), 'Amazon_5000'))
@@ -129,7 +129,7 @@ def get_graphs(iterations):
 
 	# TODO: Graphs with different community sizes, e.g. 10-100
 	for minc in [60]:
-		for om in range(2, 5):
+		for om in range(1, 6):
 			for mu in [0.25]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
@@ -167,9 +167,8 @@ def get_graphs(iterations):
 	# 	N = 2000
 	# 	on = N / 100 * overlap
 	# 	LFR_graph_args['on_' + str(overlap/100)[:3].rjust(3, '0')] = {
-	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 20, 'maxc': 100,
+	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
-
 
 	# # Scale mixing factor
 	# for mu_factor in range(40, 51, 10):
@@ -188,9 +187,9 @@ def get_graphs(iterations):
 	return graphs
 
 
-# ************************************************************************************
-# *                         Benchmark algorithms                                     *
-# ************************************************************************************
+# ****************************************************************************************
+# *                                     Algorithms                                       *
+# ****************************************************************************************
 def get_algos(storeEgoNets):
 	algos = []
 	algos.append(GroundTruth())
@@ -232,6 +231,8 @@ def get_algos(storeEgoNets):
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom_full')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-remove')
 	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-3')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-5')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-shrink')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-check')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-keep')
@@ -265,13 +266,14 @@ def get_ego_parameters(store_ego_nets):
 	extend_standard = {
 		**standard,
 		'extendPartitionIterations': 1,
-		'addNodesFactor': 1,
-		'addNodesExponent': 1,
+		'addNodesFactor': 2,
+		'addNodesExponent': 0.8,
 		'edgesBetweenNeigNeig': 'Yes',
 		'minNodeDegree': 2,
 		'extendOverDirected': 'No',
 		'keepOnlyTriangles': 'No',
 		'scoreStrategy': 'score',
+		'onlyDirectedCandidates': 'No',
 	}
 	edge_scores_standard = {
 		**extend_standard,
@@ -283,14 +285,10 @@ def get_ego_parameters(store_ego_nets):
 		'extendStrategySecond': 'significance',
 		'maxSignificance': 0.1,
 		'sortGroups': "significance",
-		'orderedStatPos': 0.05,
+		'orderedStatPos': 0.1,
 		'useSignInterpol': 'No',
-	}
-	triangles_standard = {
-		**extend_standard,
-		'extendStrategy': 'triangles',
-		'scoreStrategy': 'score_normed',
-		'minTriangles': 0,
+		'subtractNodeDegree': 'Yes',
+		'maxGroupsConsider': '5',
 	}
 
 	# TODO: Nochmal die gewichteten Persona Connections testen
@@ -302,114 +300,19 @@ def get_ego_parameters(store_ego_nets):
 	ego_parameters['e'] = {
 		**edge_scores_standard,
 	}
-	# ego_parameters['s'] = {
-	# 	**significance_scores_standard,
+	# ego_parameters['e-dir'] = {
+	# 	**edge_scores_standard,
+	# 	'extendOverDirected': 'Yes',
+		# 'onlyDirectedCandidates': 'Yes',
 	# }
-	ego_parameters['sign-0.0'] = {
+	ego_parameters['s'] = {
 		**significance_scores_standard,
-		'orderedStatPos': 0.00,
 	}
-	ego_parameters['sign'] = {
-		**significance_scores_standard,
-		'useSignInterpol': 'No',
-	}
-	ego_parameters['sign_interpol'] = {
-		**significance_scores_standard,
-		'useSignInterpol': 'Yes',
-	}
-	# ego_parameters['sign-x3'] = {
+	# ego_parameters['s-dir'] = {
 	# 	**significance_scores_standard,
-	# 	'extendPartitionIterations': 4,
+	# 	'extendOverDirected': 'Yes',
+		# 'onlyDirectedCandidates': 'Yes',
 	# }
-	# ego_parameters['b-sign-0.1'] = {
-	# 	**extend_standard,
-	# 	'extendStrategy': 'none',
-	# 	'extendPartitionIterations': 2,
-	# 	'extendStrategySecond': 'significance',
-	# 	'maxSignificance': 0.1,
-	# 	'sortGroupsDensity': "No",
-	# 	'orderedStatPos': 0.1,
-	# }
-	# ego_parameters['sign-0.3'] = {
-	# 	**significance_scores_standard,
-	# 	'maxSignificance': 0.3,
-	# }
-	# ego_parameters['base-sign-0.1'] = {
-	# 	**extend_standard,
-	# 	'extendStrategy': 'none',
-	# 	'extendPartitionIterations': '2',
-	# 	'extendStrategySecond': 'significance',
-	# 	'maxSignificance': 0.1,
-	# 	'signOnlyNeighs': "No",
-	# }
-	# ego_parameters['cut'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonasStrat': 'spanning',
-	# 	'maxPersonaEdges': 1,
-	# 	'normalizePersonaCut': 'No',
-	# 	'personaEdgeWeightFactor': 1,
-	# 	'normalizePersonaWeights': 'spanSize',
-	# 	'iterationWeight': 'No'
-	# }
-	# ego_parameters['spanMulti'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'spanning',
-	# 	'maxPersonaEdges': 3,
-	# 	'normalizePersonaCut': 'No',
-	# 	'normalizePersonaWeights': 'spanSize',
-	# 	'iterationWeight': 'Yes'
-	# }
-	# ego_parameters['span-dens'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'spanning',
-	# 	'maxPersonaEdges': 1,
-	# 	'normalizePersonaCut': 'density',
-	# }
-	# ego_parameters['maxEdge-cut'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'maxEdge',
-	# 	'maxPersonaEdges': 1,
-	# 	'normalizePersonaCut': 'No',
-	# }
-	# ego_parameters['maxEdge-dens'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'maxEdge',
-	# 	'maxPersonaEdges': 1,
-	# 	'normalizePersonaCut': 'density',
-	# }
-	# ego_parameters['all_volume'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'all',
-	# 	'normalizePersonaCut': 'volume',
-	# 	'normalizePersonaWeights': 'spanSize',
-	# }
-	# ego_parameters['all_density'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'all',
-	# 	'normalizePersonaCut': 'density',
-	# 	'normalizePersonaWeights': 'spanSize',
-	# }
-	# ego_parameters['all_cut'] = {
-	# 	**edge_scores_standard,
-	# 	'connectPersonas': 'Yes',
-	# 	'connectPersonasStrat': 'all',
-	# 	'normalizePersonaCut': 'No',
-	# 	'normalizePersonaWeights': 'spanSize',
-	# }
-	# ego_parameters[''] = {
-	# 	**triangles_standard,
-	# }
-	# for threshold in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.4, 1.7, 2]:
-	# 	ego_parameters['triangles_{}'.format(threshold)] = {
-	# 		**triangles_standard,
-	# 		'triangleThreshold': threshold,
-	# 	}
 
 	# add_nodes_factor_exponents = [
 	# 	(0, 0.6),

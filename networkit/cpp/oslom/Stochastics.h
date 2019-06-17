@@ -67,8 +67,12 @@ public:
 	                        const double &probability_b, int Nstar,
 	                        const double &critical_xi);
 
-	static inline double hyper_table(int kin_node, int kout_g, int tm, int degree_node) {
-		return log_table->hyper(kin_node, kout_g, tm, degree_node);
+	/**
+	 * Calculate the probability that the node has exactly k_in edges into the group, according to a
+	 * hypergeometric distribution.
+	 */
+	static inline double hypergeom_dist(int k_in, int g_out, int ext_stubs, int degree_node) {
+		return log_table->hypergeom_dist(k_in, g_out, ext_stubs, degree_node);
 	}
 
 	/**
@@ -82,18 +86,17 @@ public:
 	 */
 	static inline double topological_05(int kin_node, int kout_g, int tm, int degree_node) {
 		return log_table->right_cumulative_function(degree_node, kout_g, tm, kin_node + 1) +
-		       ran4() * hyper_table(kin_node, kout_g, tm, degree_node);
+		       ran4() * hypergeom_dist(kin_node, kout_g, tm, degree_node);
 	}
 
 	// TODO: Does this function compute the r-Score?
-	static double compute_global_fitness(int kin_node, int kout_g, int tm, int degree_node,
+	static double compute_global_fitness(int k_in, int gr_out, int tm, int k_degree,
 	                                     double minus_log_total, int number_of_neighs, int Nstar,
 	                                     double &boot_interval);
 
-	static double compute_simple_fitness(int kin_node, int kout_g, int ext_stubs, int degree_node,
-	                                     double &boot_interval);
+	static double compute_simple_fitness(int k_in, int gr_out, int ext_stubs, int k_degree);
 
-	static double compute_global_fitness_step(int kin_node, int kout_g, int tm, int degree_node,
+	static double compute_global_fitness_step(int k_in, int gr_out, int tm, int k_degree,
 	                                          double minus_log_total, int number_of_neighs,
 	                                          int Nstar, double _step_);
 
@@ -137,7 +140,7 @@ public:
 	}
 
 	static double
-	compute_global_fitness_randomized_short(int kin_node, int kout_g, int tm, int degree_node,
+	compute_global_fitness_randomized_short(int k_in, int gr_out, int tm, int k_degree,
 	                                        double minus_log_total);
 
 private:

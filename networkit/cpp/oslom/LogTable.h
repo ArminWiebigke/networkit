@@ -27,28 +27,43 @@ public:
 
     ~LogFactTable() = default;
 
-
     double log_factorial(int a);
 
     void set(int);
-    //void set_small_tab_right_hyper(int, int);
 
-    inline double log_hyper(int kin_node, int kout_g, int tm, int degree_node) {
-        return log_choose(kout_g, kin_node)
-               + log_choose(tm - kout_g, degree_node - kin_node)
-               - log_choose(tm, degree_node);
+    inline double log_hyper(int k_in, int g_out, int ext_stubs, int k_degree) {
+        return log_choose(g_out, k_in)
+               + log_choose(ext_stubs - g_out, k_degree - k_in)
+               - log_choose(ext_stubs, k_degree);
     };
 
-    inline double hyper(int kin_node, int kout_g, int tm, int degree_node) {
-        return std::max(0., std::exp(log_hyper(kin_node, kout_g, tm, degree_node)));
+	/**
+	 * Calculate the probability that the node has exactly k_in edges into the group, according to
+	 * a hypergeometric distribution.
+	 * P(X = kin_node)
+	 * @param k_in Edges from node to group
+	 * @param g_out Outgoing stubs of group
+	 * @param ext_stubs External stubs
+	 * @param k_degree Degree of the node
+	 * @return the probability
+	 */
+    inline double hypergeom_dist(int k_in, int g_out, int ext_stubs, int k_degree) {
+        return std::max(0., std::exp(log_hyper(k_in, g_out, ext_stubs, k_degree)));
     };
 
     inline double binom(int x, int N, double p) {
         return std::exp(log_choose(N, x) + x * std::log(p) + (N - x) * std::log(1 - p));
     };
 
-    inline double log_choose(int tm, int degree_node) {
-        return lnf[tm] - lnf[tm - degree_node] - lnf[degree_node];
+    /**
+     * Calculate the number of possible configurations to choose k out of n
+     * == binomial coefficient n choose k
+     * @param n
+     * @param k
+     * @return natural logarithm of the binomiala coefficent
+     */
+    inline double log_choose(int n, int k) {
+        return lnf[n] - lnf[n - k] - lnf[k];
     };
 
     double cum_binomial_right(int x, int N, double prob);
@@ -61,12 +76,9 @@ public:
 
     double slow_symmetric_eq(int k1, int k2, int H, int x);
 
-    //vector<vector<vector<vector<double> > > > small_rh;
-    // /*********/// small_rh[tm][kout][k][kin]		tm>=kout>=k>=kin
-    //double right_cum_symmetric_eq(int k1, int k2, int H, int x);
-    double fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode, int tm);
+    double fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode, int ext_stubs);
 
-    double right_cumulative_function(int k1, int k2, int k3, int x);
+    double right_cumulative_function(int k1, int k2, int ext_stubs, int x);
 
 private:
 
@@ -76,9 +88,9 @@ private:
         return 0.5 * (k1 - i + 1) / ((i + H) * i) * (k2 - i + 1);
     };
 
-    double cum_hyper_right(int kin_node, int kout_g, int tm, int degree_node);
+    double cum_hyper_right(int k_in, int gr_out, int ext_stubs, int k_degree);
 
-    double cum_hyper_left(int kin_node, int kout_g, int tm, int degree_node);
+    double cum_hyper_left(int k_in, int gr_out, int ext_stubs, int k_degree);
 };
 
 #endif // LOG_TABLE_HPP

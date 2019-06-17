@@ -65,6 +65,10 @@ def clean_up_cover(graph, cover, ground_truth, clean_up):
 		cover, _ = cleanUpOslom(graph, cover, cleanup_strategy="check")
 	elif clean_up == "Oslom-merge":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge")
+	elif clean_up == "Oslom-merge-3":
+		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge", runs=3)
+	elif clean_up == "Oslom-merge-5":
+		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge", runs=5)
 	elif clean_up == "Oslom-merge-shrink":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge",
 		                        discard_max_extend_groups=False)

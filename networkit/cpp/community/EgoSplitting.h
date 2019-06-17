@@ -106,7 +106,6 @@ private:
 	const Graph &G;
 	PartitionFunction localClusterAlgo, globalClusterAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: <global node ID, set ID in ego-net>
-	std::vector<std::vector<std::tuple<index, index, edgeweight>>> personaEdges; // for each node: edges between the personas
 	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
@@ -116,9 +115,17 @@ private:
 	mutable std::map<std::string, double> executionInfo;
 	std::vector<Graph> egoNets;
 	std::map<std::string, std::string> parameters;
-//	Graph edgeScoreGraph;
 	AdjacencyArray directedEdges;
 	Cover groundTruth;
+	struct Edge {
+		node firstNode;
+		node secondNode;
+		edgeweight weight;
+
+		Edge(node firstNode, node secondNode, edgeweight weight)
+				: firstNode(firstNode), secondNode(secondNode), weight(weight) {}
+	};
+	std::vector<std::vector<EgoSplitting::Edge>> personaEdges; // for each node: edges between its personas
 
 	void init();
 
@@ -138,10 +145,6 @@ private:
 	                  Partition &basePartition, const std::string &extendStrategy) const;
 
 	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors) const;
-
-	std::vector<std::pair<node, double>> scoreTriangles(node u, const NodeMapping &neighbors,
-	                                                    std::vector<std::set<node>> &triangleEdges,
-	                                                    Graph const &egoGraph) const;
 
 	std::vector<std::pair<node, double>>
 	scoreSignificance(node u, const NodeMapping &egoMapping, Graph const &egoGraph,
@@ -175,10 +178,10 @@ private:
 	/**
 	 * Connect the personas of a node. Returns a list of edges between the persona indexes.
 	 */
-	std::vector<std::tuple<index, index, edgeweight>> connectEgoPartitionPersonas(
+	std::vector<Edge> connectEgoPartitionPersonas(
 			const Graph &egoGraph, const Partition &egoPartition) const;
 
-	void addTime(Aux::Timer &timer, const std::string& name) const;
+	inline void addTime(Aux::Timer &timer, const std::string &name) const;
 };
 
 } /* namespace NetworKit */

@@ -57,7 +57,7 @@ TEST_F(OslomGTest, testOslomCleanUp) {
 double calc_score(int node_degree, int k_in, int gr_out, int ext_stubs, int ext_nodes) {
 	double boot_interval;
 	double r_score = Stochastics::compute_simple_fitness(k_in, gr_out, ext_stubs,
-	                                                     node_degree, boot_interval);
+	                                                     node_degree);
 	double ordered_stat = Stochastics::order_statistics_left_cumulative(ext_nodes,
 	                                                                    ext_nodes, r_score);
 	return ordered_stat;
@@ -81,15 +81,15 @@ TEST_F(OslomGTest, testOslomStochastics) {
 //		double r;
 //		r = Stochastics::topological_05(k_in, group_out_stubs, external_stubs, avg_k);
 //		r = log_table->right_cumulative_function(node_degree, group_out_stubs, external_stubs,		                                         k_in);
-//		double hyper = log_table->hyper(k_in, group_out_stubs, external_stubs, node_degree);
+//		double hyper = log_table->hypergeom_dist(k_in, group_out_stubs, external_stubs, node_degree);
 //		double cum = Stochastics::order_statistics_left_cumulative(n - avg_k, n - avg_k, r);
-//		std::cout << k_in << ": r=" << r << ", hyper=" << hyper << ", cum=" << cum << std::endl;
+//		std::cout << k_in << ": r=" << r << ", hyper=" << hypergeom_dist << ", cum=" << cum << std::endl;
 ////		std::cout << k_in << ": " << r << ", " << r * n << ", " << std::pow(1 - r, n) << std::endl;
 		if (k_in > group_size)
 			break;
 		double boot_interval;
 		double r_score = Stochastics::compute_simple_fitness(k_in, group_out_stubs, external_stubs,
-		                                                     node_degree, boot_interval);
+		                                                     node_degree);
 		double ordered_stat = Stochastics::order_statistics_left_cumulative(external_nodes,
 		                                                                    external_nodes,
 		                                                                    r_score);
