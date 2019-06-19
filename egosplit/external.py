@@ -68,7 +68,8 @@ def clusterOSLOM(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		subprocess.call([code_path + '/OSLOM2/oslom_undir', '-r', '4', '-hr', '0', '-uw', '-f', graph_filename], stdout=dev_null)
+		subprocess.call([code_path + '/OSLOM2/oslom_undir', '-r', '4', '-hr', '0', '-uw',
+		                 '-f', graph_filename], stdout=dev_null)
 		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
 		return result
 
@@ -81,7 +82,8 @@ def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
 		cover_filename = os.path.join(tempdir, 'cover.dat')
 		graphio.CoverWriter().write(cover, cover_filename)
 		bad_groups_filename = os.path.join(tempdir, 'bad_groups.txt')
-		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw', '-singlet',
+		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
+		          '-singlet',
 		          '-f', graph_filename, '-hint', cover_filename,
 		          '-t', str(tolerance),
 		          '-cup_runs', str(runs),
@@ -97,7 +99,8 @@ def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
 			params.append('-equiv_cup')
 		print(params)
 		subprocess.call(params)
-		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files', 'tp'), G)
+		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files',
+		                                                 'tp'), G)
 		bad_groups_file = open(bad_groups_filename, 'r')
 		bad_groups = []
 		for group in bad_groups_file:
@@ -135,7 +138,7 @@ def clusterGCE(G, alpha=1.5, min_clique=4):
 		return C
 
 
-def covertCoverToPartition(G, cover):
+def convertCoverToPartition(G, cover):
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(G.upperNodeIdBound())
 	singleton_idx = cover.upperBound()

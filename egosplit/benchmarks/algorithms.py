@@ -67,7 +67,11 @@ class CoverAlgorithm:
 		self.graph = graph.graph
 		self.ground_truth = graph.ground_truth
 		self.create_cover()
+		t_create = self.timer.elapsed
+		print("Created cover in {:.3f}s".format(t_create))
 		self.clean_up_cover()
+		print("Cleaned up cover in {:.3f}s".format(self.timer.elapsed - t_create))
+
 
 	def create_cover(self):
 		"""

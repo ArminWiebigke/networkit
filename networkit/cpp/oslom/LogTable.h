@@ -29,7 +29,11 @@ public:
 
     double log_factorial(int a);
 
-    void set(int);
+    /**
+     * Memoize the log sums from 0 to size.
+     * log sum (x) = sum(log(i)) for i = 0 to x
+     */
+    void set(int size);
 
     inline double log_hyper(int k_in, int g_out, int ext_stubs, int k_degree) {
         return log_choose(g_out, k_in)

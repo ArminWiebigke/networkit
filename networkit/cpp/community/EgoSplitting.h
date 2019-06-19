@@ -18,6 +18,7 @@
 #include "../structures/AdjacencyArray.h"
 #include "../structures/NodeMapping.h"
 #include "../auxiliary/Timer.h"
+#include "../auxiliary/Timings.h"
 
 namespace NetworKit {
 
@@ -25,7 +26,7 @@ namespace NetworKit {
  * Ego Splitting is a framework to detect overlapping communities.
  * https://dl.acm.org/citation.cfm?id=3098054
  */
-class EgoSplitting : public Algorithm {
+class EgoSplitting : public Algorithm, public Timings {
 	using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:
@@ -78,16 +79,10 @@ public:
 	std::string toString() const override;
 
 	/**
-	 * Get timings for the parts of the algorithm.
-	 * @return A map that maps the timer name to its value.
-	 */
-	std::map<std::string, double> getTimings();
-
-	/**
 	 * Get additional information about the execution.
 	 * @return A map that maps a name to a value.
 	 */
-	std::map<std::string, double> getExecutionInfo();
+	std::unordered_map<std::string, double> getExecutionInfo();
 
 	/**
 	 * Get the partitions of the ego-nets. A partition maps a node to its partition ID.
@@ -105,18 +100,18 @@ private:
 
 	const Graph &G;
 	PartitionFunction localClusterAlgo, globalClusterAlgo;
-	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: <global node ID, set ID in ego-net>
+	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
 	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
 	Partition personaPartition;
 	Cover cover; // the result of the algorithm
-	mutable std::map<std::string, double> timings;
-	mutable std::map<std::string, double> executionInfo;
+	mutable std::unordered_map<std::string, double> executionInfo;
 	std::vector<Graph> egoNets;
-	std::map<std::string, std::string> parameters;
-	AdjacencyArray directedEdges;
+	std::unordered_map<std::string, std::string> parameters;
+	AdjacencyArray directedG;
 	Cover groundTruth;
+
 	struct Edge {
 		node firstNode;
 		node secondNode;
@@ -125,6 +120,7 @@ private:
 		Edge(node firstNode, node secondNode, edgeweight weight)
 				: firstNode(firstNode), secondNode(secondNode), weight(weight) {}
 	};
+
 	std::vector<std::vector<EgoSplitting::Edge>> personaEdges; // for each node: edges between its personas
 
 	void init();
@@ -139,49 +135,22 @@ private:
 
 	void createCover();
 
-	Partition partitionEgoNet(node u, const Graph &egoGraph, const NodeMapping &nodeMapping) const;
-
-	void extendEgoNet(node u, Graph &egoGraph, NodeMapping &nodeMapping,
-	                  Partition &basePartition, const std::string &extendStrategy) const;
-
-	std::vector<std::pair<node, double>> scoreEdgeCount(node u, const NodeMapping &neighbors) const;
-
-	std::vector<std::pair<node, double>>
-	scoreSignificance(node u, const NodeMapping &egoMapping, Graph const &egoGraph,
-	                  const Partition &basePartition) const;
-
-	std::vector<std::pair<node, double>>
-	calcSignficance(node externalNode, const Graph &coarseGraph,
-	                const NodeMapping &coarseMapping,
-	                const std::vector<count> &coarseSizes, double orderedStatPosition) const;
-
-	double normalizeScore(node v, double score) const;
-
-	/**
-	 * Remove all edges adjacent to nodes with a low degree
-	 */
-	void removeLowDegreeNodes(Graph &egoGraph, count minDegree, count directNeighborsCnt) const;
-
-
-	/**
-	 * Search for triangles and execute function for each found triangle
-	 */
-	void findTriangles(Graph graph, AdjacencyArray directedGraph,
-	                   std::function<void(node, node, node)> triangleFunc) const;
-
-	/**
-	 * Create a perfect partition from the ground truth.
-	 */
-	Partition createGroundTruthPartition(const Graph &egoGraph, const NodeMapping &mapping,
-	                                     node egoNode) const;
-
 	/**
 	 * Connect the personas of a node. Returns a list of edges between the persona indexes.
 	 */
 	std::vector<Edge> connectEgoPartitionPersonas(
 			const Graph &egoGraph, const Partition &egoPartition) const;
 
-	inline void addTime(Aux::Timer &timer, const std::string &name) const;
+};
+
+struct EgoNetData {
+	const Graph &G;
+	const AdjacencyArray &directedG;
+	const Cover &groundTruth;
+	node egoNode;
+	Graph &egoGraph;
+	NodeMapping &egoMapping;
+	const std::unordered_map<std::string, std::string> &parameters;
 };
 
 } /* namespace NetworKit */

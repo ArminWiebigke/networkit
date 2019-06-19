@@ -4915,8 +4915,8 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
-		map[string, double] getTimings() except +
-		map[string, double] getExecutionInfo() except +
+		unordered_map[string, double] getTimings() except +
+		unordered_map[string, double] getExecutionInfo() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
 		vector[_Graph] getEgoNets() except +
 		void setParameters(map[string, string]) except +

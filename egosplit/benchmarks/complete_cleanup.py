@@ -40,7 +40,7 @@ def cleanUpOslom(G, cover, threshold=0.1, simple_cleanup=True,
 
 	args = [arg.encode('utf-8') for arg in args]
 
-	cleanAlgo = OslomCleanUp(copy(G), copy(cover), args)
+	cleanAlgo = OslomCleanUp(G, cover, args)
 	cleanAlgo.run()
 	cleanedCover = cleanAlgo.getCover()
 

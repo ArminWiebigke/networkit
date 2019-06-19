@@ -729,14 +729,15 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
 }
 
 TEST_F(CommunityGTest, testEgoSplitting) {
+	Aux::Random::setSeed(234769, false);
+
 //	EdgeListReader reader('\t', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 //	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
 //								 G);
 //	EdgeListReader reader(' ', 0);
 //	Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
-	Aux::Random::setSeed(234769, false);
-	ClusteredRandomGraphGenerator gen(100, 10, 0.5, 0.1);
+	ClusteredRandomGraphGenerator gen(100, 10, 0.5, 0.03);
 	Graph G = gen.generate();
 
 	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
@@ -764,6 +765,8 @@ TEST_F(CommunityGTest, testEgoSplitting) {
 //	CoverF1Similarity sim(G, cover, C);
 //	sim.run();
 //	std::cout << sim.getUnweightedAverage() << std::endl;
+
+//	std::cout << cover.numberOfSubsets() << std::endl;
 
 	auto isProperCover = [](const Graph &G, const Cover &cover) {
 		for (auto size : cover.subsetSizes()) {

@@ -4,7 +4,8 @@ from copy import copy
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
 
 from networkit.stopwatch import clockit
-from networkit.community import PLM, PLP, LPPotts, SLPA
+from networkit.community import PLM, PLP, LPPotts, SLPA, OslomCleanUp
+from networkit.structures import Cover
 from networkit import setLogLevel
 from ..external import *
 from .evaluation.metrics import write_results_to_file, add_compact_results, \
@@ -16,7 +17,6 @@ from egosplit.benchmarks.cleanup import cleanup_test
 from .cover_benchmark import CoverBenchmark, MetricCache
 from .algorithms import *
 from .graph import BenchGraph, LFRGraph
-from .cleanup import partition_merge
 
 
 def start_benchmarks():
@@ -129,7 +129,7 @@ def get_graphs(iterations):
 
 	# TODO: Graphs with different community sizes, e.g. 10-100
 	for minc in [60]:
-		for om in range(1, 6):
+		for om in range(2, 6):
 			for mu in [0.25]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
@@ -206,6 +206,13 @@ def get_algos(storeEgoNets):
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
+
+	# def PLM_OSLOM_clean(g):
+	# 	part = PLM(g, True, 1.0, 'none').run().getPartition()
+	# 	cover_clean = OslomCleanUp(g, Cover(part)).run().getCover()
+	# 	return convertCoverToPartition(g, cover_clean)
+	# partition_algos['PLM_clean'] = [PLM_OSLOM_clean]
 	# partition_algos['SLPA'] = [lambda g: SLPA(g, 0.1, 100).run().getPartition()]
 	# partition_algos['PLM_merge'] = [
 	# 	lambda g: partition_merge(g, PLM(copy(g), True, 1.0, 'none').run().getPartition())]
@@ -227,10 +234,10 @@ def get_algos(storeEgoNets):
 		p_algos.insert(1, lambda g: clusterInfomap(g))
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters)
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom_full')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-remove')
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-3')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-5')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-shrink')
@@ -274,6 +281,7 @@ def get_ego_parameters(store_ego_nets):
 		'keepOnlyTriangles': 'No',
 		'scoreStrategy': 'score',
 		'onlyDirectedCandidates': 'No',
+		'extendDirectedBack': 'Yes',
 	}
 	edge_scores_standard = {
 		**extend_standard,
@@ -288,26 +296,65 @@ def get_ego_parameters(store_ego_nets):
 		'orderedStatPos': 0.1,
 		'useSignInterpol': 'No',
 		'subtractNodeDegree': 'Yes',
-		'maxGroupsConsider': '5',
+		'maxGroupsConsider': 5,
+		'signMerge': 'Yes',
 	}
 
-	# TODO: Nochmal die gewichteten Persona Connections testen
 	ego_parameters['b'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
 	# }
-	ego_parameters['e'] = {
+	# ego_parameters['e-2-0.8'] = {
+	# 	**edge_scores_standard,
+	# 	'addNodesFactor': 2,
+	# }
+	ego_parameters['e-1-0.8'] = {
 		**edge_scores_standard,
+		'addNodesFactor': 1,
 	}
-	# ego_parameters['e-dir'] = {
+	ego_parameters['s-1-0.8'] = {
+		**significance_scores_standard,
+		'addNodesFactor': 1,
+	}
+	# ego_parameters['e-1-0.5'] = {
+	# 	**edge_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'addNodesExponent': 0.5,
+	# }
+	# ego_parameters['e-2-0.5'] = {
+	# 	**edge_scores_standard,
+	# 	'addNodesFactor': 2,
+	# 	'addNodesExponent': 0.5,
+	# }
+	# ego_parameters['e-1-1'] = {
+	# 	**edge_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'addNodesExponent': 1,
+	# }
+	# ego_parameters['e-2-1'] = {
+	# 	**edge_scores_standard,
+	# 	'addNodesFactor': 2,
+	# 	'addNodesExponent': 1,
+	# }
+	# ego_parameters['s-5-0.5'] = {
+	# 	**significance_scores_standard,
+	# 	'addNodesFactor': 5,
+	# 	'addNodesExponent': 0.5,
+	# }
+	# ego_parameters['e-dir-1'] = {
 	# 	**edge_scores_standard,
 	# 	'extendOverDirected': 'Yes',
-		# 'onlyDirectedCandidates': 'Yes',
+	# 	'extendDirectedBack': 'No',
 	# }
-	ego_parameters['s'] = {
-		**significance_scores_standard,
-	}
+	# ego_parameters['e-dir-2'] = {
+	# 	**edge_scores_standard,
+	# 	'extendOverDirected': 'Yes',
+	# 	'extendDirectedBack': 'Yes',
+	# }
+	# ego_parameters['s'] = {
+	# 	**significance_scores_standard,
+	# }
 	# ego_parameters['s-dir'] = {
 	# 	**significance_scores_standard,
 	# 	'extendOverDirected': 'Yes',

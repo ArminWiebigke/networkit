@@ -7,6 +7,7 @@ networkit_add_module(auxiliary
     Random.cpp
     SignalHandling.cpp
     Timer.cpp
+    Timings.cpp
     UniformRandomSelector.cpp
     )
 

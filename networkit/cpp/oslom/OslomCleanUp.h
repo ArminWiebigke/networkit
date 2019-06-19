@@ -5,7 +5,6 @@
  * Author: Armin Wiebigke
  */
 
-
 #ifndef OSLOMCLEANUP_H
 #define OSLOMCLEANUP_H
 

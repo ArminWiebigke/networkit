@@ -10,7 +10,11 @@ networkit_add_module(community
     DissimilarityMeasure.cpp
     DynamicNMIDistance.cpp
     EdgeCut.cpp
+    EgoNetPartition.cpp
     EgoSplitting.cpp
+    ExtendEdges.cpp
+    ExtendScore.cpp
+    ExtendSignificance.cpp
     GraphClusteringTools.cpp
     GraphStructuralRandMeasure.cpp
     HubDominance.cpp

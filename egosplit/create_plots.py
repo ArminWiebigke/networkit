@@ -39,7 +39,7 @@ if "metrics" in plots:
 			xlabel="om",
 			algo_match="Ego_",
 			# add_algos=["OSLOM"],
-			remove_algo_part=["Ego_PLM_", "Ego_PLM-", "_Oslom-merge"],
+			remove_algo_part=["Ego_PLM_", "Ego_PLM-", "lom-merge"],
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
@@ -145,7 +145,7 @@ if "num_comms" in plots:
 		hue="algo",
 		plot_args={
 			"dashes": False,
-			# "markers": False,
+			"markers": False,
 		},
 		ax_set={
 			"ylim": 0,

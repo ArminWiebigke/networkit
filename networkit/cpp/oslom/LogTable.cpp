@@ -12,14 +12,23 @@ LogFactTable *LogFactTable::get_instance() {
 }
 
 void LogFactTable::set(int size) {
+	if (size < lnf.size())
+		return;
+
 	std::cout << "allocating " << size << " factorials..." << std::endl;
-	lnf.clear();
 	lnf.reserve(size + 1);
 
 	double f = 0.0;
-	lnf.push_back(f);
+	size_t old_size = lnf.size();
 
-	for (int i = 1; i <= size; i++) {
+	if (old_size > 0) {
+		f = lnf.back();
+	} else {
+		lnf.push_back(0.0);
+		old_size = 1;
+	}
+
+	for (int i = old_size; i <= size; i++) {
 		f += std::log(i);
 		lnf.push_back(f);
 	}

@@ -33,8 +33,6 @@ void setUpParameters(const std::vector<std::string> &args) {
 
 void setUpStochastics(int log_max) {
 	Stochastics::init(log_max);
-//	LogFactTable *table = LogFactTable::get_instance();
-//	table->set(log_max);
 }
 
 std::map<int, std::map<int, std::pair<int, double> > >
