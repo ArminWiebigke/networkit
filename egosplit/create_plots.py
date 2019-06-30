@@ -37,8 +37,8 @@ if "metrics" in plots:
 			data=data["metrics"],
 			graphs="om",
 			xlabel="om",
-			algo_match="Ego_",
-			# add_algos=["OSLOM"],
+			algo_matches=["Ego_", "GCE_"],
+			# add_algos=["GCE_1.0", "GCE_1.5"],
 			remove_algo_part=["Ego_PLM_", "Ego_PLM-", "lom-merge"],
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
@@ -104,7 +104,7 @@ if "comm_sizes" in plots:
 		data=data["cover_comm_sizes"],
 		graphs="",
 		# xlabel="om",
-		algo_match="",
+		algo_matches=[""],
 		# add_algos=["Ground_Truth"],
 		remove_algo_part=["Ego_PLM_", "Ego_PLM-", "_Oslom-merge"],
 		title="Community Sizes",
@@ -135,7 +135,7 @@ if "num_comms" in plots:
 		data=data["cover_num_comms"],
 		graphs="",
 		# xlabel="om",
-		algo_match="",
+		algo_matches=[""],
 		# add_algos=["Ground_Truth"],
 		remove_algo_part=["Ego_PLM_", "_Oslom-merge"],
 		title="Number of communities" + ", PLM(1.0)",
@@ -167,38 +167,30 @@ if "ego_net_partition" in plots:
 		"extended_nodes",
 		"external_nodes",
 	]
-	algos = [
-		# {"filter": "_edges", "title": "extend (edges)", "file": "_edges"},
-		# {"filter": "_triangles", "title": "extend (triangles)", "file": "_triangles"},
-		# {"filter": "Ego_PLM_1.0_", "title": "PLM(1.0)", "file": "_PLM_1.0"},
-		{"filter": "Ego", "title": "", "file": ""},
-	]
 	for ego_metric in ego_metrics:
-		# break
-		for algo in algos:
-			make_plot(
-				# plot_type=PlotType.bar,
-				data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
-				graphs="",
-				xlabel="om",
-				algo_match=algo["filter"],
-				# add_algos=["Ego_PLP_b", "Ego_PLP_e"],
-				remove_algo_part=["Ego_PLM_", "_Oslom-merge"],
-				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
-				file_name="ego_partition/metrics/" + ego_metric + algo["file"],
-				x="graph",
-				y="value",
-				hue="algo",
-				plot_args={
-					# "style": "metric_name",
-					"dashes": False,
-					# "markers": False,
-				},
-				ax_set={
-					# "ylim": (0, 1.05),
-					"ylim": 0,
-				}
-			)
+		make_plot(
+			# plot_type=PlotType.bar,
+			data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
+			graphs="",
+			xlabel="om",
+			algo_matches=[""],
+			# add_algos=["Ego_PLP_b", "Ego_PLP_e"],
+			remove_algo_part=["Ego_PLM_", "_Oslom-merge"],
+			title="Ego-Net Metrics, " + ego_metric + ", ",
+			file_name="ego_partition/metrics/" + ego_metric,
+			x="graph",
+			y="value",
+			hue="algo",
+			plot_args={
+				# "style": "metric_name",
+				"dashes": False,
+				# "markers": False,
+			},
+			ax_set={
+				# "ylim": (0, 1.05),
+				"ylim": 0,
+			}
+		)
 
 	# Algo parameters on x-axis
 	for ego_metric in ego_metrics:
@@ -224,30 +216,29 @@ if "ego_net_partition" in plots:
 	# Metrics per Ego-Net
 	for ego_metric in ego_metrics:
 		# break
-		for algo in algos:
-			make_plot(
-				# plot_type=PlotType.bar,
-				data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
-				graphs="",
-				# xlabel="om",
-				algo_match=algo["filter"],
-				remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_Oslom-merge"],
-				title="Ego-Net Metrics, " + ego_metric + ", " + algo["title"],
-				file_name="ego_partition/ego_metrics/" + ego_metric + algo["file"],
-				x="ego_net_size",
-				y="value",
-				hue="algo",
-				plot_args={
-					# "style": "metric_name",
-					"dashes": False,
-					# "markers": False,
-					# "markersize": 3,
-				},
-				ax_set={
-					# "ylim": (0, 1.05),
-					"ylim": 0,
-				}
-			)
+		make_plot(
+			# plot_type=PlotType.bar,
+			data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
+			graphs="",
+			# xlabel="om",
+			algo_matches=[""],
+			remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_Oslom-merge"],
+			title="Ego-Net Metrics, " + ego_metric + ", ",
+			file_name="ego_partition/ego_metrics/" + ego_metric,
+			x="ego_net_size",
+			y="value",
+			hue="algo",
+			plot_args={
+				# "style": "metric_name",
+				"dashes": False,
+				# "markers": False,
+				# "markersize": 3,
+			},
+			ax_set={
+				# "ylim": (0, 1.05),
+				"ylim": 0,
+			}
+		)
 
 
 # # Create plots

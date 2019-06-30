@@ -70,6 +70,12 @@ public:
 
 	void reset();
 
+	/**
+	 * Reset the mapping while keeping only the smallest local nodes.
+	 * @param end The first local node that will be deleted.
+	 */
+	void reset(index end);
+
 private:
 	std::vector<node> globalToLocal;
 	std::vector<node> localToGlobal;

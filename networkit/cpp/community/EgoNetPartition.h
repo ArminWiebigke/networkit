@@ -49,6 +49,7 @@ private:
 	const std::unordered_map<std::string, std::string> &parameters;
 	const Cover &groundTruth;
 	const EgoNetData &egoNetData;
+	int it_char;
 
 	void partitionEgoNet();
 

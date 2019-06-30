@@ -30,6 +30,9 @@ public:
 protected:
 	void addTime(Aux::Timer &timer, const std::string &name) const;
 
+	void addTimings(const std::unordered_map<std::string, double> &ts,
+			const std::string &prefix = "");
+
 	mutable std::unordered_map<std::string, double> timings;
 };
 

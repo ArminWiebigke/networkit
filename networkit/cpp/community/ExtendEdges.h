@@ -14,12 +14,17 @@
 
 namespace NetworKit {
 
-class ExtendEdges : public ExtendScore, public Timings {
+class ExtendEdges : public ExtendScore {
 public:
 	explicit ExtendEdges(const EgoNetData &egoNetData);
 
 	void run() override;
 
+	bool isParallel() const override;
+
+	std::string toString() const override;
+
+private:
 	double normalizeScore(node v, double score) const;
 };
 

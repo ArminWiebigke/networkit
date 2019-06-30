@@ -27,18 +27,10 @@ EgoNetPartition::EgoNetPartition(const EgoNetData &egoNetData,
 		  partitionFunction(partitionFunction),
 		  parameters(egoNetData.parameters),
 		  groundTruth(egoNetData.groundTruth),
-		  egoNetData(egoNetData) {
+		  egoNetData(egoNetData),
+		  it_char(1) {
 
 }
-
-bool EgoNetPartition::isParallel() const {
-	return false;
-}
-
-std::string EgoNetPartition::toString() const {
-	return "EgoNetPartition";
-}
-
 
 void EgoNetPartition::run() {
 	Aux::Timer timer;
@@ -93,6 +85,7 @@ void EgoNetPartition::run() {
 		partitionEgoNet();
 		addTime(timer, "4    Partition EgoNet");
 	}
+
 	for (count i = 0; i < extendIterations; ++i) {
 		if (i > 0) {
 			extendStrategy = parameters.at("extendStrategySecond");
@@ -102,10 +95,11 @@ void EgoNetPartition::run() {
 		INFO("Extend ego-net with strategy " + extendStrategy);
 
 		extendEgoNet(extendStrategy);
-		addTime(timer, "3    Extend EgoNet");
+		addTime(timer, "3" + std::to_string(it_char) + "    Extend EgoNet");
 
 		partitionEgoNet();
-		addTime(timer, "4    Partition EgoNet");
+		addTime(timer, "4" + std::to_string(it_char) + "    Partition EgoNet");
+		++it_char;
 	}
 
 	hasRun = true;
@@ -152,7 +146,7 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 		result = Partition(egoGraph.upperNodeIdBound());
 		result.allToOnePartition();
 	}
-	addTime(timer, "31    Setup");
+	addTime(timer, "3" + std::to_string(it_char) + "1    Setup");
 
 //	std::set<node> foundNeighbors;
 //	std::vector<node> directNeighbors = egoMapping.globalNodes();
@@ -182,6 +176,7 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 		                         + " is not a valid strategy to extend the Ego-Net!");
 	extendScore->run();
 	nodeScores = extendScore->getScores();
+	addTimings(extendScore->getTimings(), "3" + std::to_string(it_char) + "3");
 
 //	if (parameters.at("onlyDirectedCandidates") == "Yes") {
 //		// Remove candidates that can not be found over the directed graph
@@ -191,7 +186,7 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 //		                             });
 //		nodeScores.resize(newEnd - nodeScores.begin());
 //	}
-	addTime(timer, "33    Get candidates");
+	addTime(timer, "3" + std::to_string(it_char) + "3    Get candidates");
 
 #ifndef NDEBUG
 	std::set<node> candidates;
@@ -219,14 +214,14 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	          });
 	if (nodeScores.size() > extendNodeCnt)
 		nodeScores.resize(extendNodeCnt);
-	addTime(timer, "34    Sort candidates");
+	addTime(timer, "3" + std::to_string(it_char) + "4    Sort candidates");
 	for (auto pair : nodeScores) {
 		if (pair.second <= 0)
 			break;
 		egoMapping.addNode(pair.first);
 		egoGraph.addNode();
 	}
-	addTime(timer, "35    Add nodes");
+	addTime(timer, "3" + std::to_string(it_char) + "5    Add nodes");
 
 
 	/**********************************************************************************************
@@ -253,11 +248,11 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 			}
 		});
 	}
-	addTime(timer, "37    Add edges");
+	addTime(timer, "3" + std::to_string(it_char) + "7    Add edges");
 
 	count minDegree = stoi(parameters.at("minNodeDegree"));
 	removeLowDegreeNodes(minDegree, directNeighborsCnt);
-	addTime(timer, "39    Remove low degree nodes");
+	addTime(timer, "3" + std::to_string(it_char) + "9    Remove low degree nodes");
 }
 
 void EgoNetPartition::removeLowDegreeNodes(count minDegree, count directNeighborsCnt) const {
@@ -274,6 +269,14 @@ void EgoNetPartition::removeLowDegreeNodes(count minDegree, count directNeighbor
 			}
 		});
 	} while (nodes_changed > 0);
+}
+
+bool EgoNetPartition::isParallel() const {
+	return false;
+}
+
+std::string EgoNetPartition::toString() const {
+	return "EgoNetPartition";
 }
 
 } /* namespace NetworKit */

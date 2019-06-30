@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#import "ExtendScore.h"
+#include "ExtendScore.h"
 
 namespace NetworKit {
 
@@ -20,11 +20,8 @@ ExtendScore::ExtendScore(const EgoNetData &egoNetData)
 }
 
 std::vector<std::pair<node, double>> ExtendScore::getScores() {
-	return result;
-}
-
-void ExtendScore::run() {
-	throw std::runtime_error("Don't call this class directly, use a subclass.");
+	hasRun = false;
+	return std::move(result);
 }
 
 } /* namespace NetworKit */

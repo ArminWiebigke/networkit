@@ -72,7 +72,6 @@ class CoverAlgorithm:
 		self.clean_up_cover()
 		print("Cleaned up cover in {:.3f}s".format(self.timer.elapsed - t_create))
 
-
 	def create_cover(self):
 		"""
 		Override this method in subclasses. Set self.cover to the result of the algorithm.
@@ -125,13 +124,23 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 		# Output timings
 		timings = algo.getTimings()
+		leading_numbers = 0
 		for name in sorted(timings.keys()):
-			print(str(int(timings[name]/1000000)).rjust(7) + '  ' + name.decode('ASCII'))
+			t_name = name.decode('ASCII')
+			# print(t_name)
+			lead_new = t_name.find(" ")
+			if lead_new < leading_numbers:
+				print()
+			t_name = t_name[lead_new - 1:]
+			print((lead_new - 1) * "  " + str(int(timings[name] / 1000000)).rjust(7)
+			      + '   ' + t_name)
+			leading_numbers = lead_new
 		timings_str = ''
 		for name in sorted(timings.keys()):
-			timings_str += str(timings[name]/1000000).ljust(21)
-		# self.out_file.write(timings_str + '\n')
-		# print(timings_str)
+			timings_str += str(timings[name] / 1000000).ljust(21)
+
+	# self.out_file.write(timings_str + '\n')
+	# print(timings_str)
 
 	# def getExecutionInfo(self):
 	# 	return self.executionInfo

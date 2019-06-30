@@ -19,6 +19,7 @@
 #include "../structures/NodeMapping.h"
 #include "../auxiliary/Timer.h"
 #include "../auxiliary/Timings.h"
+#include "../structures/MemoizationTable.h"
 
 namespace NetworKit {
 
@@ -141,6 +142,8 @@ private:
 	std::vector<Edge> connectEgoPartitionPersonas(
 			const Graph &egoGraph, const Partition &egoPartition) const;
 
+	void storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode);
+
 };
 
 struct EgoNetData {
@@ -151,6 +154,7 @@ struct EgoNetData {
 	Graph &egoGraph;
 	NodeMapping &egoMapping;
 	const std::unordered_map<std::string, std::string> &parameters;
+	MemoizationTable<double> &sigTable;
 };
 
 } /* namespace NetworKit */

@@ -16,13 +16,11 @@
 
 namespace NetworKit {
 
-class ExtendScore : public Algorithm {
+class ExtendScore : public Algorithm, public Timings {
 public:
 	explicit ExtendScore(const EgoNetData &egoNetData);
 
 	virtual std::vector<std::pair<node, double>> getScores();
-
-	void run() override;
 
 protected:
 	const Graph &G;

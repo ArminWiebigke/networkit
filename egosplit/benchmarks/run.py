@@ -199,13 +199,14 @@ def get_algos(storeEgoNets):
 	# 		                           threshold=threshold, numIterations=iterations))
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm(alpha=1.0, add_name="_1.0"))
+	algos.append(GceAlgorithm(alpha=1.5, add_name="_1.5"))
 	# algos.append(GceAlgorithm(alpha=1.0, add_name="_1.0_clean", clean_up='Oslom-merge'))
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
 
 	# def PLM_OSLOM_clean(g):
@@ -298,6 +299,8 @@ def get_ego_parameters(store_ego_nets):
 		'subtractNodeDegree': 'Yes',
 		'maxGroupsConsider': 5,
 		'signMerge': 'Yes',
+		'useSigMemo': 'No',
+		'minEdgesToGroupSig': '1',
 	}
 
 	ego_parameters['b'] = standard
@@ -309,14 +312,51 @@ def get_ego_parameters(store_ego_nets):
 	# 	**edge_scores_standard,
 	# 	'addNodesFactor': 2,
 	# }
-	ego_parameters['e-1-0.8'] = {
+	ego_parameters['e'] = {
 		**edge_scores_standard,
 		'addNodesFactor': 1,
 	}
-	ego_parameters['s-1-0.8'] = {
+	ego_parameters['s'] = {
 		**significance_scores_standard,
 		'addNodesFactor': 1,
+		'orderedStatPos': 0.0,
+		'useSigMemo': 'No',
+		'minEdgesToGroupSig': '1',
 	}
+	ego_parameters['s-mem'] = {
+		**significance_scores_standard,
+		'addNodesFactor': 1,
+		'orderedStatPos': 0.0,
+		'useSigMemo': 'Yes',
+		'minEdgesToGroupSig': '1',
+	}
+	# ego_parameters['s-2'] = {
+	# 	**significance_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'orderedStatPos': 0.1,
+	# 	'useSigMemo': 'No',
+	# 	'minEdgesToGroupSig': '1',
+	# }
+	# ego_parameters['s2'] = {
+	# 	**significance_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'orderedStatPos': 0.0,
+	# 	'useSigMemo': 'No',
+	# 	'minEdgesToGroupSig': '2',
+	# }
+	# ego_parameters['s-memo'] = {
+	# 	**significance_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'orderedStatPos': 0.0,
+	# 	'useSigMemo': 'Yes',
+	# }
+	# ego_parameters['s-memo2'] = {
+	# 	**significance_scores_standard,
+	# 	'addNodesFactor': 1,
+	# 	'orderedStatPos': 0.0,
+	# 	'useSigMemo': 'Yes',
+	# 	'minEdgesToGroupSig': '2',
+	# }
 	# ego_parameters['e-1-0.5'] = {
 	# 	**edge_scores_standard,
 	# 	'addNodesFactor': 1,

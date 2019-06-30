@@ -58,4 +58,10 @@ void NodeMapping::reset() {
 	localToGlobal.clear();
 }
 
+void NodeMapping::reset(index end) {
+	for (node v = end; v < localToGlobal.size(); ++v)
+		globalToLocal[v] = none;
+	localToGlobal.resize(end);
+}
+
 } /* namespace NetworKit */

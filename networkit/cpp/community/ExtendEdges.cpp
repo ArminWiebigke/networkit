@@ -18,7 +18,7 @@ void ExtendEdges::run() {
 	Aux::Timer timer;
 	timer.start();
 	std::vector<double> edgeScores(G.upperNodeIdBound()); //TODO: Don't allocate this every time
-	addTime(timer, "331    Create vector");
+	addTime(timer, "1    Create vector");
 	std::vector<node> candidates;
 	// Search for all edges to neighbors of neighbors
 	std::vector<node> directNeighbors = egoMapping.globalNodes();
@@ -47,13 +47,13 @@ void ExtendEdges::run() {
 			G.forEdgesOf(v, countEdges);
 		}
 	}
-	addTime(timer, "333    Count edges");
+	addTime(timer, "3    Count edges");
 
 	auto newEnd = std::remove_if(candidates.begin(), candidates.end(), [&](node v) {
 		return (isDirectNeighbor(v) || v == egoNode);
 	});
 	candidates.resize(newEnd - candidates.begin());
-	addTime(timer, "335    Remove neighbors as candidates");
+	addTime(timer, "5    Remove neighbors as candidates");
 
 	// Calculate score for each candidate
 	result.reserve(candidates.size());
@@ -64,7 +64,7 @@ void ExtendEdges::run() {
 			score = 0.0;
 		result.emplace_back(v, score);
 	}
-	addTime(timer, "337    Calculate score");
+	addTime(timer, "7    Calculate score");
 }
 
 double ExtendEdges::normalizeScore(node v, double score) const {
@@ -80,6 +80,14 @@ double ExtendEdges::normalizeScore(node v, double score) const {
 	if (scoreStrategy == "score^2_normed")
 		return score * score * 1.0 / G.degree(v);
 	throw std::runtime_error(scoreStrategy + " is not a valid score strategy!");
+}
+
+bool ExtendEdges::isParallel() const {
+	return false;
+}
+
+std::string ExtendEdges::toString() const {
+	return "ExtendEdges";
 }
 
 } /* namespace NetworKit */
