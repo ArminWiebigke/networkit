@@ -196,8 +196,6 @@ def calc_metrics(sums):
 		"community_cohesion": sums["comm_incorrect"] / sums["comm_size"],
 		"parts_per_comm": sums["parts_per_comm"] / sums["num_comms"],
 		"comms_per_part": safe_div(sums["comms_per_part"], sums["num_partitions"], 1),
-		# "merged_external_nodes": safe_div(sums["part_incorrect_ext"],
-		#                                   sums["external_nodes"]),
 		"merged_external_nodes": safe_div(sums["part_incorrect_ext"],
 		                                  sums["partition_size"]),
 		"partition_exclusivity": safe_div(sums["part_incorrect_gt"],
@@ -205,6 +203,9 @@ def calc_metrics(sums):
 		"extended_nodes": safe_div(sums["extended_nodes"], sums["ego_net_size"]),
 		"external_nodes": safe_div(sums["external_nodes_extended"],
 		                           sums["extended_ego_net_size"]),
+		"external_nodes_added": safe_div(
+			sums["external_nodes_extended"] - sums["external_nodes"],
+			sums["extended_ego_net_size"] - sums["ego_net_size"]),
 	}
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]
@@ -301,7 +302,7 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 			'wrong_nodes_gt': gt_comms_cnt,
 			'wrong_nodes_external': external_comms_cnt,
 			'wrong_percentage': 100 * (
-						gt_comms_cnt + external_comms_cnt) / partition_size,
+					gt_comms_cnt + external_comms_cnt) / partition_size,
 			'wrong_percentage_gt': 100 * gt_comms_cnt / partition_size,
 			'wrong_percentage_external': 100 * external_comms_cnt / partition_size,
 			'num_communities': num_communities,

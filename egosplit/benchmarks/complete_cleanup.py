@@ -53,29 +53,29 @@ def cleanUpOslom(G, cover, threshold=0.1, simple_cleanup=True,
 
 
 def clean_up_cover(graph, cover, ground_truth, clean_up):
-	if clean_up == "":
+	if clean_up == "" or clean_up == "no_clean":
 		return cover
-	if clean_up == "Oslom-full":
+	if clean_up == "clean-full":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="remove",
 		                        check_unions=True, check_minimality=True,
 		                        max_extend=100)
-	elif clean_up == "Oslom-remove":
+	elif clean_up == "clean-remove":
 		cover, _ = cleanUpOslom(graph, cover)
-	elif clean_up == "Oslom-shrink":
+	elif clean_up == "clean-shrink":
 		cover, _ = cleanUpOslom(graph, cover, cleanup_strategy="check")
-	elif clean_up == "Oslom-merge":
+	elif clean_up == "clean-merge":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge")
-	elif clean_up == "Oslom-merge-3":
+	elif clean_up == "clean-merge-3":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge", runs=3)
-	elif clean_up == "Oslom-merge-5":
+	elif clean_up == "clean-merge-5":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge", runs=5)
-	elif clean_up == "Oslom-merge-shrink":
+	elif clean_up == "clean-merge-shrink":
 		cover, _ = cleanUpOslom(graph, cover, bad_groups_strat="merge",
 		                        discard_max_extend_groups=False)
-	elif clean_up == "Oslom-keep":
+	elif clean_up == "clean-keep":
 		cover, bad_groups = cleanUpOslom(graph, cover)
 		cover = add_communities(cover, bad_groups)
-	elif clean_up == "Oslom-keep,merge-E":
+	elif clean_up == "clean-keep,merge-E":
 		cover, bad_groups = cleanUpOslom(graph, cover)
 		cover = merge_overlap_comms(graph, cover)
 		cover = merge_comms_entropy(graph, cover, bad_groups)

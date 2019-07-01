@@ -1,6 +1,6 @@
 from plot_scripts.read_data import read_data
 from plot_scripts.config import set_sns_style, metric_names
-from plot_scripts.base_plot import make_plot, PlotType
+from plot_scripts.draw_plot import make_plot, PlotType
 
 
 print("Reading results...")
@@ -15,6 +15,8 @@ plots = [
 	"ego_net_partition",
 ]
 
+algo_matches = ["clean-merge",]
+remove_algo_part = ["Ego_PLM_", "ean"]
 
 # *****************************************************************************
 # *                                  Metrics                                  *
@@ -35,19 +37,17 @@ if "metrics" in plots:
 		make_plot(
 			# plot_type=PlotType.bar,
 			data=data["metrics"],
-			graphs="om",
+			graph_filter="om",
 			xlabel="om",
-			algo_matches=["Ego_", "GCE_"],
+			algo_matches=algo_matches,
 			# add_algos=["GCE_1.0", "GCE_1.5"],
-			remove_algo_part=["Ego_PLM_", "Ego_PLM-", "lom-merge"],
+			remove_algo_part=remove_algo_part,
 			title=metric_names[metric]["description"],
 			file_name="metrics/" + metric_names[metric]["file_name"],
 			x="graph",
 			y=metric,
 			hue="algo",
 			plot_args={
-				"dashes": False,
-				# "markers": False,
 				"ci": "sd",
 			},
 			ax_set={
@@ -102,11 +102,11 @@ if "comm_sizes" in plots:
 	make_plot(
 		plot_type=PlotType.swarm,
 		data=data["cover_comm_sizes"],
-		graphs="",
+		graph_filter="",
 		# xlabel="om",
-		algo_matches=[""],
-		# add_algos=["Ground_Truth"],
-		remove_algo_part=["Ego_PLM_", "Ego_PLM-", "_Oslom-merge"],
+		algo_matches=algo_matches,
+		add_algos=["Ground_Truth"],
+		remove_algo_part=remove_algo_part,
 		title="Community Sizes",
 		file_name="communities/" + "comm_sizes",
 		one_plot_per_graph=True,
@@ -133,19 +133,17 @@ if "num_comms" in plots:
 	make_plot(
 		# plot_type=PlotType.bar,
 		data=data["cover_num_comms"],
-		graphs="",
-		# xlabel="om",
-		algo_matches=[""],
-		# add_algos=["Ground_Truth"],
-		remove_algo_part=["Ego_PLM_", "_Oslom-merge"],
+		# graph_filter="",
+		xlabel="om",
+		algo_matches=algo_matches,
+		add_algos=["Ground_Truth"],
+		remove_algo_part=remove_algo_part,
 		title="Number of communities" + ", PLM(1.0)",
 		file_name="communities/" + "num_comms",
 		x="graph",
 		y="num_comms",
 		hue="algo",
 		plot_args={
-			"dashes": False,
-			"markers": False,
 		},
 		ax_set={
 			"ylim": 0,
@@ -166,16 +164,17 @@ if "ego_net_partition" in plots:
 		"comms_per_part",
 		"extended_nodes",
 		"external_nodes",
+		"external_nodes_added",
 	]
 	for ego_metric in ego_metrics:
 		make_plot(
 			# plot_type=PlotType.bar,
 			data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
-			graphs="",
+			# graph_filter="",
 			xlabel="om",
-			algo_matches=[""],
+			algo_matches=algo_matches,
 			# add_algos=["Ego_PLP_b", "Ego_PLP_e"],
-			remove_algo_part=["Ego_PLM_", "_Oslom-merge"],
+			remove_algo_part=remove_algo_part,
 			title="Ego-Net Metrics, " + ego_metric + ", ",
 			file_name="ego_partition/metrics/" + ego_metric,
 			x="graph",
@@ -183,8 +182,6 @@ if "ego_net_partition" in plots:
 			hue="algo",
 			plot_args={
 				# "style": "metric_name",
-				"dashes": False,
-				# "markers": False,
 			},
 			ax_set={
 				# "ylim": (0, 1.05),
@@ -200,7 +197,7 @@ if "ego_net_partition" in plots:
 		make_plot(
 			data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
 			graphs="LFR_om",
-			algo_match="Ego_PLM_",
+			algo_match=algo_matches,
 			title="Ego-Net Metrics, " + ego_metric,
 			file_name="ego_partition/2_dim_metrics/" + ego_metric,
 			x=x,
@@ -219,10 +216,10 @@ if "ego_net_partition" in plots:
 		make_plot(
 			# plot_type=PlotType.bar,
 			data=data["ego_net_ego_metrics"].query("metric_name in @ego_metric"),
-			graphs="",
+			# graph_filter="",
 			# xlabel="om",
-			algo_matches=[""],
-			remove_algo_part=["Ego_PLM-", "Ego_PLM_", "_Oslom-merge"],
+			algo_matches=algo_matches,
+			remove_algo_part=remove_algo_part,
 			title="Ego-Net Metrics, " + ego_metric + ", ",
 			file_name="ego_partition/ego_metrics/" + ego_metric,
 			x="ego_net_size",
@@ -230,8 +227,6 @@ if "ego_net_partition" in plots:
 			hue="algo",
 			plot_args={
 				# "style": "metric_name",
-				"dashes": False,
-				# "markers": False,
 				# "markersize": 3,
 			},
 			ax_set={

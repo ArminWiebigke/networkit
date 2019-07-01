@@ -129,7 +129,7 @@ def get_graphs(iterations):
 
 	# TODO: Graphs with different community sizes, e.g. 10-100
 	for minc in [60]:
-		for om in range(2, 6):
+		for om in range(1, 7):
 			for mu in [0.25]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
@@ -198,15 +198,15 @@ def get_algos(storeEgoNets):
 	# 		algos.append(SlpaAlgorithm(name='SLPA_{}_{}'.format(threshold, iterations),
 	# 		                           threshold=threshold, numIterations=iterations))
 	# algos.append(OlpAlgorithm())
-	# algos.append(GceAlgorithm(alpha=1.0, add_name="_1.0"))
-	algos.append(GceAlgorithm(alpha=1.5, add_name="_1.5"))
-	# algos.append(GceAlgorithm(alpha=1.0, add_name="_1.0_clean", clean_up='Oslom-merge'))
+	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0'))
+	# algos.append(GceAlgorithm(alpha=1.5, add_name='_1.5'))
+	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0_clean', clean_up='Oslom-merge'))
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
 
 	# def PLM_OSLOM_clean(g):
@@ -235,16 +235,16 @@ def get_algos(storeEgoNets):
 		p_algos.insert(1, lambda g: clusterInfomap(g))
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters)
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom_full')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-remove')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-3')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-5')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-merge-shrink')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-check')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-keep')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='Oslom-keep-merge_E')
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='no_clean')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean_full')
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-remove')
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-3')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-5')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-shrink')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-check')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-keep')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-keep-merge_E')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='trim_gt')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='trim_gt-merge_gt')
 
@@ -293,11 +293,10 @@ def get_ego_parameters(store_ego_nets):
 		'extendPartitionIterations': 2,
 		'extendStrategySecond': 'significance',
 		'maxSignificance': 0.1,
-		'sortGroups': "significance",
-		'orderedStatPos': 0.1,
-		'useSignInterpol': 'No',
+		'sortGroups': 'significance',
+		'orderedStatPos': 0.0,
 		'subtractNodeDegree': 'Yes',
-		'maxGroupsConsider': 5,
+		'maxGroupsConsider': 10,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
 		'minEdgesToGroupSig': '1',
@@ -314,22 +313,15 @@ def get_ego_parameters(store_ego_nets):
 	# }
 	ego_parameters['e'] = {
 		**edge_scores_standard,
-		'addNodesFactor': 1,
 	}
-	ego_parameters['s'] = {
-		**significance_scores_standard,
-		'addNodesFactor': 1,
-		'orderedStatPos': 0.0,
-		'useSigMemo': 'No',
-		'minEdgesToGroupSig': '1',
-	}
-	ego_parameters['s-mem'] = {
-		**significance_scores_standard,
-		'addNodesFactor': 1,
-		'orderedStatPos': 0.0,
-		'useSigMemo': 'Yes',
-		'minEdgesToGroupSig': '1',
-	}
+	# ego_parameters['s'] = {
+	# 	**significance_scores_standard,
+	# 	'useSigMemo': 'No',
+	# }
+	# ego_parameters['s-mem'] = {
+	# 	**significance_scores_standard,
+	# 	'useSigMemo': 'Yes',
+	# }
 	# ego_parameters['s-2'] = {
 	# 	**significance_scores_standard,
 	# 	'addNodesFactor': 1,
@@ -337,83 +329,6 @@ def get_ego_parameters(store_ego_nets):
 	# 	'useSigMemo': 'No',
 	# 	'minEdgesToGroupSig': '1',
 	# }
-	# ego_parameters['s2'] = {
-	# 	**significance_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'orderedStatPos': 0.0,
-	# 	'useSigMemo': 'No',
-	# 	'minEdgesToGroupSig': '2',
-	# }
-	# ego_parameters['s-memo'] = {
-	# 	**significance_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'orderedStatPos': 0.0,
-	# 	'useSigMemo': 'Yes',
-	# }
-	# ego_parameters['s-memo2'] = {
-	# 	**significance_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'orderedStatPos': 0.0,
-	# 	'useSigMemo': 'Yes',
-	# 	'minEdgesToGroupSig': '2',
-	# }
-	# ego_parameters['e-1-0.5'] = {
-	# 	**edge_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'addNodesExponent': 0.5,
-	# }
-	# ego_parameters['e-2-0.5'] = {
-	# 	**edge_scores_standard,
-	# 	'addNodesFactor': 2,
-	# 	'addNodesExponent': 0.5,
-	# }
-	# ego_parameters['e-1-1'] = {
-	# 	**edge_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'addNodesExponent': 1,
-	# }
-	# ego_parameters['e-2-1'] = {
-	# 	**edge_scores_standard,
-	# 	'addNodesFactor': 2,
-	# 	'addNodesExponent': 1,
-	# }
-	# ego_parameters['s-5-0.5'] = {
-	# 	**significance_scores_standard,
-	# 	'addNodesFactor': 5,
-	# 	'addNodesExponent': 0.5,
-	# }
-	# ego_parameters['e-dir-1'] = {
-	# 	**edge_scores_standard,
-	# 	'extendOverDirected': 'Yes',
-	# 	'extendDirectedBack': 'No',
-	# }
-	# ego_parameters['e-dir-2'] = {
-	# 	**edge_scores_standard,
-	# 	'extendOverDirected': 'Yes',
-	# 	'extendDirectedBack': 'Yes',
-	# }
-	# ego_parameters['s'] = {
-	# 	**significance_scores_standard,
-	# }
-	# ego_parameters['s-dir'] = {
-	# 	**significance_scores_standard,
-	# 	'extendOverDirected': 'Yes',
-		# 'onlyDirectedCandidates': 'Yes',
-	# }
-
-	# add_nodes_factor_exponents = [
-	# 	(0, 0.6),
-	# ]
-	# for factor, exponent in add_nodes_factor_exponents:
-	# 	name = 'edges_f-{factor}*e-{exponent}'.format(
-	# 		factor=factor,
-	# 		exponent=exponent,
-	# 	)
-	# 	ego_parameters[name] = {
-	# 		**edge_scores_standard,
-	# 		'addNodesFactor': factor,
-	# 		'addNodesExponent': exponent,
-	# 	}
 
 	return ego_parameters
 

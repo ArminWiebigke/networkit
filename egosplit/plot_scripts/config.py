@@ -39,19 +39,19 @@ metric_names = {
 	"f1": {
 		"description": "F1 Score",
 		"y_val": "F1",
-		"file_name": "F1_score",
+		"file_name": "F1",
 		"ylim": (0, 1.05),
 	},
 	"f1_rev": {
 		"description": "F1 Score (reversed)",
 		"y_val": "F1",
-		"file_name": "F1_score_rev",
+		"file_name": "F1_rev",
 		"ylim": (0, 1.05),
 	},
 	"nmi": {
 		"description": "NMI Score",
 		"y_val": "NMI",
-		"file_name": "NMI_score",
+		"file_name": "NMI",
 		"ylim": (0, 1.05),
 	},
 	"time": {
@@ -64,24 +64,6 @@ metric_names = {
 		"description": "Entropy",
 		"y_val": "Entropy",
 		"file_name": "entropy",
-		"ylim": 0,
-	},
-	"entropy2": {
-		"description": "Entropy2",
-		"y_val": "Entropy",
-		"file_name": "entropy2",
-		"ylim": 0,
-	},
-	"entropy3": {
-		"description": "Entropy3",
-		"y_val": "Entropy",
-		"file_name": "entropy3",
-		"ylim": 0,
-	},
-	"entropy4": {
-		"description": "Entropy4",
-		"y_val": "Entropy",
-		"file_name": "entropy4",
 		"ylim": 0,
 	},
 }
@@ -112,30 +94,3 @@ algo_sets["ego_parameters"] = [
 
 def set_sns_style():
 	sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
-
-
-def set_xticklabels(ax, xlabel):
-	labels = ax.get_xticklabels()
-	def cut_label(label, xlabel):
-		begin = label.find(xlabel) + len(xlabel)
-		end = label.find('_', begin)
-		if end == -1:
-			return label[begin:]
-		return label[begin:end]
-
-	labels = [cut_label(l.get_text(), xlabel) for l in labels]
-	ax.set_xticklabels(labels)
-
-
-def set_layout(ax, legend_handles=None, legend_labels=None):
-	legend_args = {
-		"loc": "lower center",
-		"bbox_to_anchor": (0.5, 1.01),
-		"ncol": 3,
-		"prop": {'size': 9}
-	}
-	if legend_handles is None:
-		ax.legend(**legend_args)
-	else:
-		ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
-	plt.tight_layout(rect=(0, 0, 1, 0.96))
