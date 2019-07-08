@@ -369,6 +369,26 @@ def merge_gt_comms(G, ground_truth, cover):
 	return cover
 
 
+def discard_overlap_comms(G, cover, min_overlap=0.7):
+	cover = copy(cover)
+	communities = get_community_vector(G, cover)
+	for comm_a, nodes_a in enumerate(communities):
+		if len(nodes_a) == 0:
+			continue
+		for comm_b, nodes_b in enumerate(communities):
+			if len(nodes_b) == 0 or comm_a == comm_b:
+				continue
+			common_nodes = nodes_a.intersection(nodes_b)
+			overlap = len(common_nodes) / len(nodes_b)
+			if overlap < min_overlap:
+				continue
+			for u in nodes_b:
+				cover.removeFromSubset(comm_b, u)
+			nodes_b.clear()
+	return cover
+
+
+
 # Merge a community A into another community B if most nodes of A are already in B
 def merge_overlap_comms(G, cover):
 	cover = copy(cover)

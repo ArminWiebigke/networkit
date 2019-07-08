@@ -23,9 +23,9 @@
 namespace NetworKit {
 
 struct GroupStubs {
+	GroupStubs() = default;
 	explicit GroupStubs(int size) : groupTotal(size), groupOutgoing(size), externalStubs(size),
 	                                externalNodes(size) {
-
 	}
 
 	std::vector<count> groupTotal;
@@ -50,11 +50,18 @@ private:
 	const Partition &basePartition;
 	MemoizationTable<double> &sigTable;
 	Graph coarseGraph;
-	std::vector<std::vector<double>> edgeScores;
+	std::vector<std::vector<count>> edgesToGroups; // For each candidate: number of edges to the groups
 	std::map<node, std::vector<node> > coarseToEgo;
 	std::vector<node> egoToCoarse;
 	std::vector<count> coarseSizes;
-	const bool subtractNodeDegree;
+	int orderStatPos = 0;
+	count numGroups = 0;
+	std::vector<std::pair<count, node>> candidatesSorted;
+	double scorePenalty = 0.0;
+	GroupStubs groupStubs;
+	std::vector<node> significantGroup;
+	std::unordered_set<node> addedCandidates;
+	// Algorithm parameters
 	const bool useSigMemo;
 	const bool mergeGroups;
 	const bool sortGroupsStrat;
@@ -62,52 +69,44 @@ private:
 	const count maxGroupCnt;
 	const count minEdgesToGroup;
 
-	std::vector<std::pair<node, double>>
-	calcSignficance(node numGroups, double orderedStatPosition,
-	                const std::string &t_prefix,
-	                const std::vector<std::pair<count, node>> &candidatesSorted) const;
+	void
+	checkCandidates(const std::string &t_prefix);
 
 	std::vector<node> getCandidates();
 
 	node addExtEdges(std::vector<node> &candidates);
 
-	std::vector<std::pair<count, node>> sortCandidates(const std::vector<node> &candidates) const;
+	std::vector<std::pair<count, node>> sortCandidatesByEdges(const std::vector<node> &candidates) const;
 
-	void secondSigRound(node externalNode,
-	                    std::vector<std::pair<count, node>> &candidatesSorted,
-	                    double orderedStatPosition);
+	void secondRound();
 
 	void createCoarseGraph();
 
 	double
-	calcScore(int nodeDegree, int kIn, int grOut, int extStubs, int extNodes, int position) const;
+	calcScore(int nodeDegree, int kIn, int grOut, int groupExtStubs, int extNodes) const;
 
 	bool
-	checkMergedGroups(const std::string &t_prefix, Aux::Timer &timer,
-	                  const GroupStubs &groupStubs, index statPosInt, node v,
+	checkMergedGroups(const std::string &t_prefix, Aux::Timer &timer, node v,
 	                  std::vector<std::pair<double, node>> &groupEdges,
-	                  const std::vector<double> &groupSigs, count calcedGroups,
-	                  std::vector<std::pair<node, double>> &nodeScores) const;
+	                  const std::vector<double> &groupSigs);
 
-	bool addIfSignificant(std::vector<std::pair<node, double>> &nodeScores, node v,
-	                      double significance) const;
+	bool addIfSignificant(node v, double significance, node group);
 
 	bool
-	checkSingleGroups(const GroupStubs &groupStubs, index statPosInt,
-	                  std::vector<std::pair<node, double>> &nodeScores, node v,
+	checkSingleGroups(node v,
 	                  const std::vector<std::pair<double, node>> &groupEdges,
-	                  std::vector<double> &groupSigs, count &calcedGroups) const;
+	                  std::vector<double> &groupSigs);
 
-	void removeEgoNodeCandidate(std::vector<node> &candidates) const;
+	void removeEgoNodeCandidate(std::vector<node> &candidates);
 
-	GroupStubs calcGroupStubsCounts(node numGroups) const;
+	GroupStubs calcGroupStubsCounts() const;
 
 	std::vector<std::pair<double, node>> sortGroupsByEdges(node v) const;
 
 	void
-	checkForSignificance(node numGroups, const std::string &t_prefix, Aux::Timer &timer,
-	                     const GroupStubs &groupStubs, index statPosInt,
-	                     std::vector<std::pair<node, double>> &nodeScores, node v) const;
+	checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v);
+
+	void updateCandidates();
 };
 
 } /* namespace NetworKit */

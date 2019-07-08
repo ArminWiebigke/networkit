@@ -170,18 +170,13 @@ Stochastics::equivalent_check_gather(CupDataStruct &a, int &add_nodes, const dou
  * Compute the probability that a node from the null model has k_in or more edges into the group.
  * @param k_in Edges from node to group
  * @param gr_out Outgoing stubs of the group
- * @param ext_stubs Stubs in the graph, excluding the node and the group
+ * @param open_stubs Stubs in the graph, excluding the node and the group
  * @param k_degree Degree of the node
  * @param boot_interval
  * @return
  */
-double Stochastics::compute_simple_fitness(int k_in, int gr_out, int ext_stubs, int k_degree) {
-	// External stubs in the hypergeometric distribution are all open stubs, excluding the stubs of
-	// the node, so all possible target stubs.
-	// In the null model however, the external stubs are all stubs of the nodes of
-	// G without the group and the node. So we have to add the stubs going out of the group.
-	ext_stubs += gr_out;
-	double topologic = log_table->right_cumulative_function(k_degree, gr_out, ext_stubs, k_in);
+double Stochastics::compute_simple_fitness(int k_in, int gr_out, int open_stubs, int k_degree) {
+	double topologic = log_table->right_cumulative_function(k_degree, gr_out, open_stubs, k_in);
 
 	if (paras->weighted)
 		throw std::runtime_error("Don't use weighted graphs!");

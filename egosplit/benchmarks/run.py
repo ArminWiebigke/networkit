@@ -21,7 +21,7 @@ from .graph import BenchGraph, LFRGraph
 
 def start_benchmarks():
 	# setLogLevel('INFO')
-	iterations = 1
+	iterations = 5
 	append_results = False
 	# append_results = True
 	evaluations = [
@@ -119,18 +119,18 @@ def get_graphs(iterations):
 	# graphs.append(BenchGraph(*getDBLPGraph(), 'DBLP'))
 	# graphs.append(BenchGraph(*getLiveJournalGraph(), 'LiveJournal'))
 	# graphs.append(BenchGraph(*getOrkutGraph(), 'Orkut'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Caltech36'), 'Caltech36'))
+	# graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'Caltech36'))
 	# graphs.append(BenchGraph(*getFacebookGraph('Rice31', clean=True), 'Rice31'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Auburn71'), 'Auburn71'))
+	# graphs.append(BenchGraph(*getFacebookGraph('Auburn71', clean=True), 'Auburn71'))
 	# graphs.append(BenchGraph(*getFacebookGraph('Smith60', clean=True), 'Smith60'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Oklahoma97'), 'Oklahoma97'))
+	# graphs.append(BenchGraph(*getFacebookGraph('Oklahoma97', clean=True), 'Oklahoma97'))
 
 	LFR_graph_args = OrderedDict()
 
 	# TODO: Graphs with different community sizes, e.g. 10-100
 	for minc in [60]:
-		for om in range(1, 7):
-			for mu in [0.25]:
+		for om in range(5, 6):
+			for mu in [0.2]:
 				k = 15 * om  # Number of neighbors per community independent of mixing factor
 				k /= (1 - mu)
 				maxk = 1.5 * k  # Scale max degree with average degree
@@ -148,7 +148,7 @@ def get_graphs(iterations):
 	# 	LFR_graph_args['om_{}'.format(om)] = {
 	# 		'N': 2000, 'k': k, 'maxk': 1.5 * k, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 2, 'mu': 0.2, 'on': 1000, 'om': om}
-
+	#
 	# # Overlapping CD study
 	# small = (10, 50)
 	# large = (20, 100)
@@ -161,7 +161,7 @@ def get_graphs(iterations):
 	# 		LFR_graph_args[name] = {
 	# 			'N': 1000, 'k': 10, 'maxk': 50, 'minc': comm_sizes[0], 'maxc': comm_sizes[1],
 	# 			't1': 2, 't2': 1, 'mu': 0.3, 'on': 500, 'om': om}
-
+	#
 	# # Scale overlap
 	# for overlap in range(0, 101, 10):
 	# 	N = 2000
@@ -169,10 +169,10 @@ def get_graphs(iterations):
 	# 	LFR_graph_args['on_' + str(overlap/100)[:3].rjust(3, '0')] = {
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
-
+	#
 	# # Scale mixing factor
-	# for mu_factor in range(40, 51, 10):
-	# 	om = 4
+	# for mu_factor in range(40, 71, 10):
+	# 	om = 2
 	# 	mu = 0.01 * mu_factor
 	# 	k = om * 15  # Number of neighbors per community independent of mixing factor
 	# 	k /= (1 - mu)
@@ -200,13 +200,13 @@ def get_algos(storeEgoNets):
 	# algos.append(OlpAlgorithm())
 	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0'))
 	# algos.append(GceAlgorithm(alpha=1.5, add_name='_1.5'))
-	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0_clean', clean_up='Oslom-merge'))
+	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0_clean', clean_up='clean-merge'))
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
 
 	# def PLM_OSLOM_clean(g):
@@ -229,16 +229,22 @@ def get_algos(storeEgoNets):
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
 	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
 	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
-	# partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
+	partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
+	# partition_algos['Leiden_Sig'] = [lambda g: partitionLeiden(g, 'significance')]
+	# partition_algos['Leiden_SigRes'] = [lambda g: leidenSignificance(g)]
 
 	for p_algos in partition_algos.values():
 		p_algos.insert(1, lambda g: clusterInfomap(g))
 	ego_parameters = get_ego_parameters(storeEgoNets)
 
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='no_clean')
+	# TODO: Cleanup der overlapping groups verwirft statt merged
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='no-clean')
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='merge-overl')
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='remv-overl')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge,overl')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean_full')
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-remove')
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge')
+	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-remove')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-3')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-5')
 	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-shrink')
@@ -299,10 +305,12 @@ def get_ego_parameters(store_ego_nets):
 		'maxGroupsConsider': 10,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
-		'minEdgesToGroupSig': '1',
+		'minEdgesToGroupSig': '3',  # TODO: should be 1
+		'sigSecondRoundStrat': 'updateCandidates',
+		'secondarySigExtRounds': '2',
 	}
 
-	ego_parameters['b'] = standard
+	# ego_parameters['b!'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
@@ -311,12 +319,34 @@ def get_ego_parameters(store_ego_nets):
 	# 	**edge_scores_standard,
 	# 	'addNodesFactor': 2,
 	# }
-	ego_parameters['e'] = {
+	ego_parameters['e!'] = {
 		**edge_scores_standard,
 	}
-	# ego_parameters['s'] = {
+	# ego_parameters['b-s*1'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'none',
+	# }
+	# ego_parameters['b-s*3'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'none',
+	# 	'extendPartitionIterations': 4,
+	# }
+	# ego_parameters['e-s*1'] = {
+	# 	**significance_scores_standard,
+	# }
+	# ego_parameters['e-s*3'] = {
+	# 	**significance_scores_standard,
+	# 	'extendPartitionIterations': 4,
+	# }
+	# ego_parameters['s-order'] = {
 	# 	**significance_scores_standard,
 	# 	'useSigMemo': 'No',
+	# 	'sigSecondRoundStrat': 'orderStat',
+	# }
+	# ego_parameters['s-mem-update'] = {
+	# 	**significance_scores_standard,
+	# 	'useSigMemo': 'Yes',
+	# 	'sigSecondRoundStrat': 'updateCandidates',
 	# }
 	# ego_parameters['s-mem'] = {
 	# 	**significance_scores_standard,

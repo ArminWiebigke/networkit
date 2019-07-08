@@ -15,13 +15,14 @@ plots = [
 	"ego_net_partition",
 ]
 
-algo_matches = ["clean-merge",]
-remove_algo_part = ["Ego_PLM_", "ean"]
+algo_matches = ["Ego", "GCE"]
+remove_algo_part = ["Ego_", "eiden_Mod", "_e!"]
 
 # *****************************************************************************
 # *                                  Metrics                                  *
 # *****************************************************************************
 if "metrics" in plots:
+	print("Plots for Metrics")
 	metrics = [
 		'time',
 		'nmi',
@@ -37,7 +38,7 @@ if "metrics" in plots:
 		make_plot(
 			# plot_type=PlotType.bar,
 			data=data["metrics"],
-			graph_filter="om",
+			# graph_filter="om",
 			xlabel="om",
 			algo_matches=algo_matches,
 			# add_algos=["GCE_1.0", "GCE_1.5"],
@@ -99,6 +100,7 @@ if "metrics" in plots:
 # *                                  Comm sizes                               *
 # *****************************************************************************
 if "comm_sizes" in plots:
+	print("Plots for comm sizes")
 	make_plot(
 		plot_type=PlotType.swarm,
 		data=data["cover_comm_sizes"],
@@ -130,6 +132,7 @@ if "comm_sizes" in plots:
 # *                            Number of communities                          *
 # *****************************************************************************
 if "num_comms" in plots:
+	print("Plots for num comms")
 	make_plot(
 		# plot_type=PlotType.bar,
 		data=data["cover_num_comms"],
@@ -165,7 +168,9 @@ if "ego_net_partition" in plots:
 		"extended_nodes",
 		"external_nodes",
 		"external_nodes_added",
+		"external_nodes_added_total",
 	]
+	print("Plots for ego-net metrics")
 	for ego_metric in ego_metrics:
 		make_plot(
 			# plot_type=PlotType.bar,
@@ -211,6 +216,7 @@ if "ego_net_partition" in plots:
 		)
 
 	# Metrics per Ego-Net
+	print("Plots for ego-net metrics per graph")
 	for ego_metric in ego_metrics:
 		# break
 		make_plot(

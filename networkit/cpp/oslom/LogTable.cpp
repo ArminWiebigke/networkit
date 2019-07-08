@@ -37,31 +37,34 @@ void LogFactTable::set(int size) {
 }
 
 double
-LogFactTable::cum_hyper_right(int k_in, int gr_out, int ext_stubs, int k_degree) {
+LogFactTable::cum_hyper_right(int k_in, int gr_out, int open_stubs, int k_degree) {
 	// TODO
-	//std::cout<<"k_in... "<<k_in<<" "<<gr_out<<" "<<ext_stubs<<" "<<k_degree<<std::endl;
+	//std::cout<<"k_in... "<<k_in<<" "<<gr_out<<" "<<open_stubs<<" "<<k_degree<<std::endl;
 	// this is bigger or equal p(x >= k_in)   *** EQUAL ***
 	if (k_in > std::min(k_degree, gr_out))
 		throw std::runtime_error("k_in too large!");
 
-	if (ext_stubs - gr_out - k_degree + k_in <= 0)
-		throw std::runtime_error("ext_stubs too small!");
+#define W(x) #x << "=" << x << ", "
+	if (open_stubs - gr_out - k_degree + k_in <= 0) {
+		std::cout << W(open_stubs) << W(gr_out) << W(k_degree) << W(k_in) << std::endl;
+		throw std::runtime_error("open_stubs too small!");
+	}
 
 	if (k_in <= 0)
 		return 1;
 
 	// k_in is smaller than the expected value for a random node
-	if (k_in < double(gr_out + 1) / double(ext_stubs + 2) * double(k_degree + 1)) {
-		return (1. - cum_hyper_left(k_in, gr_out, ext_stubs, k_degree));
+	if (k_in < double(gr_out + 1) / double(open_stubs + 2) * double(k_degree + 1)) {
+		return (1. - cum_hyper_left(k_in, gr_out, open_stubs, k_degree));
 	}
 
 	int x = k_in;
-	double pzero = hypergeom_dist(x, gr_out, ext_stubs, k_degree);
+	double pzero = hypergeom_dist(x, gr_out, open_stubs, k_degree);
 
 	if (pzero <= 1e-40)
 		return 0;
 
-	double ga = ext_stubs - gr_out - k_degree; // TODO: ext_stubs with or without k_degree?
+	double ga = open_stubs - gr_out - k_degree; // TODO: open_stubs with or without k_degree?
 	int kout_g_p = gr_out + 1;
 	double degree_node_p = k_degree + 1;
 	double z_zero = 1.;
@@ -112,29 +115,29 @@ LogFactTable::cum_hyper_right(int k_in, int gr_out, int ext_stubs, int k_degree)
 //	return pzero * sum;
 //}
 
-double LogFactTable::cum_hyper_left(int k_in, int gr_out, int ext_stubs, int k_degree) {
+double LogFactTable::cum_hyper_left(int k_in, int gr_out, int open_stubs, int k_degree) {
 	// this is strictly less  p(x < k_in)   *** NOT EQUAL ***
-	//std::cout<<k_in<<" node: "<<degree_node<<" group: "<<ext_stubs<<" "<<degree_node<<std::endl;
+	//std::cout<<k_in<<" node: "<<degree_node<<" group: "<<open_stubs<<" "<<degree_node<<std::endl;
 	if (k_in <= 0)
 		return 0;
 
-	if (ext_stubs - gr_out - k_degree + k_in <= 0)
+	if (open_stubs - gr_out - k_degree + k_in <= 0)
 		return 0;
 
 	if (k_in > std::min(k_degree, gr_out))
 		return 1;
 
-	if (k_in > double(gr_out + 1) / double(ext_stubs + 2) * double(k_degree + 1))
-		return (1. - cum_hyper_right(k_in, gr_out, ext_stubs, k_degree));
+	if (k_in > double(gr_out + 1) / double(open_stubs + 2) * double(k_degree + 1))
+		return (1. - cum_hyper_right(k_in, gr_out, open_stubs, k_degree));
 
 	int x = k_in - 1;
-	double pzero = hypergeom_dist(x, gr_out, ext_stubs, k_degree);
+	double pzero = hypergeom_dist(x, gr_out, open_stubs, k_degree);
 
-	//std::cout<<"pzero: "<<pzero<<" "<<log_hyper(x, gr_out, ext_stubs, degree_node)<<" gsl: "<<(gsl_ran_hypergeometric_pdf(x, gr_out, ext_stubs - gr_out,  degree_node))<<std::endl;
+	//std::cout<<"pzero: "<<pzero<<" "<<log_hyper(x, gr_out, open_stubs, degree_node)<<" gsl: "<<(gsl_ran_hypergeometric_pdf(x, gr_out, open_stubs - gr_out,  degree_node))<<std::endl;
 	if (pzero <= 1e-40)
 		return 0;
 
-	double ga = ext_stubs - gr_out - k_degree;
+	double ga = open_stubs - gr_out - k_degree;
 	int kout_g_p = gr_out + 1;
 	double degree_node_p = k_degree + 1;
 	double z_zero = 1.;
@@ -313,19 +316,19 @@ LogFactTable::fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode
 
 // k1 = node_degree
 // k2 = g_out
-// x = k_in + 1
-double LogFactTable::right_cumulative_function(int k1, int k2, int ext_stubs, int x) {
+// x = k_in
+double LogFactTable::right_cumulative_function(int k1, int k2, int open_stubs, int x) {
 	if (x > k1 || x > k2)
 		return 0;
 
-	if (k1 * k1 < ext_stubs)
-		return cum_hyper_right(x, k2, ext_stubs, k1);
+	if (k1 * k1 < open_stubs)
+		return cum_hyper_right(x, k2, open_stubs, k1);
 
 	//	std::cout << "Calculate propability directly" << std::endl;
 	// k1 is the degree of the node
 	// k2 is the degree of the other node (the bigger)
 	// k3 is 2m - k1 - k2
-	int k3 = ext_stubs - k1;
+	int k3 = open_stubs - k1;
 	int H = (k3 - k1 - k2) / 2;
 	int l1 = std::max(0, -H);
 
@@ -339,8 +342,8 @@ double LogFactTable::right_cumulative_function(int k1, int k2, int ext_stubs, in
 
 //	std::cout << "mode: " << mode << std::endl;
 	if (x < mode)
-		return cum_hyper_right(x, k2, ext_stubs, k1);
-	return fast_right_cum_symmetric_eq(k1, k2, H, x, mode, ext_stubs);
+		return cum_hyper_right(x, k2, open_stubs, k1);
+	return fast_right_cum_symmetric_eq(k1, k2, H, x, mode, open_stubs);
 }
 
 double LogFactTable::log_factorial(int a) { return lnf[a]; }

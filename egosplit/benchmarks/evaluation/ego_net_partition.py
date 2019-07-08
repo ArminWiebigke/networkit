@@ -206,6 +206,9 @@ def calc_metrics(sums):
 		"external_nodes_added": safe_div(
 			sums["external_nodes_extended"] - sums["external_nodes"],
 			sums["extended_ego_net_size"] - sums["ego_net_size"]),
+		"external_nodes_added_total": safe_div(
+			sums["external_nodes_extended"] - sums["external_nodes"],
+			sums["ego_net_size"]),
 	}
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]

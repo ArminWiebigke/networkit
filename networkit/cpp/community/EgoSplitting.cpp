@@ -102,6 +102,8 @@ void EgoSplitting::init() {
 	parameters["signMerge"] = "Yes";
 	parameters["useSigMemo"] = "Yes";
 	parameters["minEdgesToGroupSig"] = "1";
+	parameters["sigSecondRoundStrat"] = "updateCandidates";
+	parameters["secondarySigExtRounds"] = "3";
 
 	// Parameters for edgeScores
 	parameters["extendStrategy"] = "edgeScore";

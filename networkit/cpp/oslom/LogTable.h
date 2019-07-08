@@ -35,10 +35,10 @@ public:
      */
     void set(int size);
 
-    inline double log_hyper(int k_in, int g_out, int ext_stubs, int k_degree) {
+    inline double log_hyper(int k_in, int g_out, int open_stubs, int k_degree) {
         return log_choose(g_out, k_in)
-               + log_choose(ext_stubs - g_out, k_degree - k_in)
-               - log_choose(ext_stubs, k_degree);
+               + log_choose(open_stubs - g_out, k_degree - k_in)
+               - log_choose(open_stubs, k_degree);
     };
 
 	/**
@@ -47,12 +47,13 @@ public:
 	 * P(X = kin_node)
 	 * @param k_in Edges from node to group
 	 * @param g_out Outgoing stubs of group
-	 * @param ext_stubs External stubs
+	 * @param open_stubs Open stubs, g_out + M (sum of degree of all external nodes)
+	 *                           or: 2 * m - g_in - k
 	 * @param k_degree Degree of the node
 	 * @return the probability
 	 */
-    inline double hypergeom_dist(int k_in, int g_out, int ext_stubs, int k_degree) {
-        return std::max(0., std::exp(log_hyper(k_in, g_out, ext_stubs, k_degree)));
+    inline double hypergeom_dist(int k_in, int g_out, int open_stubs, int k_degree) {
+        return std::max(0., std::exp(log_hyper(k_in, g_out, open_stubs, k_degree)));
     };
 
     inline double binom(int x, int N, double p) {
@@ -82,7 +83,7 @@ public:
 
     double fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode, int ext_stubs);
 
-    double right_cumulative_function(int k1, int k2, int ext_stubs, int x);
+    double right_cumulative_function(int k1, int k2, int open_stubs, int x);
 
 private:
 
@@ -92,9 +93,9 @@ private:
         return 0.5 * (k1 - i + 1) / ((i + H) * i) * (k2 - i + 1);
     };
 
-    double cum_hyper_right(int k_in, int gr_out, int ext_stubs, int k_degree);
+    double cum_hyper_right(int k_in, int gr_out, int open_stubs, int k_degree);
 
-    double cum_hyper_left(int k_in, int gr_out, int ext_stubs, int k_degree);
+    double cum_hyper_left(int k_in, int gr_out, int open_stubs, int k_degree);
 };
 
 #endif // LOG_TABLE_HPP

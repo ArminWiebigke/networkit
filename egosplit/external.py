@@ -74,39 +74,39 @@ def clusterOSLOM(G):
 		return result
 
 
-def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
-                 check_minimality=False, simple_cleanup=True, max_extend=2, tolerance=0.1):
-	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, 'network.dat')
-		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		cover_filename = os.path.join(tempdir, 'cover.dat')
-		graphio.CoverWriter().write(cover, cover_filename)
-		bad_groups_filename = os.path.join(tempdir, 'bad_groups.txt')
-		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
-		          '-singlet',
-		          '-f', graph_filename, '-hint', cover_filename,
-		          '-t', str(tolerance),
-		          '-cup_runs', str(runs),
-		          '-cu_strat', cleanup_strategy,
-		          '-max_extend', str(max_extend),
-		          '-bad_groups_file', bad_groups_filename
-		          ]
-		if merge_bad:
-			params.append('-merge_bad')
-		if check_minimality:
-			params.append('-check_min')
-		if not simple_cleanup:
-			params.append('-equiv_cup')
-		print(params)
-		subprocess.call(params)
-		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files',
-		                                                 'tp'), G)
-		bad_groups_file = open(bad_groups_filename, 'r')
-		bad_groups = []
-		for group in bad_groups_file:
-			nodes = group.split(' ')[:-1]  # Last item is the newline character
-			bad_groups.append([int(u) for u in nodes])
-		return result, bad_groups
+# def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
+#                  check_minimality=False, simple_cleanup=True, max_extend=2, tolerance=0.1):
+# 	with tempfile.TemporaryDirectory() as tempdir:
+# 		graph_filename = os.path.join(tempdir, 'network.dat')
+# 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+# 		cover_filename = os.path.join(tempdir, 'cover.dat')
+# 		graphio.CoverWriter().write(cover, cover_filename)
+# 		bad_groups_filename = os.path.join(tempdir, 'bad_groups.txt')
+# 		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
+# 		          '-singlet',
+# 		          '-f', graph_filename, '-hint', cover_filename,
+# 		          '-t', str(tolerance),
+# 		          '-cup_runs', str(runs),
+# 		          '-cu_strat', cleanup_strategy,
+# 		          '-max_extend', str(max_extend),
+# 		          '-bad_groups_file', bad_groups_filename
+# 		          ]
+# 		if merge_bad:
+# 			params.append('-merge_bad')
+# 		if check_minimality:
+# 			params.append('-check_min')
+# 		if not simple_cleanup:
+# 			params.append('-equiv_cup')
+# 		print(params)
+# 		subprocess.call(params)
+# 		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files',
+# 		                                                 'tp'), G)
+# 		bad_groups_file = open(bad_groups_filename, 'r')
+# 		bad_groups = []
+# 		for group in bad_groups_file:
+# 			nodes = group.split(' ')[:-1]  # Last item is the newline character
+# 			bad_groups.append([int(u) for u in nodes])
+# 		return result, bad_groups
 
 
 # https://sites.google.com/site/aaronmcdaid/downloads
@@ -156,76 +156,64 @@ def convertCoverToPartition(G, cover):
 
 # https://github.com/vtraag/leidenalg
 def partitionLeiden(G, partition_type_name):
+	try:
 		graph_i = convertToIgraph(G)
-		checkIgraph(G, graph_i)
+		# checkIgraph(G, graph_i)
 		if partition_type_name == 'modularity':
 			partition_type = leidenalg.ModularityVertexPartition
 		elif partition_type_name == 'surprise':
 			partition_type = leidenalg.SurpriseVertexPartition
+		elif partition_type_name == 'significance':
+			partition_type = leidenalg.SignificanceVertexPartition
 		else:
 			raise RuntimeError
 		la_partition = leidenalg.find_partition(graph_i, partition_type)
-		partition = convertLeidenPartition(G, la_partition)
+		partition = convertLeidenPartition(G, la_partition, graph_i)
 		# TODO: Something with the partition is wrong.
+	except Exception as e:
+		print(e)
+		exit(1)
+	return partition
 
-		# Convert to networkit.Partition
-		# partition_filename = os.path.join('./partition.dat')
-		# writeLeidenPartition(G, partition_i, partition_filename)
-		# partition = community.readCommunities(partition_filename, 'edgelist-s0')
-		# partition = community.PartitionReader().read(partition_filename)
-		# partition = readLeidenPartition(partition_filename)
-		return partition
+
+def leidenSignificance(G):
+	graph_i = convertToIgraph(G)
+	optimiser = leidenalg.Optimiser()
+	profile = optimiser.resolution_profile(graph_i, leidenalg.CPMVertexPartition,
+	                                       resolution_range=(0,1), linear_bisection=False,
+	                                       min_diff_resolution=0.01)
+
+	best_p = None
+	best_sig = -1
+	for p in profile:
+		# print(p.resolution_parameter)
+		sig = leidenalg.SignificanceVertexPartition.FromPartition(p).quality()
+		if sig > best_sig:
+			best_sig = sig
+			best_p = p
+	# print(best_p)
+	partition = convertLeidenPartition(G, best_p, graph_i)
+	return partition
 
 
 def convertToIgraph(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'graph.dat')
-		graph_writer = graphio.EdgeListWriter(' ', 0)
+		# graph_writer = graphio.EdgeListWriter(' ', 0)
+		graph_writer = graphio.GMLGraphWriter()
 		graph_writer.write(G, graph_filename)
-		graph_i = igraph.Graph.Read_Edgelist(graph_filename)
+		graph_i = igraph.Graph.Read_GML(graph_filename)
 		return graph_i
 
 
-def checkIgraph(G, graph_i):
-	try:
-		for u in G.nodes():
-			assert sorted(G.neighbors(u)) == sorted(graph_i.neighbors(u))
-		assert G.numberOfEdges() == graph_i.ecount()
-		edge_list = graph_i.get_edgelist()
-		for e in graph_i.es:
-			assert G.hasEdge(e.source, e.target)
-	except AssertionError as err:
-		print('Igraph is not identical to networkit graph!')
-		raise err
-
-
-def convertLeidenPartition(G, la_partition):
+def convertLeidenPartition(G, la_partition, graph_i):
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(len(la_partition) + 1)
 	for i, nodes in enumerate(la_partition):
 		for u in nodes:
-			assert G.hasNode(u)
-			if G.hasNode(u):
-				partition.addToSubset(i, u)
+			u = int(graph_i.vs[u]['id'])
+			partition.addToSubset(i, u)
 	return partition
-
-
-def writeLeidenPartition(G, partition, filename):
-	partition_ids = []
-	for i in range(0, partition.n):
-		partition_ids.append([])
-	for i in range(0, len(partition)):
-		for u in partition[i]:
-			# if G.hasNode(u):
-			partition_ids[u].append(i)
-
-	file = open(filename, 'w')
-	for pid in partition_ids:
-		if len(pid) > 1:
-			raise RuntimeError
-		if len(pid) == 1:
-			file.write(str(pid[0]))
-		file.write('\n')
 
 
 # https://sites.google.com/site/andrealancichinetti/files
@@ -244,7 +232,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 				f.write(str(random.randint(0, 2**31)))
 			subprocess.call(map(str, args), stdout=dev_null)
 		except:
-			print("Error")
+			print('Error')
 		finally:
 			os.chdir(old_dir)
 		G = graphio.readGraph(os.path.join(tempdir, 'network.dat'), fileformat=graphio.Format.LFR)

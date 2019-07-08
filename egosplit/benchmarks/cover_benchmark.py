@@ -15,6 +15,9 @@ class CoverBenchmark:
 		self.algo.run(self.graph)
 		print("Time: " + str(self.algo.get_time()) + "\n")
 
+	# def clean_up(self):
+	#
+
 	def get_graph(self):
 		return self.graph.graph
 

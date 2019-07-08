@@ -71,8 +71,8 @@ public:
 	 * Calculate the probability that the node has exactly k_in edges into the group, according to a
 	 * hypergeometric distribution.
 	 */
-	static inline double hypergeom_dist(int k_in, int g_out, int ext_stubs, int degree_node) {
-		return log_table->hypergeom_dist(k_in, g_out, ext_stubs, degree_node);
+	static inline double hypergeom_dist(int k_in, int g_out, int open_stubs, int degree_node) {
+		return log_table->hypergeom_dist(k_in, g_out, open_stubs, degree_node);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public:
 	                                     double minus_log_total, int number_of_neighs, int Nstar,
 	                                     double &boot_interval);
 
-	static double compute_simple_fitness(int k_in, int gr_out, int ext_stubs, int k_degree);
+	static double compute_simple_fitness(int k_in, int gr_out, int open_stubs, int k_degree);
 
 	static double compute_global_fitness_step(int k_in, int gr_out, int tm, int k_degree,
 	                                          double minus_log_total, int number_of_neighs,

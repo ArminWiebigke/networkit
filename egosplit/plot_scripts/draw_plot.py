@@ -48,17 +48,18 @@ def make_plot(data,
 	if type(hue) != str and hue:
 		hue = hue['name']
 
-	plot_args = get_plot_args(algo_list, hue, plot_args, plot_type, x, y)
-
 	# Create plots
 	def create_plot(graph_data, graph_name):
+		num_x_values = len(get_unique_values(graph_data, x))
+		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
+		this_plot_args = get_plot_args(algo_list, hue, plot_args, this_plot_type, x, y)
 		fig, ax = plt.subplots()
 		this_plot_args = {
-			**plot_args,
+			**this_plot_args,
 			'data': graph_data,
 			'ax': ax,
 		}
-		draw_plot(plot_type, this_plot_args)
+		draw_plot(this_plot_type, this_plot_args)
 
 		sns.despine(ax=ax)
 		clean_xlabel(ax, ax_set, fig, xlabel)
@@ -70,7 +71,7 @@ def make_plot(data,
 		plt.close(fig)
 
 	# Make one plot per graph if graph is not on the x-axis
-	if plot_args['x'] != 'graph' or one_plot_per_graph:
+	if x != 'graph' or one_plot_per_graph:
 		for graph in graphs:
 			graph_data = filtered_data.query('graph == @graph')
 			create_plot(graph_data, graph)
@@ -80,6 +81,15 @@ def make_plot(data,
 		else:
 			graph_name = ""
 		create_plot(filtered_data, graph_name)
+
+
+def confirm_plot_type(plot_type, graph_data, x_values):
+	if plot_type == PlotType.swarm and len(graph_data) > 10000:
+		return PlotType.violin
+
+	if x_values == 1 and plot_type == PlotType.line:
+		plot_type = PlotType.bar
+	return plot_type
 
 
 def get_unique_values(filtered_data, column):

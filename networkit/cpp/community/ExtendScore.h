@@ -18,9 +18,10 @@ namespace NetworKit {
 
 class ExtendScore : public Algorithm, public Timings {
 public:
+	using NodeScore = std::pair<node, double>;
 	explicit ExtendScore(const EgoNetData &egoNetData);
 
-	virtual std::vector<std::pair<node, double>> getScores();
+	virtual std::vector<NodeScore> getScores();
 
 protected:
 	const Graph &G;
@@ -29,7 +30,7 @@ protected:
 	const NodeMapping &egoMapping;
 	node egoNode;
 	const std::unordered_map<std::string, std::string> &parameters;
-	std::vector<std::pair<node, double>> result;
+	std::vector<NodeScore> result;
 };
 
 } /* namespace NetworKit */
