@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib import pyplot as plt
 
 file_prefix = "plots/"
 opacity = 0.7
@@ -94,3 +95,17 @@ algo_sets["ego_parameters"] = [
 
 def set_sns_style():
 	sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
+
+
+def set_layout(ax, legend_handles=None, legend_labels=None):
+	legend_args = {
+		"loc": "lower center",
+		"bbox_to_anchor": (0.5, 1.01),
+		"ncol": 3,
+		"prop": {'size': 9}
+	}
+	if legend_handles is None:
+		ax.legend(**legend_args)
+	else:
+		ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
+	plt.tight_layout(rect=(0, 0, 1, 0.96))

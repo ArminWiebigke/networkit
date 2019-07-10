@@ -3,6 +3,10 @@ import seaborn as sns
 
 from enum import Enum
 
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter
+
+from plot_scripts.config import set_layout
+from plot_scripts.extract_data_column import create_new_columns
 from .config import file_prefix
 
 
@@ -18,7 +22,6 @@ def make_plot(data,
               graph_filter='',
               algo_matches='',
               add_algos=None,
-              xlabel=None,
               remove_algo_part=None,
               one_plot_per_graph=False,
               title='',
@@ -32,24 +35,23 @@ def make_plot(data,
 	# Filter data
 	if isinstance(graph_filter, str):
 		filtered_data = data.query('graph.str.contains(@graph_filter)').copy()
-		graphs = get_unique_values(filtered_data, 'graph')
 	else:
 		assert (isinstance(graph_filter, list))
 		filtered_data = data.query('graph in @graph_filter').copy()
-		graphs = graph_filter
+	graphs = get_unique_values(filtered_data, 'graph')
 	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
 	filtered_data.query('algo in @algo_list', inplace=True)
+	create_new_columns(filtered_data, hue, x)
 	if len(filtered_data) is 0:
 		return
 
-	create_new_columns(filtered_data, hue, x)
 	if type(x) != str and x:
 		x = x['name']
 	if type(hue) != str and hue:
 		hue = hue['name']
 
 	# Create plots
-	def create_plot(graph_data, graph_name):
+	def create_plot(graph_data):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
 		this_plot_args = get_plot_args(algo_list, hue, plot_args, this_plot_type, x, y)
@@ -62,25 +64,23 @@ def make_plot(data,
 		draw_plot(this_plot_type, this_plot_args)
 
 		sns.despine(ax=ax)
-		clean_xlabel(ax, ax_set, fig, xlabel)
+		set_ax(ax, ax_set, fig)
 		clean_legend(algo_matches, ax, remove_algo_part)
-		add_title = ', ' + graph_name if graph_name else ""
-		fig.suptitle(title + add_title)
-		add_file = '_' + graph_name if graph_name else ""
-		fig.savefig(file_prefix + file_name + add_file + '.pdf')
+		fig.suptitle(title)
+		fig.savefig(file_prefix + file_name + '.pdf')
 		plt.close(fig)
 
 	# Make one plot per graph if graph is not on the x-axis
-	if x != 'graph' or one_plot_per_graph:
+	if one_plot_per_graph:
+		file_name_base = file_name
+		title_base = title
 		for graph in graphs:
+			file_name = file_name_base + "_" + graph
+			title = "{} ({})".format(title_base, graph)
 			graph_data = filtered_data.query('graph == @graph')
-			create_plot(graph_data, graph)
+			create_plot(graph_data)
 	else:
-		if (isinstance(graph_filter, str)):
-			graph_name = graph_filter
-		else:
-			graph_name = ""
-		create_plot(filtered_data, graph_name)
+		create_plot(filtered_data)
 
 
 def confirm_plot_type(plot_type, graph_data, x_values):
@@ -118,20 +118,21 @@ def draw_plot(plot_type, plot_args):
 	plot_functions[plot_type](**plot_args)
 
 
-def clean_xlabel(ax, ax_set, fig, xlabel):
+def set_ax(ax, ax_set, fig):
 	ax_set = ax_set or {}
-	old_xlabel = ax.get_xlabel()
-	xlabel = xlabel or old_xlabel
-	ax_set = {
-		'xlabel': xlabel,
-		**ax_set,
-	}
 	ax.set(
 		**ax_set,
 	)
+	ax.xaxis.set(
+		major_locator=MultipleLocator(1),
+		major_formatter=FormatStrFormatter('%d'),
+		minor_formatter=FormatStrFormatter('%.1f'),
+	)
+
+	minor_xticks = [1.2, 1.4, 1.6, 1.8]
+	ax.set_xticks(minor_xticks, minor=True)
+	ax.set_xticks_minor(minor_xticks, minor=True)
 	fig.canvas.draw()
-	if xlabel != old_xlabel:
-		set_xticklabels(ax, xlabel + '_')
 
 
 def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
@@ -180,34 +181,6 @@ def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
 	return plot_args
 
 
-def create_new_columns(graph_filtered_data, hue, x):
-	# Create new data columns for x or hue if necessary
-	# Example: Create the x column by taking the value between '_f-' and the next '*'
-	#   from the 'algo' column
-	# x = {'name': 'factor', 'create_from': 'algo', 'str_start': '_f-', 'str_end': '*'}
-	new_columns = []
-	if type(x) != str and x:
-		new_columns.append(x)
-	if type(hue) != str and hue:
-		new_columns.append(hue)
-	for new_column in new_columns:
-		for row in graph_filtered_data.itertuples(index=True, name='Pandas'):
-			index = row.Index
-			from_string = graph_filtered_data.loc[index, new_column['create_from']]
-			start_idx = from_string.find(new_column['str_start']) + len(
-				new_column['str_start'])
-			if new_column['str_end'] == '':
-				end_idx = len(from_string)
-			else:
-				end_idx = from_string.find(new_column['str_end'], start_idx)
-			value = from_string[start_idx:end_idx]
-			try:
-				value = float(value)
-			except ValueError:
-				pass
-			graph_filtered_data.loc[index, new_column['name']] = value
-
-
 def get_algo_list(algo_matches, add_algos, data):
 	algo_set = set()
 	if algo_matches:
@@ -242,17 +215,3 @@ def set_xticklabels(ax, xlabel):
 
 	labels = [cut_label(l.get_text(), xlabel) for l in labels]
 	ax.set_xticklabels(labels)
-
-
-def set_layout(ax, legend_handles=None, legend_labels=None):
-	legend_args = {
-		"loc": "lower center",
-		"bbox_to_anchor": (0.5, 1.01),
-		"ncol": 3,
-		"prop": {'size': 9}
-	}
-	if legend_handles is None:
-		ax.legend(**legend_args)
-	else:
-		ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
-	plt.tight_layout(rect=(0, 0, 1, 0.96))

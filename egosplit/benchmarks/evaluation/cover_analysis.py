@@ -25,10 +25,8 @@ def print_headers(result_dir):
 
 # Count the number of communities and their sizes
 def count_benchmark_cover(result_dir, benchmark):
-	algo = benchmark.algo
-	graph = benchmark.graph
-	count_communities(result_dir, algo.name, graph.name,
-	                  graph.graph, algo.get_cover())
+	count_communities(result_dir, benchmark.get_algo_name(), benchmark.get_graph_name(),
+	                  benchmark.get_graph(), benchmark.get_cover())
 
 
 # Count the number of communities and their sizes

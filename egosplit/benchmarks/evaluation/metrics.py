@@ -44,7 +44,8 @@ def add_compact_results(results, benchmark_results, metrics):
 				d[m.get_name()] = []
 			results[algo_name][graph_name] = d
 		for metric in metrics:
-			results[algo_name][graph_name][metric.get_name()].append(result.get_metric(metric))
+			results[algo_name][graph_name][metric.get_name()].append(
+				result.get_metric(metric))
 
 
 # Print the compact results to the standard output and the output file

@@ -1,41 +1,19 @@
 import tempfile
 import os
 import subprocess
+from copy import copy
+
 from networkit.community import EgoSplitting, OLP, SLPA
-from networkit.stopwatch import Timer
 from networkit import graphio
 from .cleanup import trim_comms, merge_overlap_comms, entropy_trim, \
 	merge_comms_entropy, merge_gt_comms, remove_comms_entropy, remove_small_comms, \
 	add_communities
 from .complete_cleanup import clean_up_cover
+from .context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
 dev_null = open(os.devnull, 'w')
-
-
-class ContextTimer(object):
-	""" Time code like this:
-	t = ContextTimer()
-	with t:
-		<Code>
-	print(t.elapsed)
-	"""
-
-	def __init__(self):
-		self.elapsed = 0.0
-		self.timer = None
-
-	def __enter__(self):
-		self.timer = Timer()
-
-	# On context exit, add the elapsed time since context enter
-	def __exit__(self, exc_type, exc_val, exc_tb):
-		self.elapsed += self.timer.stop()
-		del self.timer
-
-	def reset(self):
-		self.elapsed = 0.0
 
 
 class CoverAlgorithm:
@@ -44,18 +22,18 @@ class CoverAlgorithm:
 	community detection, return a cover.
 	"""
 
-	def __init__(self, name='CoverAlgorithm', clean_up=''):
+	def __init__(self, name):
 		self.name = name
-		self.clean_up = clean_up
 		self.timer = ContextTimer()
 		self.graph = None
 		self.ground_truth = None
 		self.cover = None
+		self.has_run = False
 
-	def copy(self):
+	def __copy__(self):
 		""" Override this method in subclass if __init__ takes arguments """
 		print(self.__class__)
-		return self.__class__(self.name, self.clean_up)
+		return self.__class__(self.name)
 
 	def get_time(self):
 		return self.timer.elapsed
@@ -64,13 +42,12 @@ class CoverAlgorithm:
 		return self.cover
 
 	def run(self, graph):
+		if self.has_run:
+			return
+		self.has_run = True
 		self.graph = graph.graph
 		self.ground_truth = graph.ground_truth
 		self.create_cover()
-		t_create = self.timer.elapsed
-		print("Created cover in {:.3f}s".format(t_create))
-		self.clean_up_cover()
-		print("Cleaned up cover in {:.3f}s".format(self.timer.elapsed - t_create))
 
 	def create_cover(self):
 		"""
@@ -78,15 +55,10 @@ class CoverAlgorithm:
 		"""
 		raise NotImplementedError('create_cover method not implemented!')
 
-	def clean_up_cover(self):
-		with self.timer:
-			self.cover = clean_up_cover(self.graph, self.cover, self.ground_truth,
-			                            self.clean_up)
-
 
 class GroundTruth(CoverAlgorithm):
-	def __init__(self, name='Ground_Truth', clean_up=''):
-		super().__init__(name, clean_up)
+	def __init__(self, name='Ground_Truth'):
+		super().__init__(name)
 
 	def create_cover(self):
 		self.cover = self.ground_truth
@@ -95,7 +67,7 @@ class GroundTruth(CoverAlgorithm):
 class EgoSplitAlgorithm(CoverAlgorithm):
 	def __init__(self, name, parameters, local_partition_algorithm,
 	             global_partition_algorithm=None, clean_up=''):
-		super().__init__(name, clean_up)
+		super().__init__(name)
 		self.local_partition_algorithm = local_partition_algorithm
 		self.global_partition_algorithm = global_partition_algorithm
 		self.executionInfo = None
@@ -103,10 +75,10 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.egoNets = None
 		self.parameters = parameters
 
-	def copy(self):
+	def __copy__(self):
 		return EgoSplitAlgorithm(self.name, self.parameters,
 		                         self.local_partition_algorithm,
-		                         self.global_partition_algorithm, self.clean_up)
+		                         self.global_partition_algorithm)
 
 	def create_cover(self):
 		algo = EgoSplitting(self.graph, self.local_partition_algorithm,
@@ -146,15 +118,15 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	# 	return self.executionInfo
 
 	def ego_net_partition_of(self, u):
-		return self.egoNetPartitions[u]
+		return copy(self.egoNetPartitions[u])
 
 	def ego_net_of(self, u):
-		return self.egoNets[u]
+		return copy(self.egoNets[u])
 
 
 class OlpAlgorithm(CoverAlgorithm):
-	def __init__(self, name='OLP', clean_up=''):
-		super().__init__(name, clean_up)
+	def __init__(self, name='OLP'):
+		super().__init__(name)
 
 	def create_cover(self):
 		a = OLP(self.graph)
@@ -164,8 +136,8 @@ class OlpAlgorithm(CoverAlgorithm):
 
 
 class MosesAlgorithm(CoverAlgorithm):
-	def __init__(self, name='MOSES', clean_up=''):
-		super().__init__(name, clean_up)
+	def __init__(self, name='MOSES'):
+		super().__init__(name)
 
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:
@@ -182,12 +154,12 @@ class MosesAlgorithm(CoverAlgorithm):
 
 
 class GceAlgorithm(CoverAlgorithm):
-	def __init__(self, name='GCE', clean_up='', alpha=1.5, add_name=''):
-		super().__init__(name + add_name, clean_up)
+	def __init__(self, name='GCE', alpha=1.5):
+		super().__init__(name)
 		self.alpha = alpha
 
-	def copy(self):
-		return GceAlgorithm(self.name, self.clean_up, self.alpha)
+	def __copy__(self):
+		return GceAlgorithm(self.name, self.alpha)
 
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:
@@ -206,8 +178,8 @@ class GceAlgorithm(CoverAlgorithm):
 
 
 class OslomAlgorithm(CoverAlgorithm):
-	def __init__(self, name='OSLOM', clean_up=''):
-		super().__init__(name, clean_up)
+	def __init__(self, name='OSLOM'):
+		super().__init__(name)
 
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:
@@ -223,13 +195,13 @@ class OslomAlgorithm(CoverAlgorithm):
 
 
 class SlpaAlgorithm(CoverAlgorithm):
-	def __init__(self, name='SLPA', clean_up='', threshold=0.1, numIterations=100):
-		super().__init__(name, clean_up)
+	def __init__(self, name='SLPA', threshold=0.1, numIterations=100):
+		super().__init__(name)
 		self.threshold = threshold
 		self.numIterations = numIterations
 
-	def copy(self):
-		return SlpaAlgorithm(self.name, self.clean_up, self.threshold, self.numIterations)
+	def __copy__(self):
+		return SlpaAlgorithm(self.name, self.threshold, self.numIterations)
 
 	def create_cover(self):
 		with self.timer:

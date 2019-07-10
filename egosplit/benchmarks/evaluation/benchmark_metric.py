@@ -6,8 +6,6 @@ class BenchmarkMetric:
 	"""This class represents a metric of a benchmark run. The main method get_value
 	takes a benchmark result and returns the metric value.
 	"""
-	def __init__(self):
-		raise NotImplementedError("This class can not be instanced!")
 
 	@staticmethod
 	def get_value(benchmark):
@@ -21,7 +19,7 @@ class BenchmarkMetric:
 class Time(BenchmarkMetric):
 	@staticmethod
 	def get_value(benchmark):
-		return benchmark.algo.get_time()
+		return benchmark.get_time()
 
 	@staticmethod
 	def get_name():

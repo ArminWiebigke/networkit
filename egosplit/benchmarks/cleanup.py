@@ -169,7 +169,8 @@ def remove_comms_entropy(G, cover):
 # 	entropy = calc_entropy(G, cover)
 # 	for c_id, community in enumerate(communities):
 # 		max_comm_size = 50
-# 		if len(community) >= max_comm_size or len(community) == 0:  # Only for the specific LFR graph
+# 		if len(community) >= max_comm_size or len(community) == 0:
+#           # Only for the specific LFR graph
 # 			continue
 # 		community_changed = True
 # 		while community_changed:
@@ -369,7 +370,7 @@ def merge_gt_comms(G, ground_truth, cover):
 	return cover
 
 
-def discard_overlap_comms(G, cover, min_overlap=0.7):
+def remove_overlap_comms(G, cover, min_overlap=0.7):
 	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 	for comm_a, nodes_a in enumerate(communities):
@@ -388,9 +389,8 @@ def discard_overlap_comms(G, cover, min_overlap=0.7):
 	return cover
 
 
-
 # Merge a community A into another community B if most nodes of A are already in B
-def merge_overlap_comms(G, cover):
+def merge_overlap_comms(G, cover, min_overlap=0.8):
 	cover = copy(cover)
 	communities = get_community_vector(G, cover)
 	for a, comm_a in enumerate(communities):
@@ -402,7 +402,7 @@ def merge_overlap_comms(G, cover):
 			if not common_nodes:
 				continue
 			overlap = len(common_nodes) / min(len(comm_a), len(comm_b))
-			if overlap >= 0.8:
+			if overlap >= min_overlap:
 				candidates.append((overlap, b))
 		# Merge with the community with the highest overlap
 		if candidates:

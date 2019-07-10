@@ -78,7 +78,7 @@ def stream_partition(graphs, benchmarks):
 				client.exportNodeValues(egonet, neighbors, "neighbors")
 
 				partition = benchmark.algo.ego_net_partition_of(node_id)
-				client.exportNodeValues(egonet, partition, benchmark.algo.name)
+				client.exportNodeValues(egonet, partition, benchmark.get_algo_name())
 
 			command = input("Press Enter to proceed, or q + Enter to quit")
 			if command == "q":

@@ -17,13 +17,14 @@ from egosplit.benchmarks.cleanup import cleanup_test
 from .cover_benchmark import CoverBenchmark, MetricCache
 from .algorithms import *
 from .graph import BenchGraph, LFRGraph
+from .complete_cleanup import CleanUp
 
 
 def start_benchmarks():
 	# setLogLevel('INFO')
-	iterations = 5
+	iterations = 1
 	append_results = False
-	# append_results = True
+	append_results = True
 	evaluations = [
 		'metrics',
 		'cover',
@@ -38,24 +39,23 @@ def start_benchmarks():
 	print('Creating Graphs...')
 	graphs = get_graphs(iterations)
 	algos = get_algos(store_ego_nets)
+	clean_ups = get_clean_ups()
 	if stream_to_gephi and len(graphs) * len(algos) > 8:
 		raise RuntimeError('Too many runs to stream!')
 
 	print('Starting benchmarks...')
 	result_summary = OrderedDict()
+	benchmarks = create_benchmarks(graphs, algos)
 	if stream_to_gephi:
-		benchmarks = create_benchmarks(graphs, algos)
 		run_benchmarks(benchmarks)
 		evaluate_result(graphs, benchmarks, evaluations, append_results,
 		                result_summary)
 	else:
-		for graph in graphs:
-			for algo in algos:
-				benchmarks = create_benchmarks([graph], [algo])
-				run_benchmarks(benchmarks)
-				evaluate_result(graphs, benchmarks, evaluations, append_results,
-				                result_summary)
-				append_results = True
+		for benchmark in benchmarks:
+			run_benchmarks([benchmark])
+			evaluate_result(graphs, [benchmark], evaluations, append_results,
+			                result_summary)
+			append_results = True
 
 	print_result_summary(result_summary)
 
@@ -76,25 +76,19 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 	if 'metrics' in evaluations:
 		metric_caches = [MetricCache(b) for b in benchmarks]
 		metrics = [
-			bm.Time,
-			bm.NMI,
-			bm.F1,
-			bm.F1_rev,
-			# bm.Entropy,
-			# bm.Entropy2,
-			# bm.Entropy3,
-			# bm.Entropy4,
+			bm.Time(),
+			bm.NMI(),
+			bm.F1(),
+			bm.F1_rev(),
+			# bm.Entropy(),
 		]
 		write_results_to_file(metric_caches, result_dir, metrics, append)
 		compact_metrics = [
-			bm.Time,
-			bm.NMI,
-			bm.F1,
-			bm.F1_rev,
-			# bm.Entropy,
-			# bm.Entropy2,
-			# bm.Entropy3,
-			# bm.Entropy4,
+			bm.Time(),
+			bm.NMI(),
+			bm.F1(),
+			bm.F1_rev(),
+			# bm.Entropy(),
 		]
 		add_compact_results(summary, metric_caches, compact_metrics)
 	if 'cover' in evaluations:
@@ -128,15 +122,26 @@ def get_graphs(iterations):
 	LFR_graph_args = OrderedDict()
 
 	# TODO: Graphs with different community sizes, e.g. 10-100
-	for minc in [60]:
-		for om in range(5, 6):
-			for mu in [0.2]:
-				k = 15 * om  # Number of neighbors per community independent of mixing factor
-				k /= (1 - mu)
-				maxk = 1.5 * k  # Scale max degree with average degree
-				LFR_graph_args['mu_{}_om_{}'.format(mu, om)] = {
-					'N': 2000, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
-					't1': 2, 't2': 2, 'mu': mu, 'on': 2000, 'om': om}
+	N = 2000
+	minc = 60
+	mu = 0.25
+	def scale_om_graph(on, om, name):
+		k = 15 * om  # Number of neighbors per community independent of mixing factor
+		k /= (1 - mu)
+		maxk = 1.5 * k  # Scale max degree with average degree
+		LFR_graph_args[name] = {
+			'N': N, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
+			't1': 2, 't2': 2, 'mu': mu, 'on': on, 'om': om}
+	for overlap in range(0, 100, 20):
+		on = N * overlap / 100
+		avg_comms = 1 + overlap / 100
+		om = 2
+		name = 'om_{:.2f}'.format(avg_comms)
+		scale_om_graph(on, om, name)
+	for om in range(2, 6):
+		on = N
+		name = 'om_{}'.format(om)
+		scale_om_graph(on, om, name)
 
 	# # GCE paper
 	# for om in range(1, 6):
@@ -169,16 +174,17 @@ def get_graphs(iterations):
 	# 	LFR_graph_args['on_' + str(overlap/100)[:3].rjust(3, '0')] = {
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
-	#
+
 	# # Scale mixing factor
-	# for mu_factor in range(40, 71, 10):
-	# 	om = 2
+	# for mu_factor in range(10, 71, 10):
+	# 	om = 3
 	# 	mu = 0.01 * mu_factor
 	# 	k = om * 15  # Number of neighbors per community independent of mixing factor
 	# 	k /= (1 - mu)
 	# 	maxk = 1.5 * k  # Scale max degree with average degree
-	# 	LFR_graph_args['mu_' + str(mu_factor).rjust(2,'0')] = {
-	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 60, 'maxc': 100,
+	# 	name = 'mu_' + str(mu_factor).rjust(2, '0')
+	# 	LFR_graph_args[name] = {
+	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
 	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
 
 	create_LFR_graphs(graphs, LFR_graph_args, iterations)
@@ -191,16 +197,16 @@ def get_graphs(iterations):
 # *                                     Algorithms                                       *
 # ****************************************************************************************
 def get_algos(storeEgoNets):
-	algos = []
-	algos.append(GroundTruth())
+	algos = [] # Elements are tuples (AlgorithmObject, list of clean up procedures)
+	algos.append((GroundTruth(), [""]))
 	# for iterations in [20, 40, 60, 80, 100]:
 	# 	for threshold in [0.1]:
 	# 		algos.append(SlpaAlgorithm(name='SLPA_{}_{}'.format(threshold, iterations),
 	# 		                           threshold=threshold, numIterations=iterations))
 	# algos.append(OlpAlgorithm())
-	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0'))
-	# algos.append(GceAlgorithm(alpha=1.5, add_name='_1.5'))
-	# algos.append(GceAlgorithm(alpha=1.0, add_name='_1.0_clean', clean_up='clean-merge'))
+	# algos.append(GceAlgorithm('GEC_1.0', alpha=1.0))
+	# algos.append(GceAlgorithm('GCE_1.5', alpha=1.5, ))
+	# algos.append(GceAlgorithm('GCE_1.0_clean', alpha=1.0, clean_up='clean-merge'))
 	# algos.append(MosesAlgorithm())
 	# algos.append(OslomAlgorithm())
 
@@ -236,25 +242,22 @@ def get_algos(storeEgoNets):
 	for p_algos in partition_algos.values():
 		p_algos.insert(1, lambda g: clusterInfomap(g))
 	ego_parameters = get_ego_parameters(storeEgoNets)
-
-	# TODO: Cleanup der overlapping groups verwirft statt merged
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='no-clean')
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='merge-overl')
-	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='remv-overl')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge,overl')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean_full')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-remove')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-3')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-5')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-merge-shrink')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-check')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-keep')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='clean-keep-merge_E')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='trim_gt')
-	# algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_up='trim_gt-merge_gt')
+	clean_ups = [
+		'*',
+		# 'merge-overl',
+		# 'remv-overl',
+		# 'clean-merge',
+		# 'clean-merge,overl',
+		# 'clean-full',
+		# 'clean-remove',
+	]
+	algos += create_egosplit_algorithms(partition_algos, ego_parameters, clean_ups)
 
 	return algos
+
+
+def get_clean_ups():
+	return
 
 
 def get_ego_parameters(store_ego_nets):
@@ -302,15 +305,15 @@ def get_ego_parameters(store_ego_nets):
 		'sortGroups': 'significance',
 		'orderedStatPos': 0.0,
 		'subtractNodeDegree': 'Yes',
-		'maxGroupsConsider': 10,
+		'maxGroupsConsider': 15,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
-		'minEdgesToGroupSig': '3',  # TODO: should be 1
+		'minEdgesToGroupSig': '1',  # TODO: should be 1
 		'sigSecondRoundStrat': 'updateCandidates',
 		'secondarySigExtRounds': '2',
 	}
 
-	# ego_parameters['b!'] = standard
+	ego_parameters['b*'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
@@ -319,7 +322,7 @@ def get_ego_parameters(store_ego_nets):
 	# 	**edge_scores_standard,
 	# 	'addNodesFactor': 2,
 	# }
-	ego_parameters['e!'] = {
+	ego_parameters['e*'] = {
 		**edge_scores_standard,
 	}
 	# ego_parameters['b-s*1'] = {
@@ -331,13 +334,9 @@ def get_ego_parameters(store_ego_nets):
 	# 	'extendStrategy': 'none',
 	# 	'extendPartitionIterations': 4,
 	# }
-	# ego_parameters['e-s*1'] = {
-	# 	**significance_scores_standard,
-	# }
-	# ego_parameters['e-s*3'] = {
-	# 	**significance_scores_standard,
-	# 	'extendPartitionIterations': 4,
-	# }
+	ego_parameters['e-s'] = {
+		**significance_scores_standard,
+	}
 	# ego_parameters['s-order'] = {
 	# 	**significance_scores_standard,
 	# 	'useSigMemo': 'No',
@@ -367,33 +366,35 @@ def create_LFR_graphs(graphs, graphArgs, iterations):
 	for argsName in graphArgs.keys():
 		args = graphArgs[argsName]
 		graphName = 'LFR_' + argsName
+		print(args)
 		for i in range(iterations):
 			graph_wrapper = LFRGraph(graphName, args)
 			graphs.append(graph_wrapper)
 	return graphs
 
 
-def create_egosplit_algorithms(partition_algos, ego_parameters, clean_up=''):
+def create_egosplit_algorithms(partition_algos, ego_parameters, clean_ups):
 	algos = []
 	for part_name in partition_algos:
 		for para_name, parameters in ego_parameters.items():
-			name = '{}{}{}{}'.format('Ego_', part_name,
-			                         '_' + para_name if para_name else '',
-			                         '_' + clean_up if clean_up else '')
-			algos.append(EgoSplitAlgorithm(
+			name = '{}{}{}'.format('Ego_', part_name,
+			                       '_' + para_name if para_name else '')
+			algo = EgoSplitAlgorithm(
 				name,
 				{key.encode('utf-8'): str(value).encode('utf-8')
 				 for (key, value) in parameters.items()},
-				*partition_algos[part_name],
-				clean_up=clean_up))
+				*partition_algos[part_name])
+			algos.append((algo, clean_ups))
 	return algos
 
 
-def create_benchmarks(graphs, algos):
+def create_benchmarks(graphs, algos_and_clean):
 	benchmarks = []
-	for algo in algos:
-		for graph in graphs:
-			benchmarks.append(CoverBenchmark(algo.copy(), graph))
+	for graph in graphs:
+		for algo, clean_ups in algos_and_clean:
+			algo_copy = copy(algo)
+			for clean_up in clean_ups:
+				benchmarks.append(CoverBenchmark(algo_copy, CleanUp(clean_up), graph))
 	return benchmarks
 
 
