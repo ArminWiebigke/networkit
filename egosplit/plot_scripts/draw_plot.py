@@ -3,10 +3,11 @@ import seaborn as sns
 
 from enum import Enum
 
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
+	StrMethodFormatter, Formatter
 
 from plot_scripts.config import set_layout
-from plot_scripts.extract_data_column import create_new_columns
+from plot_scripts.read_data import create_column_if_missing
 from .config import file_prefix
 
 
@@ -19,6 +20,7 @@ class PlotType(Enum):
 
 # Create a plot
 def make_plot(data,
+              filter_data=None,
               graph_filter='',
               algo_matches='',
               add_algos=None,
@@ -32,23 +34,28 @@ def make_plot(data,
               hue=None,
               plot_args=None,
               ax_set=None):
+	# Create the columns for x, y, hue if not already present in data
+	for column in [x, y, hue]:
+		create_column_if_missing(data, column)
 	# Filter data
 	if isinstance(graph_filter, str):
 		filtered_data = data.query('graph.str.contains(@graph_filter)').copy()
 	else:
 		assert (isinstance(graph_filter, list))
 		filtered_data = data.query('graph in @graph_filter').copy()
+	if filter_data:
+		filtered_data.query(filter_data, inplace=True)
 	graphs = get_unique_values(filtered_data, 'graph')
 	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
 	filtered_data.query('algo in @algo_list', inplace=True)
-	create_new_columns(filtered_data, hue, x)
+	# create_new_columns(filtered_data, hue, x)
 	if len(filtered_data) is 0:
 		return
 
-	if type(x) != str and x:
-		x = x['name']
-	if type(hue) != str and hue:
-		hue = hue['name']
+	# if type(x) != str and x:
+	# 	x = x['name']
+	# if type(hue) != str and hue:
+	# 	hue = hue['name']
 
 	# Create plots
 	def create_plot(graph_data):
@@ -64,7 +71,7 @@ def make_plot(data,
 		draw_plot(this_plot_type, this_plot_args)
 
 		sns.despine(ax=ax)
-		set_ax(ax, ax_set, fig)
+		set_ax(ax, ax_set, fig, x)
 		clean_legend(algo_matches, ax, remove_algo_part)
 		fig.suptitle(title)
 		fig.savefig(file_prefix + file_name + '.pdf')
@@ -118,20 +125,28 @@ def draw_plot(plot_type, plot_args):
 	plot_functions[plot_type](**plot_args)
 
 
-def set_ax(ax, ax_set, fig):
+class MinorFormatter(Formatter):
+	def __call__(self, x, pos=None):
+		s = "{:.1f}".format(x)
+		return s[-2:]
+
+
+def set_ax(ax, ax_set, fig, x):
 	ax_set = ax_set or {}
 	ax.set(
 		**ax_set,
 	)
-	ax.xaxis.set(
-		major_locator=MultipleLocator(1),
-		major_formatter=FormatStrFormatter('%d'),
-		minor_formatter=FormatStrFormatter('%.1f'),
-	)
-
-	minor_xticks = [1.2, 1.4, 1.6, 1.8]
-	ax.set_xticks(minor_xticks, minor=True)
-	ax.set_xticks_minor(minor_xticks, minor=True)
+	if x == "communities per node":
+		ax.xaxis.set(
+			major_locator=MultipleLocator(1),
+			major_formatter=StrMethodFormatter('{x:.0f}'),
+			minor_formatter=MinorFormatter(),
+		)
+		min_x, max_x = ax.get_xlim()
+		if min_x <= 1.2 and max_x >= 1.8:
+			minor_xticks = [1.2, 1.4, 1.6, 1.8]
+			ax.set_xticks(minor_xticks, minor=True)
+			ax.tick_params(axis='both', which='minor', labelsize=6)
 	fig.canvas.draw()
 
 

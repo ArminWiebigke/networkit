@@ -1,17 +1,20 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
+from .extract_data_column import create_new_column
 
 
 def read_data():
 	result_dir = "results/"
 	data = dict()
-
-	for name in ["metrics",
-	             "ego_net_communities", "ego_net_partitions", "ego_net_ego_metrics",
-	             "ego_net_metrics",
-	             "cover_comm_sizes", "cover_node_comms", "cover_num_comms"]:
+	for name in [
+		"metrics",
+		"ego_net_communities",
+		"ego_net_partitions",
+		"ego_net_ego_metrics",
+		"ego_net_metrics",
+		"cover_comm_sizes",
+		"cover_node_comms",
+		"cover_num_comms"
+	]:
 		filename = name + '.result'
 		try:
 			data[name] = pd.read_csv(result_dir + filename, sep="\s+")
@@ -19,3 +22,26 @@ def read_data():
 			print("File " + filename + " not found")
 
 	return data
+
+
+def create_column_if_missing(data, column):
+	if not column in data.columns:
+		create_new_column(data, column, get_new_column_params()[column])
+
+
+def get_new_column_params():
+	new_columns = {
+		"communities per node": {
+			"create_from": "graph",
+			"str_start": "_om_",
+			"str_end": "_",
+			'type': float
+		},
+		"mixing factor": {
+			"create_from": "graph",
+			"str_start": "_mu_",
+			"str_end": "_",
+			'type': float
+		}
+	}
+	return new_columns

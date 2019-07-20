@@ -24,7 +24,7 @@ def start_benchmarks():
 	# setLogLevel('INFO')
 	iterations = 1
 	append_results = False
-	append_results = True
+	# append_results = True
 	evaluations = [
 		'metrics',
 		'cover',
@@ -39,7 +39,7 @@ def start_benchmarks():
 	print('Creating Graphs...')
 	graphs = get_graphs(iterations)
 	algos = get_algos(store_ego_nets)
-	clean_ups = get_clean_ups()
+
 	if stream_to_gephi and len(graphs) * len(algos) > 8:
 		raise RuntimeError('Too many runs to stream!')
 
@@ -55,6 +55,7 @@ def start_benchmarks():
 			run_benchmarks([benchmark])
 			evaluate_result(graphs, [benchmark], evaluations, append_results,
 			                result_summary)
+			benchmark.clear()
 			append_results = True
 
 	print_result_summary(result_summary)
@@ -113,11 +114,11 @@ def get_graphs(iterations):
 	# graphs.append(BenchGraph(*getDBLPGraph(), 'DBLP'))
 	# graphs.append(BenchGraph(*getLiveJournalGraph(), 'LiveJournal'))
 	# graphs.append(BenchGraph(*getOrkutGraph(), 'Orkut'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'Caltech36'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Rice31', clean=True), 'Rice31'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Auburn71', clean=True), 'Auburn71'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Smith60', clean=True), 'Smith60'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Oklahoma97', clean=True), 'Oklahoma97'))
+	# graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'FB_Caltech36'))  # 769 nodes
+	# graphs.append(BenchGraph(*getFacebookGraph('Rice31', clean=True), 'FB_Rice31'))  # 4k nodes
+	# graphs.append(BenchGraph(*getFacebookGraph('Auburn71', clean=True), 'FB_Auburn71'))  # 18k nodes
+	# graphs.append(BenchGraph(*getFacebookGraph('Smith60', clean=True), 'FB_Smith60'))
+	# graphs.append(BenchGraph(*getFacebookGraph('Oklahoma97', clean=True), 'FB_Oklahoma97'))
 
 	LFR_graph_args = OrderedDict()
 
@@ -126,22 +127,24 @@ def get_graphs(iterations):
 	minc = 60
 	mu = 0.25
 	def scale_om_graph(on, om, name):
-		k = 15 * om  # Number of neighbors per community independent of mixing factor
+		pcnt_overlap = on / N
+		avg_comms = pcnt_overlap * om + (1 - pcnt_overlap)
+		k = 15 * avg_comms  # Number of neighbors per community independent of mixing factor
 		k /= (1 - mu)
 		maxk = 1.5 * k  # Scale max degree with average degree
 		LFR_graph_args[name] = {
 			'N': N, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': mu, 'on': on, 'om': om}
-	for overlap in range(0, 100, 20):
-		on = N * overlap / 100
-		avg_comms = 1 + overlap / 100
-		om = 2
-		name = 'om_{:.2f}'.format(avg_comms)
-		scale_om_graph(on, om, name)
-	for om in range(2, 6):
+	for om in range(1, 7):
 		on = N
 		name = 'om_{}'.format(om)
 		scale_om_graph(on, om, name)
+	# for overlap in range(20, 100, 20):
+	# 	on = N * overlap / 100
+	# 	avg_comms = 1 + overlap / 100
+	# 	om = 2
+	# 	name = 'om_{:.2f}'.format(avg_comms)
+	# 	scale_om_graph(on, om, name)
 
 	# # GCE paper
 	# for om in range(1, 6):
@@ -187,6 +190,10 @@ def get_graphs(iterations):
 	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
 	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
 
+	# LFR_graph_args['test'] = {
+	# 	'N': 20000, 'k': 60, 'maxk': 90, 'minc': 20, 'maxc': 100,
+	# 	't1': 2, 't2': 2, 'mu': 0.25, 'on': 20000, 'om': 3}
+
 	create_LFR_graphs(graphs, LFR_graph_args, iterations)
 	for graph in graphs:
 		graph.graph.indexEdges()
@@ -196,7 +203,7 @@ def get_graphs(iterations):
 # ****************************************************************************************
 # *                                     Algorithms                                       *
 # ****************************************************************************************
-def get_algos(storeEgoNets):
+def get_algos(store_ego_nets):
 	algos = [] # Elements are tuples (AlgorithmObject, list of clean up procedures)
 	algos.append((GroundTruth(), [""]))
 	# for iterations in [20, 40, 60, 80, 100]:
@@ -204,16 +211,20 @@ def get_algos(storeEgoNets):
 	# 		algos.append(SlpaAlgorithm(name='SLPA_{}_{}'.format(threshold, iterations),
 	# 		                           threshold=threshold, numIterations=iterations))
 	# algos.append(OlpAlgorithm())
-	# algos.append(GceAlgorithm('GEC_1.0', alpha=1.0))
-	# algos.append(GceAlgorithm('GCE_1.5', alpha=1.5, ))
+	# algos.append((GceAlgorithm('GCE', alpha=1.0), [""]))
 	# algos.append(GceAlgorithm('GCE_1.0_clean', alpha=1.0, clean_up='clean-merge'))
-	# algos.append(MosesAlgorithm())
-	# algos.append(OslomAlgorithm())
+	# algos.append((MosesAlgorithm(), [""]))
+	# algos.append((OslomAlgorithm(), [""]))
+	# algos.append((PeacockAlgorithm(), [""]))
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
+	# for alpha in [0.8, 0.9, 1.0]:
+	# 	for min_clique in [3, 4]:
+	# 		partition_algos['GCE-{:.1f}-{}'.format(alpha, min_clique)] = [
+	# 			lambda g: convertCoverToPartition(g, clusterGCE(g, alpha=alpha, min_clique=min_clique))]
 
 	# def PLM_OSLOM_clean(g):
 	# 	part = PLM(g, True, 1.0, 'none').run().getPartition()
@@ -241,11 +252,11 @@ def get_algos(storeEgoNets):
 
 	for p_algos in partition_algos.values():
 		p_algos.insert(1, lambda g: clusterInfomap(g))
-	ego_parameters = get_ego_parameters(storeEgoNets)
+	ego_parameters = get_ego_parameters(store_ego_nets)
 	clean_ups = [
-		'*',
+		# 'no-clean',
 		# 'merge-overl',
-		# 'remv-overl',
+		'remv-overl',
 		# 'clean-merge',
 		# 'clean-merge,overl',
 		# 'clean-full',
@@ -283,8 +294,8 @@ def get_ego_parameters(store_ego_nets):
 	extend_standard = {
 		**standard,
 		'extendPartitionIterations': 1,
-		'addNodesFactor': 2,
-		'addNodesExponent': 0.8,
+		'addNodesFactor': 5,
+		'addNodesExponent': 0.5,
 		'edgesBetweenNeigNeig': 'Yes',
 		'minNodeDegree': 2,
 		'extendOverDirected': 'No',
@@ -298,45 +309,55 @@ def get_ego_parameters(store_ego_nets):
 		'extendStrategy': 'edgeScore',
 	}
 	significance_scores_standard = {
-		**edge_scores_standard,
-		'extendPartitionIterations': 2,
+		**extend_standard,
 		'extendStrategySecond': 'significance',
 		'maxSignificance': 0.1,
 		'sortGroups': 'significance',
 		'orderedStatPos': 0.0,
-		'subtractNodeDegree': 'Yes',
-		'maxGroupsConsider': 15,
+		'maxGroupsConsider': 5,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
-		'minEdgesToGroupSig': '1',  # TODO: should be 1
+		'minEdgesToGroupSig': '1',  # TODO: should be 1 for optimal result, but 3 is must faster
 		'sigSecondRoundStrat': 'updateCandidates',
-		'secondarySigExtRounds': '2',
+		'secondarySigExtRounds': '3',
+		'extendPartitionIterations': 4,
+		'onlyCheckSignOfMaxCandidates': 'No',
+		'evalSignFactor': '1',
 	}
 
-	ego_parameters['b*'] = standard
+	ego_parameters['b#'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
 	# }
-	# ego_parameters['e-2-0.8'] = {
-	# 	**edge_scores_standard,
-	# 	'addNodesFactor': 2,
-	# }
-	ego_parameters['e*'] = {
+	ego_parameters['e#'] = {
 		**edge_scores_standard,
 	}
-	# ego_parameters['b-s*1'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'none',
-	# }
-	# ego_parameters['b-s*3'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'none',
-	# 	'extendPartitionIterations': 4,
-	# }
-	ego_parameters['e-s'] = {
+	ego_parameters['b-s'] = {
 		**significance_scores_standard,
 	}
+	ego_parameters['b-s-max'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': '2',
+	}
+	ego_parameters['b-s-x1'] = {
+		**significance_scores_standard,
+		'addNodesFactor': 1,
+	}
+	ego_parameters['e-s1'] = {
+		**significance_scores_standard,
+		'extendStrategy': 'edgeScore',
+		'extendPartitionIterations': 2,
+	}
+	ego_parameters['e-s3'] = {
+		**significance_scores_standard,
+		'extendStrategy': 'edgeScore',
+		'extendPartitionIterations': 4,
+	}
+	# ego_parameters['e-s'] = {
+	# 	**significance_scores_standard,
+	# }
 	# ego_parameters['s-order'] = {
 	# 	**significance_scores_standard,
 	# 	'useSigMemo': 'No',
