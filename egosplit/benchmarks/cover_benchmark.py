@@ -48,6 +48,11 @@ class CoverBenchmark:
 			name += "_" + self.clean_up.name
 		return name
 
+	def clear(self):
+		del self.algo
+		del self.clean_up
+		del self.cover
+
 
 class MetricCache:
 	""" This class is used to cache metric results, so that they are only calculated once.

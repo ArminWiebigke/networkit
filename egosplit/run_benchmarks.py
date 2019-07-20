@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from networkit.stopwatch import Timer
 from egosplit.benchmarks.run import start_benchmarks
 

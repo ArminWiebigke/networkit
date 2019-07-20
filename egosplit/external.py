@@ -1,6 +1,8 @@
 import tempfile
 import os
 import subprocess
+from collections import defaultdict
+
 import scipy
 import random
 import igraph
@@ -38,7 +40,8 @@ def clusterInfomap(G):
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
 		seed = random.randint(-2**31, 2**31)
 		seed = 7645231
-		subprocess.call([code_path + '/infomap/Infomap', '-s', str(seed), '-2', '-z', ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
+		subprocess.call([code_path + '/infomap/Infomap', '-s', str(seed), '-2', '-z',
+		                 ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
 		                stdout=dev_null)
 		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
@@ -146,7 +149,16 @@ def convertCoverToPartition(G, cover):
 	for u in G.nodes():
 		comms = cover.subsetsOf(u)
 		if comms:
-			partition.addToSubset(comms.pop(), u)
+			# partition.addToSubset(comms.pop(), u)  # TODO: Use best community
+			comm_cnts = defaultdict(lambda: 0)
+			for v in G.neighbors(u):
+				v_comms = cover.subsetsOf(v).intersection(comms)
+				for c in v_comms:
+					comm_cnts[c] += 1
+			best_comm, _ = max([(val, c) for (c, val) in comm_cnts.items()])
+			# print(best_comm)
+			partition.addToSubset(best_comm, u)
+
 		else:
 			partition.addToSubset(singleton_idx, u)
 			singleton_idx += 1
@@ -214,6 +226,26 @@ def convertLeidenPartition(G, la_partition, graph_i):
 			u = int(graph_i.vs[u]['id'])
 			partition.addToSubset(i, u)
 	return partition
+
+
+def clusterPeacock(G, part_algorithm):
+	with tempfile.TemporaryDirectory() as tempdir:
+		old_dir = os.getcwd()
+		try:
+			os.chdir(tempdir)
+			graph_filename = os.path.join(tempdir, 'graph.txt')
+			graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
+			subprocess.call([code_path + '/conga/java -cp conga.jar CONGA',
+			                 graph_filename, '–e',
+			                 '-peacock 0.1'])
+			with open(tempdir + "/split-graph.txt", "r") as f:
+				for line in f:
+					print(line[:-1])
+
+		except:
+			print('Error')
+		finally:
+			os.chdir(old_dir)
 
 
 # https://sites.google.com/site/andrealancichinetti/files

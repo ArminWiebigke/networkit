@@ -55,9 +55,9 @@ def clean_up_cover(graph, cover, ground_truth, clean_up):
 		cover = trim_comms(graph, ground_truth, cover)
 		cover = merge_overlap_comms(graph, cover)
 	elif clean_up == "merge-overl":
-		cover = merge_overlap_comms(graph, cover, min_overlap=0.6)
+		cover = merge_overlap_comms(graph, cover, min_overlap=0.7)
 	elif clean_up == "remv-overl":
-		cover = remove_overlap_comms(graph, cover, min_overlap=0.6)
+		cover = remove_overlap_comms(graph, cover, min_overlap=0.7)
 	elif clean_up == "remove-small":
 		pass
 	elif clean_up != "":

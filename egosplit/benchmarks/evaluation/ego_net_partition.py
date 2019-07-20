@@ -4,7 +4,7 @@ from copy import copy
 from networkit import none
 from networkit.components import ConnectedComponents
 from egosplit.benchmarks.evaluation.output import *
-
+from networkit.stopwatch import clockit
 
 # Evaluate the partition of the ego-nets
 def analyse_ego_net_partitions(benchmarks, result_dir, append):
@@ -88,11 +88,15 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 	graph_name = benchmark.get_graph_name()
 	graph = benchmark.get_graph()
 	total_sums = defaultdict(lambda: 0)
+	avg_metrics = defaultdict(lambda: 0)
+	gt_comm_sizes = ground_truth.subsetSizeMap()
 	for u in graph.nodes():
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
 		ego_sums = defaultdict(lambda: 0)
 		ego_net = benchmark.algo.ego_net_of(u)
+		if ego_net.numberOfNodes() == 0:
+			continue
 
 		# Count nodes
 		node_partition_map = copy(benchmark.algo.ego_net_partition_of(u))
@@ -113,24 +117,33 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		ego_sums["ext_num_gt_comms"] = len(result_list_comms_struct)
 		for result in result_list_comms_struct:
 			ego_sums["ext_conductance"] += result["conductance"]
+			ego_sums["ext_conductance_1.5"] += result["conductance_1.5"]
 			ego_sums["ext_cut"] += result["cut"]
 			ego_sums["ext_cut_comm"] += result["cut_comm"]
 			ego_sums["ext_volume"] += result["volume"]
-			# out_conduct.write(create_line(
-			# 	algo_name,
-			# 	graph_name,
-			# 	u,
-			# 	result["comm_size"],
-			# 	result["cut"],
-			# 	result["volume"],
-			# 	result["conductance"],
-			# ))
+		# out_conduct.write(create_line(
+		# 	algo_name,
+		# 	graph_name,
+		# 	u,
+		# 	result["comm_size"],
+		# 	result["cut"],
+		# 	result["volume"],
+		# 	result["conductance"],
+		# ))
 
-		# TODO: Pro Community: Subgraph von Knoten -> #Zusam.Komponenten
+		# TODO: Modularity für Partition: GT comms, alle externen in einzelner comm
+
+		# Number of connected compontents, nodes not in the largest connected component
 		result_list_comm_comp = comm_components(ground_truth, truth_communities, ego_net)
 		for result in result_list_comm_comp:
 			ego_sums["num_components"] += result["num_components"]
 			ego_sums["separate_nodes"] += result["separate_nodes"]
+
+		# Coverage of the ground-truth communities
+		result_coverage = calc_coverage(ground_truth, truth_communities, ego_net,
+		                                gt_comm_sizes)
+		for result in result_coverage:
+			ego_sums["coverage"] += result["coverage"]
 
 		# ********************************************************************************
 		# *                Get original ego-net (remove extended nodes)                  *
@@ -169,33 +182,40 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			ego_sums["cut"] += result["cut"]
 			ego_sums["cut_comm"] += result["cut_comm"]
 			ego_sums["volume"] += result["volume"]
-			# out_conduct.write(create_line(
-			# 	algo_name,
-			# 	graph_name,
-			# 	u,
-			# 	result["comm_size"],
-			# 	result["cut"],
-			# 	result["volume"],
-			# 	result["conductance"],
-			# ))
+		# out_conduct.write(create_line(
+		# 	algo_name,
+		# 	graph_name,
+		# 	u,
+		# 	result["comm_size"],
+		# 	result["cut"],
+		# 	result["volume"],
+		# 	result["conductance"],
+		# ))
 
 		# Are communities split into multiple partitions?
 		# TODO: Anzahl Communities, die eine Partition dominieren -> sinnvolle Personas
 		# TODO: +1 wenn p beste Part. von Com. c und c dominiert p (Optimalfall)
+		result_list_good_personas = check_good_personas(
+			ground_truth, partitions, best_communities, community_sizes, truth_communities)
+		for result in result_list_good_personas:
+			ego_sums["good_personas"] += result["has_good_persona"]
+			ego_sums["strong_personas"] += result["has_strong_persona"]
+			ego_sums["persona_score"] += result["persona_score"]
+
 		result_list_comm = check_community_partition(
 			ground_truth, partitions, community_sizes, truth_communities)
 		for result in result_list_comm:
 			ego_sums["comm_size"] += result["comm_size"]
 			ego_sums["comm_incorrect"] += result["wrong_nodes"]
 			ego_sums["parts_per_comm"] += result["num_partitions"]
-			# out_comm.write(create_line(
-			# 	algo_name,
-			# 	graph_name,
-			# 	result["comm_size"],
-			# 	result["wrong_nodes"],
-			# 	result["wrong_percentage"],
-			# 	result["num_partitions"],
-			# ))
+		# out_comm.write(create_line(
+		# 	algo_name,
+		# 	graph_name,
+		# 	result["comm_size"],
+		# 	result["wrong_nodes"],
+		# 	result["wrong_percentage"],
+		# 	result["num_partitions"],
+		# ))
 
 		# Do partitions consist of multiple communities?
 		result_list_part = check_partition_composition(
@@ -206,19 +226,19 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			ego_sums["part_incorrect_gt"] += result["wrong_nodes_gt"]
 			ego_sums["part_incorrect_ext"] += result["wrong_nodes_external"]
 			ego_sums["comms_per_part"] += result["num_communities"]
-			# out_part.write(create_line(
-			# 	algo_name,
-			# 	graph_name,
-			# 	u,
-			# 	result["partition_size"],
-			# 	result["wrong_nodes"],
-			# 	result["wrong_nodes_gt"],
-			# 	result["wrong_nodes_external"],
-			# 	result["wrong_percentage"],
-			# 	result["wrong_percentage_gt"],
-			# 	result["wrong_percentage_external"],
-			# 	result["num_communities"],
-			# ))
+		# out_part.write(create_line(
+		# 	algo_name,
+		# 	graph_name,
+		# 	u,
+		# 	result["partition_size"],
+		# 	result["wrong_nodes"],
+		# 	result["wrong_nodes_gt"],
+		# 	result["wrong_nodes_external"],
+		# 	result["wrong_percentage"],
+		# 	result["wrong_percentage_gt"],
+		# 	result["wrong_percentage_external"],
+		# 	result["num_communities"],
+		# ))
 
 		# Count number of partitions
 		result = count_partitions(partitions, truth_communities)
@@ -234,6 +254,8 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			))
 
 		# Summary metrics
+		# TODO: Calculate scores per community/partition, take the average?
+		#   makes small communities more/equally important
 		ego_metrics = calc_metrics(ego_sums)
 		for key, value in ego_metrics.items():
 			out_ego_metrics.write(create_line(
@@ -247,10 +269,13 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			))
 		for key, value in ego_sums.items():
 			total_sums[key] += value
+		for key, value in ego_metrics.items():
+			avg_metrics[key] += value
+		avg_metrics['num_values'] += 1
 
-	# TODO: Count external nodes -> Good extension?
-
-	total_metrics = calc_metrics(total_sums)
+	total_metrics = {key: (value / avg_metrics['num_values'])
+	                 for (key, value) in avg_metrics.items()}
+	# total_metrics = calc_metrics(total_sums)
 
 	for key, value in total_metrics.items():
 		out_metrics.write(create_line(
@@ -259,6 +284,85 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 			key,
 			value,
 		))
+
+
+def calc_coverage(ground_truth, truth_communities, ego_net, gt_comm_sizes):
+	gt_comms, _ = get_gt_communities(ego_net, ground_truth, truth_communities)
+	result_list = []
+	for c in truth_communities:
+		coverage = len(gt_comms[c]) / gt_comm_sizes[c]
+		result_list.append({
+			'coverage': coverage,
+		})
+	return result_list
+
+
+def harmonic_mean(a, b):
+	if a + b == 0:
+		return 0
+	return 2 * a * b / (a + b)
+
+
+def check_good_personas(ground_truth, partitions, best_communities, community_sizes,
+                        truth_communities):
+	result_list = []
+	best_partitions = {}
+	best_part_size = {}
+	# TODO: for each partition: %nodes from comm * %nodes in partition
+	#   0.5 * 0.5 = 0.25, 0.2 * 1 = 0.2, 0.2 * 0.1 = 0.02, 0.1 * 0.1 = 0.01 => 0.48
+
+	for c in truth_communities:
+		best, s = find_best_partition(ground_truth, c, partitions)
+		best_partitions[c] = best
+		best_part_size[c] = s
+	for c in truth_communities:
+		good_persona = 0
+		strong_persona = 0
+		# TODO: For partitions, decending on part size:
+		#   if c dominates part: score = comm_pcnt (and break)
+		best_node_cnt = 0
+		for i, partition in enumerate(partitions):
+			if best_communities[i] == c:
+				node_cnt = count_comm_nodes_in_partition(c, ground_truth, partition)
+				best_node_cnt = max(best_node_cnt, node_cnt)
+		good_persona = best_node_cnt / community_sizes[c]
+
+		if best_communities[best_partitions[c]] == c:
+			# good_persona = 1
+			strong_persona = best_part_size[c] / community_sizes[c]
+			# if best_part_size[c] / community_sizes[c] >= 0.5:
+			# 	strong_persona = 1
+
+		persona_score = 0
+		persona_max = []
+		for i, partition in enumerate(partitions):
+			node_cnt = count_comm_nodes_in_partition(c, ground_truth, partition)
+			if node_cnt == 0:
+				continue
+			pcnt_comm = node_cnt / community_sizes[c]
+			pcnt_part = node_cnt / len(partition)
+			# persona_score += harmonic_mean(pcnt_comm, pcnt_part)
+			# persona_score += pcnt_comm ** 2 * pcnt_part ** 2
+			# persona_max.append(pcnt_comm * pcnt_part)
+			persona_max.append(harmonic_mean(pcnt_comm, pcnt_part))
+
+		result_list.append({
+			'comm_size': community_sizes[c],
+			'has_good_persona': good_persona,
+			'has_strong_persona': strong_persona,
+			# 'persona_score': persona_score / len(partitions),
+			# 'persona_score': persona_score ** 0.5,
+			'persona_score': max(persona_max),
+		})
+	return result_list
+
+
+def count_comm_nodes_in_partition(c, ground_truth, partition):
+	num_nodes = 0
+	for u in partition:
+		if c in ground_truth.subsetsOf(u):
+			num_nodes += 1
+	return num_nodes
 
 
 # Calculate the ego-net metrics
@@ -287,6 +391,8 @@ def calc_metrics(sums):
 			sums["ego_net_size"]),
 		"conductance_comm": safe_div(sums["ext_cut_comm"], sums["ext_volume"]),
 		"conductance": safe_div(sums["ext_conductance"], sums["ext_num_gt_comms"]),
+		"conductance_1.5": safe_div(sums["ext_conductance_1.5"],
+		                            sums["ext_num_gt_comms"]),
 		"conductance_ratio": safe_div(
 			(sums["ext_conductance"] / sums["ext_num_gt_comms"]),
 			(sums["conductance"] / sums["num_gt_comms"]), 1),
@@ -296,15 +402,22 @@ def calc_metrics(sums):
 			safe_div(sums["intra_edges"], sums["egonet_edges"]), 1),
 		"num_components": safe_div(sums["num_components"], sums["ext_num_gt_comms"]),
 		"separate_nodes": safe_div(sums["separate_nodes"], sums["ext_num_gt_comms"]),
+		"good_personas": safe_div(sums["good_personas"], sums["num_gt_comms"]),
+		"strong_personas": safe_div(sums["strong_personas"], sums["num_gt_comms"]),
+		"persona_score": safe_div(sums["persona_score"], sums["num_gt_comms"]),
+		"coverage": safe_div(sums["coverage"], sums["num_gt_comms"]),
 	}
 
 	a = 1 - metrics["community_cohesion"]
 	b = 1 - metrics["partition_exclusivity"]
-	metrics["ego_partition_score"] = 1 - 2 * a * b / (a + b)
+	metrics["ego_partition_score_harm"] = 1 - harmonic_mean(a, b)
+	metrics["ego_partition_score_arit"] = (metrics["community_cohesion"] +
+	                                       metrics["partition_exclusivity"]) / 2
 	return metrics
 
 
 # Count the number of connected components for each ground truth community
+# @clockit
 def comm_components(ground_truth, truth_communities, ego_net):
 	communities, _ = get_gt_communities(ego_net, ground_truth, truth_communities)
 
@@ -329,6 +442,7 @@ def comm_components(ground_truth, truth_communities, ego_net):
 # TODO: Warum wird das Ergebnis mit vielen externen Knoten besser? (edges vs. sign)
 
 # Count the intra/inter community edges on the whole ego-net
+# @clockit
 def eval_egonet_structure(ground_truth, truth_communities, ego_net):
 	num_intra = 0
 	for u, v in ego_net.edges():
@@ -346,8 +460,10 @@ def eval_egonet_structure(ground_truth, truth_communities, ego_net):
 # TODO: Add external nodes to commuities (if at least 50% of edges to one community),
 #   then evaluate community structure
 # Calculate conductance of each community
+# @clockit
 def eval_comms_structure(ground_truth, truth_communities, ego_net):
-	communities, external_nodes = get_gt_communities(ego_net, ground_truth, truth_communities)
+	communities, external_nodes = get_gt_communities(ego_net, ground_truth,
+	                                                 truth_communities)
 	external_nodes = set(external_nodes)
 
 	result_list = []
@@ -367,10 +483,13 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 		cut = cut_comm + cut_ext
 		if cut == 0:
 			conductance = 0
+			conductance_1_5 = 0
 		elif volume == 0:
 			conductance = 1
+			conductance_1_5 = 0
 		else:
 			conductance = cut / volume
+			conductance_1_5 = cut / (volume ** 1.5)
 
 		result_list.append({
 			'comm_size': len(nodes),
@@ -378,6 +497,7 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 			'cut_comm': cut_comm,
 			'volume': volume,
 			'conductance': conductance,
+			'conductance_1.5': conductance_1_5,
 		})
 	return result_list
 
@@ -455,6 +575,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 
 # For each partition: Get the community with the most nodes. Count the number of nodes
 # that are not in that community.
+# @clockit
 def check_partition_composition(ground_truth, partitions, best_communities,
                                 truth_communities):
 	result_list = []
@@ -507,12 +628,13 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 # with the largest number of nodes from that community.
 # Don't count nodes that are in multiple communities and that are assigned to one of its
 # communities correctly.
+# @clockit
 def check_community_partition(ground_truth, partitions, community_sizes,
                               truth_communities):
 	result_list = []
 	best_partitions = {}
 	for c in truth_communities:
-		best_partitions[c] = find_best_partition(ground_truth, c, partitions)
+		best_partitions[c], _ = find_best_partition(ground_truth, c, partitions)
 	for c in truth_communities:
 		best_partition = best_partitions[c]
 		node_cnt = 0
@@ -549,14 +671,11 @@ def find_best_partition(ground_truth, community, partitions):
 	best_partition = -1
 	best_partition_cnt = 0
 	for i, partition in enumerate(partitions):
-		num_nodes = 0
-		for u in partition:
-			if community in ground_truth.subsetsOf(u):
-				num_nodes += 1
+		num_nodes = count_comm_nodes_in_partition(community, ground_truth, partition)
 		if num_nodes > best_partition_cnt:
 			best_partition_cnt = num_nodes
 			best_partition = i
-	return best_partition
+	return best_partition, best_partition_cnt
 
 
 # For a given partition, return the community with the highest number of nodes.

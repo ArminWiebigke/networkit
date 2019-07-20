@@ -5,10 +5,6 @@ from copy import copy
 
 from networkit.community import EgoSplitting, OLP, SLPA
 from networkit import graphio
-from .cleanup import trim_comms, merge_overlap_comms, entropy_trim, \
-	merge_comms_entropy, merge_gt_comms, remove_comms_entropy, remove_small_comms, \
-	add_communities
-from .complete_cleanup import clean_up_cover
 from .context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
@@ -153,8 +149,61 @@ class MosesAlgorithm(CoverAlgorithm):
 			self.cover = cover
 
 
+class PeacockAlgorithm(CoverAlgorithm):
+	def __init__(self, name='Peacock'):
+		super().__init__(name)
+
+	def create_cover(self):
+		with tempfile.TemporaryDirectory() as tempdir:
+			old_dir = os.getcwd()
+			try:
+				os.chdir(tempdir)
+				graph_filename = os.path.join(tempdir, 'graph.txt')
+				graphio.writeGraph(self.graph, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
+				params = ['java', '-cp', code_path + '/conga/conga.jar', 'CONGA',
+				          graph_filename, '-e',
+				          '-peacock', '0.1'
+				          ]
+				print(params)
+				subprocess.run(params)
+				with open(tempdir + "/split-graph.txt", "r") as f:
+					for line in f:
+						print(line[:-1])
+			except Exception as e:
+				# print('Error')
+				print(e)
+				exit(1)
+			finally:
+				os.chdir(old_dir)
+
+
+
 class GceAlgorithm(CoverAlgorithm):
 	def __init__(self, name='GCE', alpha=1.5):
+		super().__init__(name)
+		self.alpha = alpha
+
+	def __copy__(self):
+		return GceAlgorithm(self.name, self.alpha)
+
+	def create_cover(self):
+		with tempfile.TemporaryDirectory() as tempdir:
+			graph_filename = os.path.join(tempdir, 'network.edgelist')
+			cover_filename = os.path.join(tempdir, 'cover.txt')
+			cover_file = open(cover_filename, 'x')
+			graphio.writeGraph(self.graph, graph_filename,
+			                   fileformat=graphio.Format.EdgeListSpaceZero)
+			with self.timer:
+				subprocess.call(
+					[code_path + '/GCECommunityFinder/GCECommunityFinderUbuntu910',
+					 graph_filename, '4', '0.6', str(self.alpha), '.75'],
+					stdout=cover_file)
+			cover_file.close()
+			self.cover = graphio.CoverReader().read(cover_filename, self.graph)
+
+
+class GceNetworkitAlgorithm(CoverAlgorithm):
+	def __init__(self, name='GCE-NetworKit', alpha=1.5):
 		super().__init__(name)
 		self.alpha = alpha
 

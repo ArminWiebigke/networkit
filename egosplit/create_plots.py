@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from plot_scripts.read_data import read_data
 from plot_scripts.config import set_sns_style
 from plot_scripts.create_plots import run
