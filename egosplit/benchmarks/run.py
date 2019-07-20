@@ -219,7 +219,7 @@ def get_algos(store_ego_nets):
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
 	# for alpha in [0.8, 0.9, 1.0]:
 	# 	for min_clique in [3, 4]:
@@ -244,7 +244,7 @@ def get_algos(store_ego_nets):
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	# partition_algos['Infomap'] = [lambda g: clusterInfomap(g)]
+	partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
 	partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
 	# partition_algos['Leiden_Sig'] = [lambda g: partitionLeiden(g, 'significance')]
@@ -317,15 +317,15 @@ def get_ego_parameters(store_ego_nets):
 		'maxGroupsConsider': 5,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
-		'minEdgesToGroupSig': '1',  # TODO: should be 1 for optimal result, but 3 is must faster
+		'minEdgesToGroupSig': 1,
 		'sigSecondRoundStrat': 'updateCandidates',
-		'secondarySigExtRounds': '3',
+		'secondarySigExtRounds': 3,
 		'extendPartitionIterations': 4,
 		'onlyCheckSignOfMaxCandidates': 'No',
-		'evalSignFactor': '1',
+		'evalSignFactor': 10,
 	}
 
-	ego_parameters['b#'] = standard
+	# ego_parameters['b#'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
@@ -333,28 +333,62 @@ def get_ego_parameters(store_ego_nets):
 	ego_parameters['e#'] = {
 		**edge_scores_standard,
 	}
-	ego_parameters['b-s'] = {
-		**significance_scores_standard,
-	}
-	ego_parameters['b-s-max'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': '2',
-	}
-	ego_parameters['b-s-x1'] = {
-		**significance_scores_standard,
-		'addNodesFactor': 1,
-	}
-	ego_parameters['e-s1'] = {
-		**significance_scores_standard,
-		'extendStrategy': 'edgeScore',
-		'extendPartitionIterations': 2,
-	}
-	ego_parameters['e-s3'] = {
-		**significance_scores_standard,
-		'extendStrategy': 'edgeScore',
-		'extendPartitionIterations': 4,
-	}
+	# ego_parameters['b-s'] = {
+	# 	**significance_scores_standard,
+	# }
+	# ego_parameters['b-s-max1'] = {
+	# 	**significance_scores_standard,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 1,
+	# }
+	# ego_parameters['b-s-max2'] = {
+	# 	**significance_scores_standard,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 2,
+	# }
+	# ego_parameters['b-s-max4'] = {
+	# 	**significance_scores_standard,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 4,
+	# }
+	# ego_parameters['b-s-max8'] = {
+	# 	**significance_scores_standard,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 8,
+	# }
+	# ego_parameters['e-s1-x2'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'edgeScore',
+	# 	'extendPartitionIterations': 2,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 2,
+	# }
+	# ego_parameters['e-s1-x10'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'edgeScore',
+	# 	'extendPartitionIterations': 2,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 10,
+	# }
+	# ego_parameters['e-s3-x2'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'edgeScore',
+	# 	'extendPartitionIterations': 4,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 2,
+	# }
+	# ego_parameters['e-s3-x10'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'edgeScore',
+	# 	'extendPartitionIterations': 4,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 10,
+	# }
+	# ego_parameters['e-s3'] = {
+	# 	**significance_scores_standard,
+	# 	'extendStrategy': 'edgeScore',
+	# 	'extendPartitionIterations': 4,
+	# }
 	# ego_parameters['e-s'] = {
 	# 	**significance_scores_standard,
 	# }

@@ -9,6 +9,7 @@
 
 #include "ExtendSignificance.h"
 #include "../auxiliary/Timer.h"
+#include "../auxiliary/ParseString.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
 #include "../oslom/Stochastics.h"
 #include "../structures/AdjacencyArray.h"
@@ -27,7 +28,7 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Parti
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
 		  mergeGroups(parameters.at("signMerge") == "Yes"),
 		  sortGroupsStrat(parameters.at("sortGroups") == "significance"),
-		  maxSignificance(std::stod(parameters.at("maxSignificance"))),
+		  maxSignificance(Aux::stringToDouble(parameters.at("maxSignificance"))),
 		  maxGroupCnt(std::stoi(parameters.at("maxGroupsConsider"))),
 		  minEdgesToGroup(std::stoi(parameters.at("minEdgesToGroupSig"))) {
 	double maxSig = maxSignificance;
@@ -79,7 +80,7 @@ void ExtendSignificance::run() {
 	addTime(timer, "5    Sort candidates");
 
 	if (parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
-		double evalFactor = std::stod(parameters.at("evalSignFactor"));
+		double evalFactor = Aux::stringToDouble(parameters.at("evalSignFactor"));
 		count evalCandidates = evalFactor * maxExtendedNodes;
 		if (candidatesSorted.size() > evalCandidates)
 			candidatesSorted.resize(evalCandidates);
@@ -197,7 +198,7 @@ void ExtendSignificance::secondRound() {
 	if (strat == "updateCandidates") {
 		updateCandidates();
 	} else if (strat == "orderStat") {
-		orderStatPos = std::floor(std::stod(parameters.at("orderedStatPos")) * result.size());
+		orderStatPos = std::floor(Aux::stringToDouble(parameters.at("orderedStatPos")) * result.size());
 		if (orderStatPos == 0)
 			return;
 	} else {

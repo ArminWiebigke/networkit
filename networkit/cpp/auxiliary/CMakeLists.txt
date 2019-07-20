@@ -6,6 +6,7 @@ networkit_add_module(auxiliary
     Parallelism.cpp
     Random.cpp
     SignalHandling.cpp
+    ParseString.cpp
     Timer.cpp
     Timings.cpp
     UniformRandomSelector.cpp

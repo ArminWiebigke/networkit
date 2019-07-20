@@ -11,6 +11,7 @@
 
 
 #include "Enforce.h"
+#include <iostream>
 
 namespace Aux {
 namespace Parsing {

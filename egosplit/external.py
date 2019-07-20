@@ -8,6 +8,7 @@ import random
 import igraph
 import leidenalg
 import graph_tool
+import infomap
 
 from graph_tool.all import OverlapBlockState
 
@@ -17,20 +18,22 @@ from networkit import community
 from networkit import structures
 from networkit import none
 
-
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
 graphs_path = home_path + '/graphs'
 dev_null = open(os.devnull, 'w')
 
 
-def clusterBigClam(graph, numClus, minCom = 5, maxCom = 100):
+def clusterBigClam(graph, numClus, minCom=5, maxCom=100):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graphPath = os.path.join(tempdir, 'graph.edgelist.txt')
 		outPath = os.path.join(tempdir, 'cmtyvv.txt')
 		graphio.writeGraph(graph, graphPath, graphio.Format.EdgeListTabOne)
-		subprocess.call([code_path + '/snap/examples/bigclam/bigclam', '-o:' + tempdir + '/', '-i:' + graphPath, '-c:' + str(numClus), '-mc:' + str(minCom), '-xc:' + str(maxCom)])
-		return graphio.SNAPEdgeListPartitionReader().read(outPath, [(i + 1, i) for i in range(graph.upperNodeIdBound())], graph)
+		subprocess.call(
+			[code_path + '/snap/examples/bigclam/bigclam', '-o:' + tempdir + '/', '-i:' + graphPath,
+			 '-c:' + str(numClus), '-mc:' + str(minCom), '-xc:' + str(maxCom)])
+		return graphio.SNAPEdgeListPartitionReader().read(outPath, [(i + 1, i) for i in range(
+			graph.upperNodeIdBound())], graph)
 
 
 # http://www.mapequation.org/code.html
@@ -38,16 +41,42 @@ def clusterInfomap(G):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graph_filename = os.path.join(tempdir, 'network.txt')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-		seed = random.randint(-2**31, 2**31)
-		seed = 7645231
+		seed = random.randint(-2 ** 31, 2 ** 31)
+		# seed = 7645231
 		subprocess.call([code_path + '/infomap/Infomap', '-s', str(seed), '-2', '-z',
 		                 ('-d' if G.isDirected() else '-u'), '--clu', graph_filename, tempdir],
 		                stdout=dev_null)
-		result = community.readCommunities(os.path.join(tempdir, 'network.clu'), format='edgelist-s0')
+		result = community.readCommunities(os.path.join(tempdir, 'network.clu'),
+		                                   format='edgelist-s0')
 		while result.numberOfElements() < G.upperNodeIdBound():
 			result.toSingleton(result.extend())
 
 		return result
+
+
+# http://www.mapequation.org/code.html
+def partitionInfomap(G):
+	seed = random.randint(-2 ** 31, 2 ** 31)
+	# seed = 7645231
+	infomapWrapper = infomap.Infomap('-s ' + str(seed)
+	                                 + (' -d' if G.isDirected() else ' -u')
+	                                 + ' -2'
+	                                 + ' -z'
+	                                 )
+	for e in G.edges():
+		infomapWrapper.addLink(e[0], e[1])
+	infomapWrapper.run()
+	# infomapWrapper.
+
+	partition = structures.Partition(G.upperNodeIdBound())
+	partition.setUpperBound(G.upperNodeIdBound())
+	for node in infomapWrapper.iterLeafNodes():
+		partition.addToSubset(node.moduleIndex(), node.physicalId)
+
+	for u in G.nodes():
+		if partition.subsetOf(u) == none:
+			partition.toSingleton(u)
+	return partition
 
 
 def clusterLouvain(G):
@@ -58,7 +87,8 @@ def clusterLouvain(G):
 		partition_file = open(partition_filename, 'x')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
 		subprocess.call([code_path + '/louvain/convert', '-i', graph_filename, '-o', bin_filename])
-		subprocess.call([code_path + '/louvain/community', bin_filename, '-l', '-1'], stdout=partition_file)
+		subprocess.call([code_path + '/louvain/community', bin_filename, '-l', '-1'],
+		                stdout=partition_file)
 		partition_file.close()
 		result = community.LouvainPartitionReader().read(partition_filename)
 		while result.numberOfElements() < G.upperNodeIdBound():
@@ -118,7 +148,8 @@ def clusterMOSES(G):
 		graph_filename = os.path.join(tempdir, 'network.dat')
 		output_filename = os.path.join(tempdir, 'output.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-		subprocess.call([code_path + '/MOSES/moses-binary-linux-x86-64', graph_filename, output_filename])
+		subprocess.call(
+			[code_path + '/MOSES/moses-binary-linux-x86-64', graph_filename, output_filename])
 		result = graphio.CoverReader().read(output_filename, G)
 		return result
 
@@ -181,7 +212,6 @@ def partitionLeiden(G, partition_type_name):
 			raise RuntimeError
 		la_partition = leidenalg.find_partition(graph_i, partition_type)
 		partition = convertLeidenPartition(G, la_partition, graph_i)
-		# TODO: Something with the partition is wrong.
 	except Exception as e:
 		print(e)
 		exit(1)
@@ -192,7 +222,7 @@ def leidenSignificance(G):
 	graph_i = convertToIgraph(G)
 	optimiser = leidenalg.Optimiser()
 	profile = optimiser.resolution_profile(graph_i, leidenalg.CPMVertexPartition,
-	                                       resolution_range=(0,1), linear_bisection=False,
+	                                       resolution_range=(0, 1), linear_bisection=False,
 	                                       min_diff_resolution=0.01)
 
 	best_p = None
@@ -209,13 +239,11 @@ def leidenSignificance(G):
 
 
 def convertToIgraph(G):
-	with tempfile.TemporaryDirectory() as tempdir:
-		graph_filename = os.path.join(tempdir, 'graph.dat')
-		# graph_writer = graphio.EdgeListWriter(' ', 0)
-		graph_writer = graphio.GMLGraphWriter()
-		graph_writer.write(G, graph_filename)
-		graph_i = igraph.Graph.Read_GML(graph_filename)
-		return graph_i
+	graph = igraph.Graph.TupleList(G.edges(), vertex_name_attr='id')
+	for u in G.nodes():
+		if G.degree(u) == 0:
+			graph.add_vertex(name=u, id=u)
+	return graph
 
 
 def convertLeidenPartition(G, la_partition, graph_i):
@@ -250,7 +278,8 @@ def clusterPeacock(G, part_algorithm):
 
 # https://sites.google.com/site/andrealancichinetti/files
 def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500, om=3, C=None):
-	args = [code_path + '/lfr_graph_generator/benchmark', '-N', N, '-k', k, '-maxk', maxk, '-mu', mu, '-t1', t1, '-t2', t2, '-minc', minc, '-maxc', maxc]
+	args = [code_path + '/lfr_graph_generator/benchmark', '-N', N, '-k', k, '-maxk', maxk, '-mu',
+	        mu, '-t1', t1, '-t2', t2, '-minc', minc, '-maxc', maxc]
 	if on > 0:
 		args.extend(['-on', on, '-om', om])
 	if C is not None:
@@ -261,7 +290,7 @@ def genLFR(N=1000, k=25, maxk=50, mu=0.01, t1=2, t2=1, minc=20, maxc=50, on=500,
 		try:
 			os.chdir(tempdir)
 			with open('time_seed.dat', 'w') as f:
-				f.write(str(random.randint(0, 2**31)))
+				f.write(str(random.randint(0, 2 ** 31)))
 			subprocess.call(map(str, args), stdout=dev_null)
 		except:
 			print('Error')
@@ -298,7 +327,8 @@ def calc_NMI(graph, cover, ref_cover):
 					if com is not '':
 						f.write(com + '\n')
 			try:
-				out = subprocess.check_output([code_path + '/Overlapping-NMI/onmi', 'cover.dat', 'ref_cover.dat'])
+				out = subprocess.check_output(
+					[code_path + '/Overlapping-NMI/onmi', 'cover.dat', 'ref_cover.dat'])
 				out_lines = out.splitlines()
 				nmi_line = out_lines[0]
 				nmi_val = float(nmi_line.split()[1])
@@ -379,33 +409,38 @@ def remove_small_communities(filename):
 
 # https://snap.stanford.edu/data/
 def getAmazonGraph5000(clean=False):
-	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.top5000.cmty.txt'
 	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
 def getAmazonGraphAll(clean=False):
-	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.all.dedup.cmty.txt'
 	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
 def getDBLPGraph():
-	g = graphio.readGraph(graphs_path + '/com-dblp.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	g = graphio.readGraph(graphs_path + '/com-dblp.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
 	c = graphio.CoverReader().read(graphs_path + '/com-dblp.top5000.cmty.txt', g)
 	return g, c
 
 
 def getLiveJournalGraph():
-	g = graphio.readGraph(graphs_path + '/com-lj.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	g = graphio.readGraph(graphs_path + '/com-lj.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
 	c = graphio.CoverReader().read(graphs_path + '/com-lj.top5000.cmty.txt', g)
 	return g, c
 
 
 def getOrkutGraph():
-	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt', fileformat=graphio.Format.EdgeListTabZero)
+	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
 	c = graphio.CoverReader().read(graphs_path + '/com-orkut.top5000.cmty.txt', g)
 	return g, c
 
@@ -435,6 +470,6 @@ def calc_entropy(G, cover, **entropy_args):
 		entropy = block_state_b.entropy(**entropy_args)
 		print('Cover entropy:', entropy)
 
-		# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
-		# print('Minimize:', min_bm.entropy(**entropy_args))
+	# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
+	# print('Minimize:', min_bm.entropy(**entropy_args))
 	return entropy

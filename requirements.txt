@@ -4,3 +4,4 @@ sklearn
 Cython
 python-igraph
 leidenalg
+infomap

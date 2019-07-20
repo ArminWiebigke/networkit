@@ -4,8 +4,8 @@ from .config import metric_names
 from .draw_plot import make_plot, PlotType
 
 # algo_matches = [
-# 	# "",
-# 	# "Ego",
+	# "",
+	# "Ego",
 # 	# "_b#",
 # 	"_e#",
 # 	# "e-score",
@@ -35,25 +35,25 @@ ego_metrics = [
 	"community_cohesion",
 	"partition_exclusivity",
 	"ego_partition_score_harm",
-	"ego_partition_score_arit",
-	"merged_external_nodes",
-	"parts_per_comm",
-	"comms_per_part",
+	# "ego_partition_score_arit",
+	# "merged_external_nodes",
+	# "parts_per_comm",
+	# "comms_per_part",
 	"coverage",
 	"extended_nodes",
 	"external_nodes",
 	"external_nodes_added",
-	"external_nodes_added_total",
+	# "external_nodes_added_total",
 	"good_personas",
-	"strong_personas",
-	"persona_score",
+	# "strong_personas",
+	# "persona_score",
 	# "conductance",
-	# "conductance_1.5",
+	"conductance_1.5",
 	# "conductance_ratio",
 	# "intra_edges",
-	# "intra_ratio",
-	# "num_components",
-	# "separate_nodes",
+	"intra_ratio",
+	"num_components",
+	"separate_nodes",
 	# "conductance_comm",
 ]
 
@@ -61,7 +61,7 @@ algo_sets = {
 	# "base": ["b#"],
 	# "edges": ["e#"],
 	# "signif": ["b-s"],
-	"all": [""],
+	"all": ["Ego"],
 }
 
 graph_sets = {

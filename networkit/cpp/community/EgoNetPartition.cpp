@@ -14,6 +14,7 @@
 #include "../oslom/Stochastics.h"
 #include "ExtendSignificance.h"
 #include "ExtendEdges.h"
+#include "../auxiliary/ParseString.h"
 
 namespace NetworKit {
 
@@ -165,8 +166,8 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	/**********************************************************************************************
 	 **                           Get node candidates with scores                                **
 	 **********************************************************************************************/
-	double addNodesFactor = std::stod(parameters.at("addNodesFactor"));
-	double addNodesExponent = std::stod(parameters.at("addNodesExponent"));
+	double addNodesFactor = Aux::stringToDouble(parameters.at("addNodesFactor"));
+	double addNodesExponent = Aux::stringToDouble(parameters.at("addNodesExponent"));
 	count extendNodeCnt = std::ceil(
 			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	std::vector<std::pair<node, double>> nodeScores; // node and its score

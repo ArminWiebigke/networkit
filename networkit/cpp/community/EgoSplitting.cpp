@@ -22,6 +22,7 @@
 #include "PLM.h"
 #include "EgoNetPartition.h"
 #include "../oslom/Stochastics.h"
+#include "../auxiliary/ParseString.h"
 
 #define true_or_throw(cond, msg) if (!cond) throw std::runtime_error(msg)
 #define W(x) #x << "=" << x << ", "
@@ -125,7 +126,7 @@ void EgoSplitting::run() {
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 	timer.start();
-	if (std::stod("0.3") == 0)
+	if (Aux::stringToDouble("0.3") == 0)
 		throw std::runtime_error("Can't convert numbers because of wrong locale!");
 	if (G.numberOfSelfLoops() > 0)
 		throw std::runtime_error("No self-loops allowed!");
@@ -369,7 +370,7 @@ void EgoSplitting::connectPersonas() {
 	};
 
 	// Connect personas of each node
-	double weightFactor = std::stod(parameters.at("personaEdgeWeightFactor"));
+	double weightFactor = Aux::stringToDouble(parameters.at("personaEdgeWeightFactor"));
 	G.forNodes([&](node u) {
 		for (auto edge : personaEdges[u]) {
 			personaGraph.addEdge(getPersona(u, edge.firstNode), getPersona(u, edge.secondNode),
