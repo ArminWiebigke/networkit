@@ -4,7 +4,7 @@ import os
 
 from egosplit.plot_scripts.read_data import read_data
 from egosplit.plot_scripts.config import set_sns_style
-from egosplit.plot_scripts.configure_plots import run
+from egosplit.plot_scripts.create_plots import run
 
 dirs = [
 	'plots/communities',
