@@ -9,8 +9,8 @@
 
 namespace NetworKit {
 
-ExtendEdges::ExtendEdges(const EgoNetData &egoNetData)
-		: ExtendScore(egoNetData) {
+ExtendEdges::ExtendEdges(const EgoNetData &egoNetData, count maxCandidates)
+		: ExtendScore(egoNetData, maxCandidates) {
 
 }
 
@@ -59,12 +59,18 @@ void ExtendEdges::run() {
 	result.reserve(candidates.size());
 	for (node v : candidates) {
 		double numEdges = edgeScores[v];
-		double score = normalizeScore(v, numEdges);
-		if (numEdges < 3)
-			score = 0.0;
-		result.emplace_back(v, score);
+		if (numEdges >= 3) {
+			double score = normalizeScore(v, numEdges);
+			result.emplace_back(v, score);
+		}
 	}
 	addTime(timer, "7    Calculate score");
+	std::sort(result.begin(), result.end(), [](NodeScore a, NodeScore b){
+		return a.second > b.second;
+	});
+	if (result.size() > maxExtendedNodes)
+		result.resize(maxExtendedNodes);
+	addTime(timer, "9    Take best candidates");
 }
 
 double ExtendEdges::normalizeScore(node v, double score) const {

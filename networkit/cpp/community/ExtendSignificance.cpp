@@ -19,9 +19,11 @@
 
 namespace NetworKit {
 
-ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
-                                       const Partition &basePartition)
-		: ExtendScore(egoNetData), basePartition(basePartition), sigTable(egoNetData.sigTable),
+ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Partition &basePartition,
+                                       count maxCandidates)
+		: ExtendScore(egoNetData, maxCandidates),
+		  basePartition(basePartition),
+		  sigTable(egoNetData.sigTable),
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
 		  mergeGroups(parameters.at("signMerge") == "Yes"),
 		  sortGroupsStrat(parameters.at("sortGroups") == "significance"),
@@ -75,6 +77,14 @@ void ExtendSignificance::run() {
 	// Sort candidates by number of edges into the egoNet, filter bad candidates (less than 3 edges)
 	candidatesSorted = sortCandidatesByEdges(candidates); // TODO: Why do we have to sort?
 	addTime(timer, "5    Sort candidates");
+
+	if (parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
+		double evalFactor = std::stod(parameters.at("evalSignFactor"));
+		count evalCandidates = evalFactor * maxExtendedNodes;
+		if (candidatesSorted.size() > evalCandidates)
+			candidatesSorted.resize(evalCandidates);
+	}
+
 
 //	for (node v : directNeighbors)
 //			directedG.forEdgesOf(v, countEdge);
@@ -166,13 +176,6 @@ void ExtendSignificance::updateCandidates() {
 		});
 		edgesToGroups[w].clear();
 	}
-	// Remove added nodes as candidates
-	auto newEnd = std::remove_if(candidatesSorted.begin(), candidatesSorted.end(),
-	                             [&](std::pair<count, node> scorePair) {
-		                             return addedCandidates.count(scorePair.second) > 0;
-	                             });
-	candidatesSorted.resize(newEnd - candidatesSorted.begin());
-	addedCandidates.clear();
 }
 
 void ExtendSignificance::createCoarseGraph() {
@@ -194,24 +197,23 @@ void ExtendSignificance::secondRound() {
 	if (strat == "updateCandidates") {
 		updateCandidates();
 	} else if (strat == "orderStat") {
-		std::unordered_set<node> addedCandidates;
-		for (const auto &pair : result) {
-			node w = pair.first;
-			addedCandidates.insert(w);
-		}
-		// Remove added nodes as candidates
-		auto newEnd = std::remove_if(candidatesSorted.begin(), candidatesSorted.end(),
-		                             [&](std::pair<count, node> scorePair) {
-			                             return addedCandidates.count(scorePair.second) > 0;
-		                             });
-		candidatesSorted.resize(newEnd - candidatesSorted.begin());
 		orderStatPos = std::floor(std::stod(parameters.at("orderedStatPos")) * result.size());
 		if (orderStatPos == 0)
 			return;
 	} else {
 		throw std::runtime_error(strat + " is not a valid strategy for the second signif. round!");
 	}
+	removeAddedAsCandidates();
 	checkCandidates("8");
+}
+
+void ExtendSignificance::removeAddedAsCandidates() {
+	auto newEnd = std::remove_if(candidatesSorted.begin(), candidatesSorted.end(),
+	                             [&](std::pair<count, node> scorePair) {
+		                             return addedCandidates.count(scorePair.second) > 0;
+	                             });
+	candidatesSorted.resize(newEnd - candidatesSorted.begin());
+	addedCandidates.clear();
 }
 
 std::vector<std::pair<count, node>>
@@ -318,10 +320,14 @@ ExtendSignificance::checkCandidates(const std::string &t_prefix) {
 	timer.start();
 
 	for (const auto &pair : candidatesSorted) {
+		if (enoughCandidates())
+			break;
 		node v = pair.second;
 		checkCandidate(t_prefix, timer, v);
 	}
 }
+
+bool ExtendSignificance::enoughCandidates() const { return result.size() >= maxExtendedNodes; }
 
 void
 ExtendSignificance::checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v) {
@@ -471,6 +477,11 @@ ExtendSignificance::calcScore(int nodeDegree, int kIn, int grOut, int groupExtSt
 	                  nodeDegree; // Remove node stubs from the free external stubs (?)
 //	std::cout << W(grOut) << W(groupExtStubs) << W(nodeDegree) << W(openStubs) << std::endl;
 	double rScore = Stochastics::compute_simple_fitness(kIn, grOut, openStubs, nodeDegree);
+
+	// TODO: Possible speedup: for each node degree (and group), store the largest kIn that
+	//   was not significant. If the current kIn is smaller than the stored one, we know that
+	//   the current candidate is not significant
+	//   Could do the same in the other direction, store the smalles kIn that was significant
 
 	double returnVal = 1.0;
 	if (useSigMemo && orderStatPos == 0) {

@@ -97,17 +97,19 @@ void EgoSplitting::init() {
 	parameters["orderedStatPos"] = "0.1";
 	parameters["sortGroups"] = "No";
 	parameters["useSignInterpol"] = "Yes";
-	parameters["subtractNodeDegree"] = "No";
 	parameters["maxGroupsConsider"] = "5";
 	parameters["signMerge"] = "Yes";
 	parameters["useSigMemo"] = "Yes";
 	parameters["minEdgesToGroupSig"] = "1";
 	parameters["sigSecondRoundStrat"] = "updateCandidates";
 	parameters["secondarySigExtRounds"] = "3";
+	parameters["onlyCheckSignOfMaxCandidates"] = "No";
+	parameters["evalSignFactor"] = "1";
 
 	// Parameters for edgeScores
 	parameters["extendStrategy"] = "edgeScore";
 	parameters["scoreStrategy"] = "score";
+//	parameters["extendPartitionIterations"] = "1";
 
 	// Test parameters
 //	parameters["storeEgoNet"] = "Yes";
@@ -214,6 +216,11 @@ void EgoSplitting::createEgoNets() {
 
 
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
+	// Only store 1000 ego-nets (expected)
+	double storePercnt = 1000.0 / G.numberOfNodes();
+	if (Aux::Random::real() > storePercnt)
+		return;
+
 	// Get EgoNet with gloabl node ids
 	Graph egoNetGraph(G.upperNodeIdBound(), egoGraph.isWeighted());
 	egoGraph.forEdges([&](node v, node w, edgeweight weight) {

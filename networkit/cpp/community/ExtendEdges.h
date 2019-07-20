@@ -16,7 +16,7 @@ namespace NetworKit {
 
 class ExtendEdges : public ExtendScore {
 public:
-	explicit ExtendEdges(const EgoNetData &egoNetData);
+	explicit ExtendEdges(const EgoNetData &egoNetData, count maxCandidates);
 
 	void run() override;
 

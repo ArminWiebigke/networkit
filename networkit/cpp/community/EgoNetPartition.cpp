@@ -165,12 +165,16 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	/**********************************************************************************************
 	 **                           Get node candidates with scores                                **
 	 **********************************************************************************************/
+	double addNodesFactor = std::stod(parameters.at("addNodesFactor"));
+	double addNodesExponent = std::stod(parameters.at("addNodesExponent"));
+	count extendNodeCnt = std::ceil(
+			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	std::vector<std::pair<node, double>> nodeScores; // node and its score
 	std::unique_ptr<ExtendScore> extendScore;
 	if (extendStrategy == "edgeScore") {
-		extendScore.reset(new ExtendEdges(egoNetData));
+		extendScore.reset(new ExtendEdges(egoNetData, extendNodeCnt));
 	} else if (extendStrategy == "significance") {
-		extendScore.reset(new ExtendSignificance(egoNetData, result));
+		extendScore.reset(new ExtendSignificance(egoNetData, result, extendNodeCnt));
 	} else
 		throw std::runtime_error(extendStrategy
 		                         + " is not a valid strategy to extend the Ego-Net!");
@@ -202,22 +206,17 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	/**********************************************************************************************
 	 **                                  Add nodes to ego-net                                    **
 	 **********************************************************************************************/
-	double addNodesFactor = std::stod(parameters.at("addNodesFactor"));
-	double addNodesExponent = std::stod(parameters.at("addNodesExponent"));
-	count extendNodeCnt = std::ceil(
-			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
-
-	// Take the nodes with the best scores
-	std::sort(nodeScores.begin(), nodeScores.end(),
-	          [](std::pair<node, double> a, std::pair<node, double> b) {
-		          return a.second > b.second;
-	          });
 	if (nodeScores.size() > extendNodeCnt)
-		nodeScores.resize(extendNodeCnt);
-	addTime(timer, "3" + std::to_string(it_char) + "4    Sort candidates");
+		throw std::runtime_error("Too many candidates!");
+	// Take the nodes with the best scores
+//	std::sort(nodeScores.begin(), nodeScores.end(),
+//	          [](std::pair<node, double> a, std::pair<node, double> b) {
+//		          return a.second > b.second;
+//	          });
+//	if (nodeScores.size() > extendNodeCnt)
+//		nodeScores.resize(extendNodeCnt);
+//	addTime(timer, "3" + std::to_string(it_char) + "4    Sort candidates");
 	for (auto pair : nodeScores) {
-		if (pair.second <= 0)
-			break;
 		egoMapping.addNode(pair.first);
 		egoGraph.addNode();
 	}

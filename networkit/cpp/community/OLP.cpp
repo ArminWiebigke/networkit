@@ -1,9 +1,10 @@
 /*
  * OLP.cpp
  *
- *  Created on: 07.12.2012
- *      Author: Christian Staudt (christian.staudt@kit.edu)
+ * Created on: 2019-01-28
+ * Author: Armin Wiebigke
  */
+
 
 #include "OLP.h"
 

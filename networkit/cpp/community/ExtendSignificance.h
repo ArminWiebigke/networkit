@@ -37,8 +37,8 @@ struct GroupStubs {
 class ExtendSignificance : public ExtendScore {
 
 public:
-	ExtendSignificance(const EgoNetData &egoNetData,
-	                   const Partition &basePartition);
+	ExtendSignificance(const EgoNetData &egoNetData, const Partition &basePartition,
+	                   count maxCandidates);
 
 	void run() override;
 
@@ -107,6 +107,10 @@ private:
 	checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v);
 
 	void updateCandidates();
+
+	bool enoughCandidates() const;
+
+	void removeAddedAsCandidates();
 };
 
 } /* namespace NetworKit */
