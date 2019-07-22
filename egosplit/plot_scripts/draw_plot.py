@@ -6,9 +6,8 @@ from enum import Enum
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
 	StrMethodFormatter, Formatter
 
-from plot_scripts.config import set_layout
-from plot_scripts.read_data import create_column_if_missing
-from .config import file_prefix
+from .config import set_layout
+from .read_data import create_column_if_missing
 
 
 class PlotType(Enum):
@@ -20,6 +19,7 @@ class PlotType(Enum):
 
 # Create a plot
 def make_plot(data,
+              output_dir,
               filter_data=None,
               graph_filter='',
               algo_matches='',
@@ -58,6 +58,8 @@ def make_plot(data,
 	# 	hue = hue['name']
 
 	# Create plots
+	if not output_dir[-1] == "/":
+		output_dir += "/"
 	def create_plot(graph_data):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
@@ -74,7 +76,7 @@ def make_plot(data,
 		set_ax(ax, ax_set, fig, x)
 		clean_legend(algo_matches, ax, remove_algo_part)
 		fig.suptitle(title)
-		fig.savefig(file_prefix + file_name + '.pdf')
+		fig.savefig(output_dir + file_name + '.pdf')
 		plt.close(fig)
 
 	# Make one plot per graph if graph is not on the x-axis

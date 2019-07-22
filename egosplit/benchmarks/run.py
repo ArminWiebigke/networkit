@@ -139,12 +139,12 @@ def get_graphs(iterations):
 		on = N
 		name = 'om_{}'.format(om)
 		scale_om_graph(on, om, name)
-	# for overlap in range(20, 100, 20):
-	# 	on = N * overlap / 100
-	# 	avg_comms = 1 + overlap / 100
-	# 	om = 2
-	# 	name = 'om_{:.2f}'.format(avg_comms)
-	# 	scale_om_graph(on, om, name)
+	for overlap in range(20, 100, 20):
+		on = N * overlap / 100
+		avg_comms = 1 + overlap / 100
+		om = 2
+		name = 'om_{:.2f}'.format(avg_comms)
+		scale_om_graph(on, om, name)
 
 	# # GCE paper
 	# for om in range(1, 6):
@@ -178,17 +178,17 @@ def get_graphs(iterations):
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
 
-	# # Scale mixing factor
-	# for mu_factor in range(10, 71, 10):
-	# 	om = 3
-	# 	mu = 0.01 * mu_factor
-	# 	k = om * 15  # Number of neighbors per community independent of mixing factor
-	# 	k /= (1 - mu)
-	# 	maxk = 1.5 * k  # Scale max degree with average degree
-	# 	name = 'mu_' + str(mu_factor).rjust(2, '0')
-	# 	LFR_graph_args[name] = {
-	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
-	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
+	# Scale mixing factor
+	for mu_factor in range(10, 71, 10):
+		om = 3
+		mu = 0.01 * mu_factor
+		k = om * 15  # Number of neighbors per community independent of mixing factor
+		k /= (1 - mu)
+		maxk = 1.5 * k  # Scale max degree with average degree
+		name = 'mu_' + str(mu_factor).rjust(2, '0')
+		LFR_graph_args[name] = {
+			'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
+			't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
 
 	# LFR_graph_args['test'] = {
 	# 	'N': 20000, 'k': 60, 'maxk': 90, 'minc': 20, 'maxc': 100,
@@ -244,9 +244,9 @@ def get_algos(store_ego_nets):
 	# partition_algos['LPPotts_par'] = [
 	# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
-	partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
+	# partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
-	partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
+	# partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
 	# partition_algos['Leiden_Sig'] = [lambda g: partitionLeiden(g, 'significance')]
 	# partition_algos['Leiden_SigRes'] = [lambda g: leidenSignificance(g)]
 
@@ -330,32 +330,37 @@ def get_ego_parameters(store_ego_nets):
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
 	# }
-	ego_parameters['e#'] = {
-		**edge_scores_standard,
+	# ego_parameters['e#'] = {
+	# 	**edge_scores_standard,
+	# }
+	ego_parameters['b-s'] = {
+		**significance_scores_standard,
 	}
-	# ego_parameters['b-s'] = {
-	# 	**significance_scores_standard,
-	# }
-	# ego_parameters['b-s-max1'] = {
-	# 	**significance_scores_standard,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 1,
-	# }
-	# ego_parameters['b-s-max2'] = {
-	# 	**significance_scores_standard,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 2,
-	# }
-	# ego_parameters['b-s-max4'] = {
-	# 	**significance_scores_standard,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 4,
-	# }
-	# ego_parameters['b-s-max8'] = {
-	# 	**significance_scores_standard,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 8,
-	# }
+	ego_parameters['b-s-max1'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': 1,
+	}
+	ego_parameters['b-s-max2'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': 2,
+	}
+	ego_parameters['b-s-max3'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': 3,
+	}
+	ego_parameters['b-s-max5'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': 5,
+	}
+	ego_parameters['b-s-max10'] = {
+		**significance_scores_standard,
+		'onlyCheckSignOfMaxCandidates': 'Yes',
+		'evalSignFactor': 10,
+	}
 	# ego_parameters['e-s1-x2'] = {
 	# 	**significance_scores_standard,
 	# 	'extendStrategy': 'edgeScore',

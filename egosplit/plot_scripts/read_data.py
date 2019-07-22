@@ -2,8 +2,9 @@ import pandas as pd
 from .extract_data_column import create_new_column
 
 
-def read_data():
-	result_dir = "results/"
+def read_data(result_dir):
+	if not result_dir[-1] == "/":
+		result_dir += "/"
 	data = dict()
 	for name in [
 		"metrics",

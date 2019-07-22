@@ -27,7 +27,7 @@ def print_headers(result_dir, metrics):
 
 # Print a summary of the metric results in a compact form (table)
 def print_compact_results(results, result_dir):
-	output_file = open(result_dir + "compact.results", "a")
+	output_file = open(result_dir + "compact.result", "a")
 	print_results_compact(results, output_file)
 
 

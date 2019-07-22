@@ -4,8 +4,8 @@ from .config import metric_names
 from .draw_plot import make_plot, PlotType
 
 # algo_matches = [
-	# "",
-	# "Ego",
+# "",
+# "Ego",
 # 	# "_b#",
 # 	"_e#",
 # 	# "e-score",
@@ -18,7 +18,7 @@ from .draw_plot import make_plot, PlotType
 remove_algo_part = [
 	"Ego_",
 	# "PLM_",
-	"Leiden_Mod_",
+	# "Leiden_Mod_",
 	"ean-merge,overl",
 	"ean",
 	"_remv-overl",
@@ -58,10 +58,10 @@ ego_metrics = [
 ]
 
 algo_sets = {
-	# "base": ["b#"],
-	# "edges": ["e#"],
-	# "signif": ["b-s"],
-	"all": ["Ego"],
+	"base": ["b#"],
+	"edges": ["e#"],
+	"signif": ["b-s"],
+	# "all": ["Ego"],
 }
 
 graph_sets = {
@@ -94,18 +94,18 @@ graph_sets = {
 
 
 # TODO: Create new columns once, update data
-def run(data):
+def run(data, output_dir):
 	plot_funcs = [
 		metric_plots,
 		num_comms_plots,
 		ego_net_plots,
 		# ego_net_plots_per_graph,
-		comm_sizes_plots,
+		# comm_sizes_plots,
 	]
 	for plot_func in plot_funcs:
 		for graph_set_name, graph_set_params in graph_sets.items():
 			for algo_set_name, algo_match in algo_sets.items():
-				params = (data, graph_set_name, graph_set_params, algo_set_name,
+				params = (data, output_dir, graph_set_name, graph_set_params, algo_set_name,
 				          algo_match)
 				plot_func(*params)
 
@@ -113,7 +113,7 @@ def run(data):
 # *****************************************************************************
 # *                                  Metrics                                  *
 # *****************************************************************************
-def metric_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_match):
+def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_name, algo_match):
 	print("Plots for Metrics")
 	metrics = [
 		'time',
@@ -128,6 +128,7 @@ def metric_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_mat
 	for metric in metrics:
 		# break
 		make_plot(
+			output_dir=output_dir,
 			plot_type=(PlotType.bar if 'bar_plot' in graph_set_params else PlotType.line),
 			data=data["metrics"],
 			graph_filter=graph_set_params["graph_filter"],
@@ -153,52 +154,13 @@ def metric_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_mat
 		)
 
 
-# make_plot(
-# 	data=data["metrics"],
-# 	graphs="LFR_om",
-# 	xlabel="om",
-# 	algo_match="_triangles",
-# 	title=metric_names[metric]["description"] + ", extend(triangles)",
-# 	file_name="metrics/" + metric_names[metric]["file_name"] + "_triangles",
-# 	x="graph",
-# 	y=metric,
-# 	hue="algo",
-# 	plot_args={
-# 	},
-# 	ax_set={
-# 		"ylim": metric_names[metric]["ylim"],
-# 		"ylabel": metric_names[metric]["y_val"]
-# 	}
-# )
-
-# metric = "nmi"
-# x = {"name": "factor", "create_from": "algo", "str_start": "_f-", "str_end": "*"}
-# hue = {"name": "exponent", "create_from": "algo", "str_start": "*e-", "str_end": ""}
-# make_plot(
-# 	data=data["metrics"],
-# 	graphs="LFR_om",
-# 	algo_match="Ego_PLM_",
-# 	title=metric_names[metric]["description"],
-# 	file_name="2_dim_metrics/" + metric_names[metric]["file_name"],
-# 	x=x,
-# 	y=metric,
-# 	hue=hue,
-# 	plot_args={
-#
-# 	},
-# 	ax_set={
-# 		"ylim": metric_names[metric]["ylim"],
-# 		"ylabel": metric_names[metric]["y_val"]
-# 	}
-# )
-
-
 # *****************************************************************************
 # *                                  Comm sizes                               *
 # *****************************************************************************
-def comm_sizes_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_match):
+def comm_sizes_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_name, algo_match):
 	print("Plots for comm sizes")
 	make_plot(
+		output_dir=output_dir,
 		plot_type=PlotType.swarm,
 		data=data["cover_comm_sizes"],
 		graph_filter=graph_set_params["graph_filter"],
@@ -227,9 +189,10 @@ def comm_sizes_plots(data, graph_set_name, graph_set_params, algo_set_name, algo
 # *****************************************************************************
 # *                            Number of communities                          *
 # *****************************************************************************
-def num_comms_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_match):
+def num_comms_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_name, algo_match):
 	print("Plots for num comms")
 	make_plot(
+		output_dir=output_dir,
 		# plot_type=PlotType.bar,
 		data=data["cover_num_comms"],
 		graph_filter=graph_set_params["graph_filter"],
@@ -253,10 +216,11 @@ def num_comms_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_
 # *****************************************************************************
 # *                             Ego-Net partition                             *
 # *****************************************************************************
-def ego_net_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_match):
+def ego_net_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_name, algo_match):
 	print("Plots for ego-net metrics")
 	for ego_metric in ego_metrics:
 		make_plot(
+			output_dir=output_dir,
 			plot_type=(PlotType.bar if 'bar_plot' in graph_set_params else PlotType.line),
 			data=data["ego_net_metrics"],
 			filter_data=("metric_name in \"{}\"".format(ego_metric)),
@@ -274,6 +238,7 @@ def ego_net_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_ma
 			hue="algo",
 			plot_args={
 				# "style": "metric_name",
+				"ci": "sd",
 			},
 			ax_set={
 				# "ylim": (0, 1.05),
@@ -289,6 +254,7 @@ def ego_net_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_ma
 # 	hue = {"name": "exponent", "create_from": "algo", "str_start": "*e-",
 # 	       "str_end": ""}
 # 	make_plot(
+# 		output_dir=output_dir,
 # 		data=data["ego_net_metrics"].query("metric_name in @ego_metric"),
 # 		graphs="LFR_om",
 # 		algo_match=algo_matches,
@@ -305,12 +271,13 @@ def ego_net_plots(data, graph_set_name, graph_set_params, algo_set_name, algo_ma
 # 	)
 
 
-def ego_net_plots_per_graph(data, graph_set_name, graph_set_params, algo_set_name,
+def ego_net_plots_per_graph(data, output_dir, graph_set_name, graph_set_params, algo_set_name,
                             algo_match):
 	# Metrics per Ego-Net
 	print("Plots for ego-net metrics per graph")
 	for ego_metric in ego_metrics:
 		make_plot(
+			output_dir=output_dir,
 			# plot_type=PlotType.bar,
 			data=data["ego_net_ego_metrics"],
 			filter_data=("metric_name in \"{}\"".format(ego_metric)),

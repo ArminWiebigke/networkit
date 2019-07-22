@@ -198,6 +198,7 @@ def convertCoverToPartition(G, cover):
 
 
 # https://github.com/vtraag/leidenalg
+# install with pip
 def partitionLeiden(G, partition_type_name):
 	try:
 		graph_i = convertToIgraph(G)
