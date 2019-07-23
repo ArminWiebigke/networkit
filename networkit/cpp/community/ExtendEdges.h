@@ -25,6 +25,7 @@ public:
 	std::string toString() const override;
 
 private:
+	std::vector<double> &nodeScores;
 	double normalizeScore(node v, double score) const;
 };
 

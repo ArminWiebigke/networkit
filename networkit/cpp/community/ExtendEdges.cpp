@@ -10,15 +10,13 @@
 namespace NetworKit {
 
 ExtendEdges::ExtendEdges(const EgoNetData &egoNetData, count maxCandidates)
-		: ExtendScore(egoNetData, maxCandidates) {
+		: ExtendScore(egoNetData, maxCandidates), nodeScores(egoNetData.nodeScores) {
 
 }
 
 void ExtendEdges::run() {
 	Aux::Timer timer;
 	timer.start();
-	std::vector<double> edgeScores(G.upperNodeIdBound()); //TODO: Don't allocate this every time
-	addTime(timer, "1    Create vector");
 	std::vector<node> candidates;
 	// Search for all edges to neighbors of neighbors
 	std::vector<node> directNeighbors = egoMapping.globalNodes();
@@ -26,9 +24,9 @@ void ExtendEdges::run() {
 		return egoMapping.isMapped(x);
 	};
 	auto countEdges = [&](node v, node w, edgeweight weight) {
-		if (edgeScores[w] == 0.0)
+		if (nodeScores[w] == 0.0)
 			candidates.push_back(w);
-		edgeScores[w] += weight;
+		nodeScores[w] += weight;
 	};
 
 	if (parameters.at("extendOverDirected") == "Yes") {
@@ -38,7 +36,7 @@ void ExtendEdges::run() {
 			for (node v : candidates) {
 				directedG.forEdgesOf(v, [&](node, node w, edgeweight weight) {
 					if (isDirectNeighbor(w))
-						edgeScores[v] += weight;
+						nodeScores[v] += weight;
 				});
 			}
 		}
@@ -49,6 +47,7 @@ void ExtendEdges::run() {
 	}
 	addTime(timer, "3    Count edges");
 
+	std::vector<node> all_candidates(candidates);
 	auto newEnd = std::remove_if(candidates.begin(), candidates.end(), [&](node v) {
 		return (isDirectNeighbor(v) || v == egoNode);
 	});
@@ -58,7 +57,7 @@ void ExtendEdges::run() {
 	// Calculate score for each candidate
 	result.reserve(candidates.size());
 	for (node v : candidates) {
-		double numEdges = edgeScores[v];
+		double numEdges = nodeScores[v];
 		if (numEdges >= 3) {
 			double score = normalizeScore(v, numEdges);
 			result.emplace_back(v, score);
@@ -71,6 +70,10 @@ void ExtendEdges::run() {
 	if (result.size() > maxExtendedNodes)
 		result.resize(maxExtendedNodes);
 	addTime(timer, "9    Take best candidates");
+
+	for (node v: all_candidates)
+		nodeScores[v] = 0.0;
+	addTime(timer, "a    Reset node scores");
 }
 
 double ExtendEdges::normalizeScore(node v, double score) const {

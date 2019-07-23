@@ -168,6 +168,9 @@ void EgoSplitting::createEgoNets() {
 	NodeMapping egoMapping(G); // Assign local IDs to the neighbors
 
 	MemoizationTable<double> sigTable(-1.0, G.upperNodeIdBound());
+	std::vector<double> nodeScores(G.upperNodeIdBound());
+	std::vector<node> significantGroup(G.upperNodeIdBound(), none);
+	std::vector<std::vector<count>> edgesToGroups(G.upperNodeIdBound());
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 
@@ -178,7 +181,7 @@ void EgoSplitting::createEgoNets() {
 		count degree = G.degree(u);
 		Graph egoGraph(degree, true);
 		EgoNetData egoNetData{G, directedG, groundTruth, u, egoGraph, egoMapping, parameters,
-						sigTable};
+						sigTable, nodeScores, significantGroup, edgesToGroups};
 
 
 		INFO("Extend and partition EgoNet");

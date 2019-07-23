@@ -50,7 +50,7 @@ private:
 	const Partition &basePartition;
 	MemoizationTable<double> &sigTable;
 	Graph coarseGraph;
-	std::vector<std::vector<count>> edgesToGroups; // For each candidate: number of edges to the groups
+	std::vector<std::vector<count>> &edgesToGroups; // For each candidate: number of edges to the groups
 	std::map<node, std::vector<node> > coarseToEgo;
 	std::vector<node> egoToCoarse;
 	std::vector<count> coarseSizes;
@@ -59,8 +59,9 @@ private:
 	std::vector<std::pair<count, node>> candidatesSorted;
 	double scorePenalty = 0.0;
 	GroupStubs groupStubs;
-	std::vector<node> significantGroup;
+	std::vector<node> &significantGroup;
 	std::unordered_set<node> addedCandidates;
+	std::vector<node> allCandidates;
 	// Algorithm parameters
 	const bool useSigMemo;
 	const bool mergeGroups;
@@ -111,6 +112,8 @@ private:
 	bool enoughCandidates() const;
 
 	void removeAddedAsCandidates();
+
+	void resetData();
 };
 
 } /* namespace NetworKit */

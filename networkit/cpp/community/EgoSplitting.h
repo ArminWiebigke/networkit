@@ -155,6 +155,9 @@ struct EgoNetData {
 	NodeMapping &egoMapping;
 	const std::unordered_map<std::string, std::string> &parameters;
 	MemoizationTable<double> &sigTable;
+	std::vector<double> &nodeScores;
+	std::vector<node> &significantGroup;
+	std::vector<std::vector<count>> &edgesToGroups;
 };
 
 } /* namespace NetworKit */

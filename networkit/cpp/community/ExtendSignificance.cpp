@@ -30,7 +30,9 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Parti
 		  sortGroupsStrat(parameters.at("sortGroups") == "significance"),
 		  maxSignificance(Aux::stringToDouble(parameters.at("maxSignificance"))),
 		  maxGroupCnt(std::stoi(parameters.at("maxGroupsConsider"))),
-		  minEdgesToGroup(std::stoi(parameters.at("minEdgesToGroupSig"))) {
+		  minEdgesToGroup(std::stoi(parameters.at("minEdgesToGroupSig"))),
+		  significantGroup(egoNetData.significantGroup),
+		  edgesToGroups(egoNetData.edgesToGroups) {
 	double maxSig = maxSignificance;
 	// For a given number of external nodes, calculate the minimal r-score that is significant
 	// We can then simply compare the r-values instead of calculating the ordered statistics
@@ -51,7 +53,6 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Parti
 		}
 		return minRScore;
 	});
-	significantGroup.resize(G.upperNodeIdBound(), none); // TODO: only do this once
 }
 
 void ExtendSignificance::run() {
@@ -64,8 +65,6 @@ void ExtendSignificance::run() {
 	addTime(timer, "0    Coarsening");
 
 	// Get candidates
-	edgesToGroups.resize(G.upperNodeIdBound()); // TODO: only do this once
-//    addTime(timer, "2    Init candidates");
 	std::vector<node> candidates = getCandidates();
 	addTime(timer, "3    Find candidates");
 
@@ -143,6 +142,9 @@ void ExtendSignificance::run() {
 	assert(resultSet.size() == result.size());
 #endif
 
+	resetData();
+	addTime(timer, "9    Reset Data");
+
 	hasRun = true;
 }
 
@@ -151,7 +153,7 @@ void ExtendSignificance::updateCandidates() {
 	for (node w : addedCandidates) {
 		node group = significantGroup[w];
 		// Update group stubs
-		// TODO: edges between added candidates
+		// TODO?: edges between added candidates
 		groupStubs.groupTotal[group] += G.degree(w);
 		groupStubs.groupOutgoing[group] += G.degree(w) - 2 * edgesToGroups[w][group];
 		groupStubs.externalNodes[group] -= 1;
@@ -268,6 +270,7 @@ ExtendSignificance::getCandidates() {
 	auto countEdge = [&](node vLoc, node w, edgeweight weight) {
 		if (edgesToGroups[w].empty()) {
 			candidates.push_back(w);
+			allCandidates.push_back(w);
 			edgesToGroups[w].resize(numGroups);
 		}
 		edgesToGroups[w][vLoc] += (count) weight;
@@ -519,5 +522,14 @@ std::string ExtendSignificance::toString() const {
 
 bool ExtendSignificance::isParallel() const {
 	return false;
+}
+
+void ExtendSignificance::resetData() {
+	for (const NodeScore &pair : result) {
+		significantGroup[pair.first] = none;
+	}
+	for (node v : allCandidates) {
+		edgesToGroups[v].clear();
+	}
 }
 } /* namespace NetworKit */
