@@ -40,7 +40,7 @@ def count_communities(result_dir, algo_name, graph_name, graph, cover):
 		for u in cover.subsetSizes():
 			f.write(create_line(algo_name, graph_name, log2(u)))
 
-	# Number of communities per node
+	# Number of communities_per_node
 	with open(result_dir + 'cover_node_comms.result', 'a') as f:
 		f.write(algo_name + ' ' + graph_name + ' ' + str(log2(0.5)) + '\n')
 		for u in range(graph.upperNodeIdBound()):

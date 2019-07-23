@@ -1,7 +1,9 @@
+import datetime
 from collections import OrderedDict
 from copy import copy
 
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
+from evaluation.timings import write_timings
 
 from networkit.stopwatch import clockit
 from networkit.community import PLM, PLP, LPPotts, SLPA, OslomCleanUp
@@ -27,6 +29,7 @@ def start_benchmarks():
 	# append_results = True
 	evaluations = [
 		'metrics',
+		'timings',
 		'cover',
 		'ego_nets',
 		# 'stream_to_gephi',
@@ -44,17 +47,18 @@ def start_benchmarks():
 		raise RuntimeError('Too many runs to stream!')
 
 	print('Starting benchmarks...')
+	out_file_suffix = datetime.datetime.now().isoformat()
 	result_summary = OrderedDict()
 	benchmarks = create_benchmarks(graphs, algos)
 	if stream_to_gephi:
 		run_benchmarks(benchmarks)
 		evaluate_result(graphs, benchmarks, evaluations, append_results,
-		                result_summary)
+		                result_summary, out_file_suffix)
 	else:
 		for benchmark in benchmarks:
 			run_benchmarks([benchmark])
 			evaluate_result(graphs, [benchmark], evaluations, append_results,
-			                result_summary)
+			                result_summary, out_file_suffix)
 			benchmark.clear()
 			append_results = True
 
@@ -72,10 +76,11 @@ def print_result_summary(summary):
 
 # TODO: Mehr output: GraphID, timestamp
 @clockit
-def evaluate_result(graphs, benchmarks, evaluations, append, summary):
+def evaluate_result(graphs, benchmarks, evaluations, append, summary, file_suffix):
 	result_dir = get_result_dir()
 	if 'metrics' in evaluations:
 		metric_caches = [MetricCache(b) for b in benchmarks]
+		# Write results
 		metrics = [
 			bm.Time(),
 			bm.NMI(),
@@ -84,6 +89,7 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 			# bm.Entropy(),
 		]
 		write_results_to_file(metric_caches, result_dir, metrics, append)
+		# Print compact as table
 		compact_metrics = [
 			bm.Time(),
 			bm.NMI(),
@@ -92,6 +98,8 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary):
 			# bm.Entropy(),
 		]
 		add_compact_results(summary, metric_caches, compact_metrics)
+	if 'timings' in evaluations:
+		write_timings(benchmarks, result_dir, append, file_suffix)
 	if 'cover' in evaluations:
 		analyse_cover(benchmarks, result_dir, append)
 	if 'ego_nets' in evaluations:
@@ -129,22 +137,22 @@ def get_graphs(iterations):
 	def scale_om_graph(on, om, name):
 		pcnt_overlap = on / N
 		avg_comms = pcnt_overlap * om + (1 - pcnt_overlap)
-		k = 15 * avg_comms  # Number of neighbors per community independent of mixing factor
+		k = 15 * avg_comms  # Number of neighbors per community independent of mixing_factor
 		k /= (1 - mu)
 		maxk = 1.5 * k  # Scale max degree with average degree
 		LFR_graph_args[name] = {
 			'N': N, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': mu, 'on': on, 'om': om}
-	for om in range(1, 7):
+	for om in range(4, 5):
 		on = N
 		name = 'om_{}'.format(om)
 		scale_om_graph(on, om, name)
-	for overlap in range(20, 100, 20):
-		on = N * overlap / 100
-		avg_comms = 1 + overlap / 100
-		om = 2
-		name = 'om_{:.2f}'.format(avg_comms)
-		scale_om_graph(on, om, name)
+	# for overlap in range(20, 100, 20):
+	# 	on = N * overlap / 100
+	# 	avg_comms = 1 + overlap / 100
+	# 	om = 2
+	# 	name = 'om_{:.2f}'.format(avg_comms)
+	# 	scale_om_graph(on, om, name)
 
 	# # GCE paper
 	# for om in range(1, 6):
@@ -178,17 +186,17 @@ def get_graphs(iterations):
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
 
-	# Scale mixing factor
-	for mu_factor in range(10, 71, 10):
-		om = 3
-		mu = 0.01 * mu_factor
-		k = om * 15  # Number of neighbors per community independent of mixing factor
-		k /= (1 - mu)
-		maxk = 1.5 * k  # Scale max degree with average degree
-		name = 'mu_' + str(mu_factor).rjust(2, '0')
-		LFR_graph_args[name] = {
-			'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
-			't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
+	# # Scale mixing_factor
+	# for mu_factor in range(10, 71, 10):
+	# 	om = 3
+	# 	mu = 0.01 * mu_factor
+	# 	k = om * 15  # Number of neighbors per community independent of mixing_factor
+	# 	k /= (1 - mu)
+	# 	maxk = 1.5 * k  # Scale max degree with average degree
+	# 	name = 'mu_' + str(mu_factor).rjust(2, '0')
+	# 	LFR_graph_args[name] = {
+	# 		'N': 2000, 'k': k, 'maxk': maxk, 'minc': 20, 'maxc': 100,
+	# 		't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}
 
 	# LFR_graph_args['test'] = {
 	# 	'N': 20000, 'k': 60, 'maxk': 90, 'minc': 20, 'maxc': 100,
@@ -219,10 +227,10 @@ def get_algos(store_ego_nets):
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
-	partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
+	# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 	# partition_algos['OSLOM'] = [lambda g: convertCoverToPartition(g, clusterOSLOM(g))]
-	# for alpha in [0.8, 0.9, 1.0]:
-	# 	for min_clique in [3, 4]:
+	# for alpha in [1.3, 1.5, 1.7]:
+	# 	for min_clique in [3]:
 	# 		partition_algos['GCE-{:.1f}-{}'.format(alpha, min_clique)] = [
 	# 			lambda g: convertCoverToPartition(g, clusterGCE(g, alpha=alpha, min_clique=min_clique))]
 
@@ -246,7 +254,7 @@ def get_algos(store_ego_nets):
 	# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
 	# partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 	# partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
-	# partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
+	partition_algos['Leiden_Mod'] = [lambda g: partitionLeiden(g, 'modularity')]
 	# partition_algos['Leiden_Sig'] = [lambda g: partitionLeiden(g, 'significance')]
 	# partition_algos['Leiden_SigRes'] = [lambda g: leidenSignificance(g)]
 
@@ -300,13 +308,13 @@ def get_ego_parameters(store_ego_nets):
 		'minNodeDegree': 2,
 		'extendOverDirected': 'No',
 		'keepOnlyTriangles': 'No',
-		'scoreStrategy': 'score',
 		'onlyDirectedCandidates': 'No',
 		'extendDirectedBack': 'Yes',
 	}
 	edge_scores_standard = {
 		**extend_standard,
 		'extendStrategy': 'edgeScore',
+		'scoreStrategy': 'score^2_normed',
 	}
 	significance_scores_standard = {
 		**extend_standard,
@@ -319,13 +327,14 @@ def get_ego_parameters(store_ego_nets):
 		'useSigMemo': 'No',
 		'minEdgesToGroupSig': 1,
 		'sigSecondRoundStrat': 'updateCandidates',
-		'secondarySigExtRounds': 3,
+		'secondarySigExtRounds': 10,
 		'extendPartitionIterations': 4,
 		'onlyCheckSignOfMaxCandidates': 'No',
 		'evalSignFactor': 10,
+		'onlyUpdatedCandidates': "Yes",
 	}
 
-	# ego_parameters['b#'] = standard
+	ego_parameters['b#'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
@@ -333,34 +342,20 @@ def get_ego_parameters(store_ego_nets):
 	# ego_parameters['e#'] = {
 	# 	**edge_scores_standard,
 	# }
-	ego_parameters['b-s'] = {
-		**significance_scores_standard,
-	}
-	ego_parameters['b-s-max1'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': 1,
-	}
-	ego_parameters['b-s-max2'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': 2,
-	}
-	ego_parameters['b-s-max3'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': 3,
-	}
-	ego_parameters['b-s-max5'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': 5,
-	}
-	ego_parameters['b-s-max10'] = {
-		**significance_scores_standard,
-		'onlyCheckSignOfMaxCandidates': 'Yes',
-		'evalSignFactor': 10,
-	}
+	# ego_parameters['s#'] = {
+	# 	**significance_scores_standard,
+	# }
+	# ego_parameters['b-s-max1'] = {
+	# 	**significance_scores_standard,
+	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
+	# 	'evalSignFactor': 1,
+	# }
+	# for iterations in range(0,6):
+	# 	name = 'b-s-ext{:.2f}'.format(iterations)
+	# 	ego_parameters[name] = {
+	# 		**significance_scores_standard,
+	# 		'secondarySigExtRounds': iterations,
+	# 	}
 	# ego_parameters['e-s1-x2'] = {
 	# 	**significance_scores_standard,
 	# 	'extendStrategy': 'edgeScore',

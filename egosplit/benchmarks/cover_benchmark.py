@@ -42,6 +42,12 @@ class CoverBenchmark:
 	def get_time(self):
 		return self.algo.get_time() + self.clean_up.get_time()
 
+	def get_timings(self):
+		try:
+			return self.algo.get_timings()
+		except AttributeError:
+			return {}
+
 	def get_algo_name(self):
 		name = self.algo.name
 		if self.clean_up.name:

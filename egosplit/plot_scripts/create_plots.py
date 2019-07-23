@@ -47,8 +47,8 @@ ego_metrics = [
 	"good_personas",
 	# "strong_personas",
 	# "persona_score",
-	# "conductance",
-	"conductance_1.5",
+	"conductance",
+	"comm_fitness",
 	# "conductance_ratio",
 	# "intra_edges",
 	"intra_ratio",
@@ -58,25 +58,33 @@ ego_metrics = [
 ]
 
 algo_sets = {
-	"base": ["b#"],
-	"edges": ["e#"],
-	"signif": ["b-s"],
-	# "all": ["Ego"],
+	# "base": ["b#"],
+	# "edges": ["e#"],
+	# "signif": ["s#"],
+	"all": ["Ego"],
 }
 
 graph_sets = {
-	"om": {
+	"om<=2": {
 		'graph_filter': "_om_",
-		'x': "communities per node",
+		'x_filter': "communities_per_node <= 2",
+		'x': "communities_per_node",
 		'ax_set': {
 		}
 	},
-	"mu": {
-		'graph_filter': "_mu_",
-		'x': "mixing factor",
+	"om>2": {
+		'graph_filter': "_om_",
+		'x_filter': "communities_per_node > 2",
+		'x': "communities_per_node",
 		'ax_set': {
 		}
 	},
+	# "mu": {
+	# 	'graph_filter': "_mu_",
+	# 	'x': "mixing_factor",
+	# 	'ax_set': {
+	# 	}
+	# },
 	# "Facebook": {
 	# 	'graph_filter': "FB_",
 	# 	'x': 'graph',
@@ -100,7 +108,7 @@ def run(data, output_dir):
 		num_comms_plots,
 		ego_net_plots,
 		# ego_net_plots_per_graph,
-		# comm_sizes_plots,
+		comm_sizes_plots,
 	]
 	for plot_func in plot_funcs:
 		for graph_set_name, graph_set_params in graph_sets.items():
@@ -132,6 +140,7 @@ def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_na
 			plot_type=(PlotType.bar if 'bar_plot' in graph_set_params else PlotType.line),
 			data=data["metrics"],
 			graph_filter=graph_set_params["graph_filter"],
+			x_filter=graph_set_params["x_filter"],
 			# xlabel="om",
 			algo_matches=algo_match,
 			# add_algos=["GCE_1.0", "GCE_1.5"],
@@ -196,6 +205,7 @@ def num_comms_plots(data, output_dir, graph_set_name, graph_set_params, algo_set
 		# plot_type=PlotType.bar,
 		data=data["cover_num_comms"],
 		graph_filter=graph_set_params["graph_filter"],
+		x_filter=graph_set_params["x_filter"],
 		algo_matches=algo_match,
 		add_algos=["Ground_Truth"],
 		remove_algo_part=remove_algo_part,
@@ -223,11 +233,10 @@ def ego_net_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_n
 			output_dir=output_dir,
 			plot_type=(PlotType.bar if 'bar_plot' in graph_set_params else PlotType.line),
 			data=data["ego_net_metrics"],
-			filter_data=("metric_name in \"{}\"".format(ego_metric)),
+			filter_data="metric_name in \"{}\"".format(ego_metric),
 			graph_filter=graph_set_params['graph_filter'],
-			# xlabel="om",
+			x_filter=graph_set_params["x_filter"],
 			algo_matches=algo_match,
-			# add_algos=["Ego_PLP_b", "Ego_PLP_e"],
 			remove_algo_part=remove_algo_part,
 			title="Ego-Net {}".format(ego_metric),
 			file_name="ego_partition/metrics/{}_{}_{}".format(ego_metric, graph_set_name,

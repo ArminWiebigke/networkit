@@ -117,7 +117,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		ego_sums["ext_num_gt_comms"] = len(result_list_comms_struct)
 		for result in result_list_comms_struct:
 			ego_sums["ext_conductance"] += result["conductance"]
-			ego_sums["ext_conductance_1.5"] += result["conductance_1.5"]
+			ego_sums["ext_comm_fitness"] += result["comm_fitness"]
 			ego_sums["ext_cut"] += result["cut"]
 			ego_sums["ext_cut_comm"] += result["cut_comm"]
 			ego_sums["ext_volume"] += result["volume"]
@@ -391,7 +391,7 @@ def calc_metrics(sums):
 			sums["ego_net_size"]),
 		"conductance_comm": safe_div(sums["ext_cut_comm"], sums["ext_volume"]),
 		"conductance": safe_div(sums["ext_conductance"], sums["ext_num_gt_comms"]),
-		"conductance_1.5": safe_div(sums["ext_conductance_1.5"],
+		"comm_fitness": safe_div(sums["ext_comm_fitness"],
 		                            sums["ext_num_gt_comms"]),
 		"conductance_ratio": safe_div(
 			(sums["ext_conductance"] / sums["ext_num_gt_comms"]),
@@ -481,15 +481,15 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 						cut_comm += 1
 
 		cut = cut_comm + cut_ext
+		inner_degree = volume - cut
 		if cut == 0:
 			conductance = 0
-			conductance_1_5 = 0
-		elif volume == 0:
-			conductance = 1
-			conductance_1_5 = 0
 		else:
 			conductance = cut / volume
-			conductance_1_5 = cut / (volume ** 1.5)
+		if volume == 0:
+			fitness = 0
+		else:
+			fitness = inner_degree / (volume ** 0.8)
 
 		result_list.append({
 			'comm_size': len(nodes),
@@ -497,7 +497,7 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 			'cut_comm': cut_comm,
 			'volume': volume,
 			'conductance': conductance,
-			'conductance_1.5': conductance_1_5,
+			'comm_fitness': fitness,
 		})
 	return result_list
 

@@ -32,13 +32,13 @@ def create_column_if_missing(data, column):
 
 def get_new_column_params():
 	new_columns = {
-		"communities per node": {
+		"communities_per_node": {
 			"create_from": "graph",
 			"str_start": "_om_",
 			"str_end": "_",
 			'type': float
 		},
-		"mixing factor": {
+		"mixing_factor": {
 			"create_from": "graph",
 			"str_start": "_mu_",
 			"str_end": "_",

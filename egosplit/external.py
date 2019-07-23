@@ -180,16 +180,13 @@ def convertCoverToPartition(G, cover):
 	for u in G.nodes():
 		comms = cover.subsetsOf(u)
 		if comms:
-			# partition.addToSubset(comms.pop(), u)  # TODO: Use best community
 			comm_cnts = defaultdict(lambda: 0)
 			for v in G.neighbors(u):
 				v_comms = cover.subsetsOf(v).intersection(comms)
 				for c in v_comms:
 					comm_cnts[c] += 1
 			best_comm, _ = max([(val, c) for (c, val) in comm_cnts.items()])
-			# print(best_comm)
 			partition.addToSubset(best_comm, u)
-
 		else:
 			partition.addToSubset(singleton_idx, u)
 			singleton_idx += 1
@@ -447,6 +444,10 @@ def getOrkutGraph():
 
 
 # https://graph-tool.skewed.de/
+# Add graph-tool to Python Virtual Env: Add line
+# /usr/lib/python3/dist-packages/
+# in (change python version if necessary, create file if necessary)
+# venv/lib/python3.6/site-packages/dist-packages.pth
 def calc_entropy(G, cover, **entropy_args):
 	with tempfile.TemporaryDirectory() as tempdir:
 		graphPath = os.path.join(tempdir, 'graph.txt')

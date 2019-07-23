@@ -21,6 +21,7 @@ class PlotType(Enum):
 def make_plot(data,
               output_dir,
               filter_data=None,
+              x_filter=None,
               graph_filter='',
               algo_matches='',
               add_algos=None,
@@ -45,17 +46,13 @@ def make_plot(data,
 		filtered_data = data.query('graph in @graph_filter').copy()
 	if filter_data:
 		filtered_data.query(filter_data, inplace=True)
+	if x_filter:
+		filtered_data.query(x_filter, inplace=True)
 	graphs = get_unique_values(filtered_data, 'graph')
 	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
 	filtered_data.query('algo in @algo_list', inplace=True)
-	# create_new_columns(filtered_data, hue, x)
 	if len(filtered_data) is 0:
 		return
-
-	# if type(x) != str and x:
-	# 	x = x['name']
-	# if type(hue) != str and hue:
-	# 	hue = hue['name']
 
 	# Create plots
 	if not output_dir[-1] == "/":
@@ -138,7 +135,7 @@ def set_ax(ax, ax_set, fig, x):
 	ax.set(
 		**ax_set,
 	)
-	if x == "communities per node":
+	if x == "communities_per_node":
 		ax.xaxis.set(
 			major_locator=MultipleLocator(1),
 			major_formatter=StrMethodFormatter('{x:.0f}'),

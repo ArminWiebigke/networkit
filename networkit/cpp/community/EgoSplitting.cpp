@@ -104,8 +104,9 @@ void EgoSplitting::init() {
 	parameters["minEdgesToGroupSig"] = "1";
 	parameters["sigSecondRoundStrat"] = "updateCandidates";
 	parameters["secondarySigExtRounds"] = "3";
-	parameters["onlyCheckSignOfMaxCandidates"] = "No";
-	parameters["evalSignFactor"] = "1";
+	parameters["onlyCheckSignOfMaxCandidates"] = "Yes";
+	parameters["evalSignFactor"] = "10";
+	parameters["onlyUpdatedCandidates"] = "Yes";
 
 	// Parameters for edgeScores
 	parameters["extendStrategy"] = "edgeScore";
@@ -130,7 +131,7 @@ void EgoSplitting::run() {
 		throw std::runtime_error("Can't convert numbers because of wrong locale!");
 	if (G.numberOfSelfLoops() > 0)
 		throw std::runtime_error("No self-loops allowed!");
-	addTime(timer, "0  Setup");
+//	addTime(timer, "0  Setup");
 
 	INFO("create EgoNets");
 	createEgoNets();

@@ -65,18 +65,18 @@ void ExtendSignificance::run() {
 
 	// Get candidates
 	edgesToGroups.resize(G.upperNodeIdBound()); // TODO: only do this once
-	addTime(timer, "2    Init candidates");
+//    addTime(timer, "2    Init candidates");
 	std::vector<node> candidates = getCandidates();
 	addTime(timer, "3    Find candidates");
 
 	// Insert a node that represents all external nodes and add the outgoing edges
 	addExtEdges(candidates);
-	addTime(timer, "4    Calc outgoing edges");
 	groupStubs = calcGroupStubsCounts();
-	addTime(timer, "4a    Calculate stub counts");
+	addTime(timer, "4    Calc outgoing edges");
+//    addTime(timer, "4a    Calculate stub counts");
 
 	// Sort candidates by number of edges into the egoNet, filter bad candidates (less than 3 edges)
-	candidatesSorted = sortCandidatesByEdges(candidates); // TODO: Why do we have to sort?
+	candidatesSorted = sortCandidatesByEdges(candidates);
 	addTime(timer, "5    Sort candidates");
 
 	if (parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
@@ -127,15 +127,11 @@ void ExtendSignificance::run() {
 	checkCandidates("6");
 	addTime(timer, "6    Calc significance one");
 
-	// Calculate significances, allowing slightly worse candidates (based on the number of already
-	// found significant candidates)
-	// TODO: Just store the best significance, then test against new ordered statistic.
-	//  Need to store significance and number of external nodes
 	int iterations = std::stoi(parameters.at("secondarySigExtRounds"));
 	for (int i = 0; i < iterations; ++i) {
 		secondRound();
 	}
-	addTime(timer, "8    Calc significance two");
+	addTime(timer, "8    Check updated candidates");
 
 #ifndef NDEBUG
 	std::set<node> resultSet;
@@ -151,6 +147,7 @@ void ExtendSignificance::run() {
 }
 
 void ExtendSignificance::updateCandidates() {
+	std::unordered_set<node> updatedCandidates;
 	for (node w : addedCandidates) {
 		node group = significantGroup[w];
 		// Update group stubs
@@ -164,6 +161,7 @@ void ExtendSignificance::updateCandidates() {
 			if (!edgesToGroups[v].empty()) {
 				// v is a neighbor of neighbor
 				edgesToGroups[v][group] += 1;
+				updatedCandidates.insert(v);
 			}
 			if (significantGroup[v] == group) {
 				// v is in the same group
@@ -177,6 +175,16 @@ void ExtendSignificance::updateCandidates() {
 		});
 		edgesToGroups[w].clear();
 	}
+	bool onlyUseUpdatedCandidates = parameters.at("onlyUpdatedCandidates") == "Yes";
+	auto newEnd = std::remove_if(
+			candidatesSorted.begin(), candidatesSorted.end(),
+			[&](std::pair<count, node> scorePair) {
+				return addedCandidates.count(scorePair.second) > 0
+				       || (onlyUseUpdatedCandidates
+				           && updatedCandidates.count(scorePair.second) == 0);
+			});
+	candidatesSorted.resize(newEnd - candidatesSorted.begin());
+	addedCandidates.clear();
 }
 
 void ExtendSignificance::createCoarseGraph() {
@@ -198,13 +206,14 @@ void ExtendSignificance::secondRound() {
 	if (strat == "updateCandidates") {
 		updateCandidates();
 	} else if (strat == "orderStat") {
-		orderStatPos = std::floor(Aux::stringToDouble(parameters.at("orderedStatPos")) * result.size());
+		orderStatPos = std::floor(
+				Aux::stringToDouble(parameters.at("orderedStatPos")) * result.size());
 		if (orderStatPos == 0)
 			return;
 	} else {
 		throw std::runtime_error(strat + " is not a valid strategy for the second signif. round!");
 	}
-	removeAddedAsCandidates();
+//    removeAddedAsCandidates();
 	checkCandidates("8");
 }
 
@@ -497,11 +506,9 @@ ExtendSignificance::calcScore(int nodeDegree, int kIn, int grOut, int groupExtSt
 			assert(Stochastics::order_statistics_left_cumulative(
 					extNodes, extNodes - orderStatPos, rScore) >= maxSignificance);
 		}
-
 	} else {
 		returnVal = Stochastics::order_statistics_left_cumulative(
 				extNodes, extNodes - orderStatPos, rScore);
-
 	}
 	return returnVal;
 }
@@ -513,5 +520,4 @@ std::string ExtendSignificance::toString() const {
 bool ExtendSignificance::isParallel() const {
 	return false;
 }
-
 } /* namespace NetworKit */

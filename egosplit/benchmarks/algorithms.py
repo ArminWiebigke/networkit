@@ -70,6 +70,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.egoNetPartitions = None
 		self.egoNets = None
 		self.parameters = parameters
+		self.timings = None
 
 	def __copy__(self):
 		return EgoSplitAlgorithm(self.name, self.parameters,
@@ -92,6 +93,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 		# Output timings
 		timings = algo.getTimings()
+		self.timings = timings
 		leading_numbers = 0
 		for name in sorted(timings.keys()):
 			t_name = name.decode('ASCII')
@@ -107,8 +109,8 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		for name in sorted(timings.keys()):
 			timings_str += str(timings[name] / 1000000).ljust(21)
 
-	# self.out_file.write(timings_str + '\n')
-	# print(timings_str)
+	def get_timings(self):
+		return self.timings
 
 	# def getExecutionInfo(self):
 	# 	return self.executionInfo
