@@ -5,6 +5,7 @@ from enum import Enum
 
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
 	StrMethodFormatter, Formatter
+from pandas import DataFrame, Series
 
 from .config import set_layout
 from .read_data import create_column_if_missing
@@ -27,7 +28,7 @@ def make_plot(data,
               add_algos=None,
               remove_algo_part=None,
               one_plot_per_graph=False,
-              title='',
+              title=None,
               file_name='',
               plot_type=PlotType.line,
               x=None,
@@ -40,23 +41,24 @@ def make_plot(data,
 		create_column_if_missing(data, column)
 	# Filter data
 	if isinstance(graph_filter, str):
-		filtered_data = data.query('graph.str.contains(@graph_filter)').copy()
+		filtered_data = data.query('`Graph Name`.str.contains(@graph_filter)').copy()
 	else:
 		assert (isinstance(graph_filter, list))
-		filtered_data = data.query('graph in @graph_filter').copy()
+		filtered_data = data.query('`Graph Name` in @graph_filter').copy()
 	if filter_data:
 		filtered_data.query(filter_data, inplace=True)
 	if x_filter:
 		filtered_data.query(x_filter, inplace=True)
-	graphs = get_unique_values(filtered_data, 'graph')
+	graphs = get_unique_values(filtered_data, 'Graph Name')
 	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
-	filtered_data.query('algo in @algo_list', inplace=True)
+	filtered_data.query('`Algorithm` in @algo_list', inplace=True)
 	if len(filtered_data) is 0:
 		return
 
 	# Create plots
 	if not output_dir[-1] == "/":
 		output_dir += "/"
+
 	def create_plot(graph_data):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
@@ -72,9 +74,12 @@ def make_plot(data,
 		sns.despine(ax=ax)
 		set_ax(ax, ax_set, fig, x)
 		clean_legend(algo_matches, ax, remove_algo_part)
-		fig.suptitle(title)
+		if title:
+			fig.suptitle(title)
 		fig.savefig(output_dir + file_name + '.pdf')
 		plt.close(fig)
+		with open(output_dir + file_name + '-table.tex', 'w') as f:
+			f.write(latex_table(filtered_data, hue, x, y, remove_algo_part))
 
 	# Make one plot per graph if graph is not on the x-axis
 	if one_plot_per_graph:
@@ -83,10 +88,41 @@ def make_plot(data,
 		for graph in graphs:
 			file_name = file_name_base + "_" + graph
 			title = "{} ({})".format(title_base, graph)
-			graph_data = filtered_data.query('graph == @graph')
+			graph_data = filtered_data.query('`Graph Name` == @graph')
 			create_plot(graph_data)
 	else:
 		create_plot(filtered_data)
+
+
+def latex_table(data, hue, x, y, remove_algo_part):
+	hue_values = sorted(get_unique_values(data, hue))
+	x_values = sorted(get_unique_values(data, x))
+	table_data = DataFrame(columns=x_values)
+	for hue_value in hue_values:
+		hue_data = data.query("{} == @hue_value".format(hue))
+		mean_data = hue_data.groupby(x).mean()
+		name = hue_value
+		for remove in remove_algo_part:
+			name = name.replace(remove, '')
+		series = Series(mean_data[y], name=name)
+		table_data = table_data.append(series)
+	return table_data.to_latex(float_format=float_format)
+
+
+def float_format(x, decimals=2):
+	format_str = '{:.' + str(decimals) + 'f}'
+	return format_str.format(x)
+	# if x > 10:
+	# 	return '{:.1f}'.format(x)
+	# if x > 0.1:
+	# 	return '{:.3f}'.format(x)
+	# if x > 0.01:
+	# 	return '{:.4f}'.format(x)
+	# if x > 0.001:
+	# 	return '{:.5f}'.format(x)
+	# if x > 0.0001:
+	# 	return '{:.6f}'.format(x)
+	# return '{:.7f}'.format(x)
 
 
 def confirm_plot_type(plot_type, graph_data, x_values):
@@ -135,7 +171,7 @@ def set_ax(ax, ax_set, fig, x):
 	ax.set(
 		**ax_set,
 	)
-	if x == "communities_per_node":
+	if x == "Communities per Node":
 		ax.xaxis.set(
 			major_locator=MultipleLocator(1),
 			major_formatter=StrMethodFormatter('{x:.0f}'),
@@ -186,11 +222,11 @@ def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
 		'hue': hue,
 		**plot_args,
 	}
-	if plot_args['hue'] == 'algo':
+	if plot_args['hue'] == 'Algorithm':
 		plot_args = {'hue_order': algo_list, **plot_args}
 		if plot_type is PlotType.line:
 			plot_args = {'style_order': algo_list, **plot_args}
-		elif plot_args['x'] == 'algo' and plot_type is PlotType.swarm:
+		elif plot_args['x'] == 'Algorithm' and plot_type is PlotType.swarm:
 			plot_args = {'order': algo_list, **plot_args}
 	return plot_args
 
@@ -200,10 +236,10 @@ def get_algo_list(algo_matches, add_algos, data):
 	if algo_matches:
 		assert (isinstance(algo_matches, list))
 		for algo_match in algo_matches:
-			algo_data = data.query('algo.str.contains(@algo_match)')
-			algo_set = algo_set.union(set(get_unique_values(algo_data, 'algo')))
+			algo_data = data.query('Algorithm.str.contains(@algo_match)')
+			algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
 	else:
-		algo_set = set(get_unique_values(data, 'algo'))
+		algo_set = set(get_unique_values(data, 'Algorithm'))
 	if add_algos:
 		for algo in add_algos:
 			algo_set.add(algo)

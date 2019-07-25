@@ -14,6 +14,7 @@ plot_dir = sys.argv[2] if num_args > 2 else "plots"
 dirs = [
 	'communities',
 	'metrics',
+	'timings',
 	'ego_partition/ego_metrics',
 	'ego_partition/metrics',
 ]
@@ -24,6 +25,7 @@ for dir in dirs:
 
 set_sns_style()
 
+# TODO?: Plot sets mit ([Graph Sets], Results Ordner,
 print("Reading results...")
 data = read_data(result_dir)
 

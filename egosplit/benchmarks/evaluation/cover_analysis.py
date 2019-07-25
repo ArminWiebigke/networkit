@@ -16,34 +16,35 @@ def analyse_cover(benchmarks, result_dir, append):
 # Print output file headers
 def print_headers(result_dir):
 	with open(result_dir + 'cover_num_comms.result', 'w') as f:
-		f.write(create_line('algo', 'graph', 'num_comms'))
+		f.write(create_line(*CoverBenchmark.output_header(), 'Number of Communities'))
 	with open(result_dir + 'cover_comm_sizes.result', 'w') as f:
-		f.write(create_line('algo', 'graph', 'comm_size'))
+		f.write(create_line(*CoverBenchmark.output_header(), 'Community Size'))
 	with open(result_dir + 'cover_node_comms.result', 'w') as f:
-		f.write(create_line('algo', 'graph', 'num_comms'))
+		f.write(create_line(*CoverBenchmark.output_header(), 'Number of Communities per Node'))
 
 
 # Count the number of communities and their sizes
 def count_benchmark_cover(result_dir, benchmark):
-	count_communities(result_dir, benchmark.get_algo_name(), benchmark.get_graph_name(),
-	                  benchmark.get_graph(), benchmark.get_cover())
+	count_communities(result_dir, benchmark)
 
 
 # Count the number of communities and their sizes
-def count_communities(result_dir, algo_name, graph_name, graph, cover):
+def count_communities(result_dir, benchmark):
+	cover = benchmark.get_cover()
 	# Number of communities
 	with open(result_dir + 'cover_num_comms.result', 'a') as f:
-		f.write(create_line(algo_name, graph_name, cover.numberOfSubsets()))
+		f.write(create_line(*benchmark.output_line(), cover.numberOfSubsets()))
 
 	# Community sizes
 	with open(result_dir + 'cover_comm_sizes.result', 'a') as f:
 		for u in cover.subsetSizes():
-			f.write(create_line(algo_name, graph_name, log2(u)))
+			f.write(create_line(*benchmark.output_line(), log2(u)))
 
-	# Number of communities_per_node
+	# Number of Communities per Node
 	with open(result_dir + 'cover_node_comms.result', 'a') as f:
-		f.write(algo_name + ' ' + graph_name + ' ' + str(log2(0.5)) + '\n')
-		for u in range(graph.upperNodeIdBound()):
+		for u in benchmark.get_graph().nodes():
 			num_comms = len(cover.subsetsOf(u))
 			if num_comms > 0:
-				f.write(create_line(algo_name, graph_name, log2(num_comms)))
+				f.write(create_line(*benchmark.output_line(), log2(num_comms)))
+
+		f.write(create_line(*benchmark.output_line(), str(log2(0.5))))  # TODO: Why?

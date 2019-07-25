@@ -210,7 +210,7 @@ void EgoSplitting::createEgoNets() {
 			egoNetPartitions[u].emplace(egoMapping.global(i), egoPartition.subsetOf(i));
 		assert(egoNetPartitions[u].size() == egoGraph.numberOfNodes());
 		egoNetPartitionCounts[u] = egoPartition.numberOfSubsets();
-		addTime(timer, "17    EgoNet subsets");
+		addTime(timer, "17    Store EgoNet Partition");
 
 
 		INFO("Reset egoMapping");

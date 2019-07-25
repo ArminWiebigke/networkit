@@ -203,6 +203,8 @@ void ExtendSignificance::createCoarseGraph() {
 }
 
 void ExtendSignificance::secondRound() {
+	if (addedCandidates.empty())
+		return;
 	scorePenalty = 0.5;
 	std::string strat = parameters.at("sigSecondRoundStrat");
 	if (strat == "updateCandidates") {

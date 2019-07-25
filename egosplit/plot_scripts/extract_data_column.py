@@ -1,9 +1,9 @@
-def create_new_column(data, name, create_paras):
+def create_new_column_from_string(data, name, create_paras):
 	# Create new data columns for x or hue if necessary
 	# Example: Create the x column by taking the value between '_f-' and the next '*'
 	#   from the 'algo' column
 	# x = {'name': 'factor', 'create_from': 'algo', 'str_start': '_f-', 'str_end': '*',
-	#      'type': 'float'}
+	#      'type': float}
 	for row in data.itertuples(index=True, name='Pandas'):
 		index = row.Index
 		from_string = data.loc[index, create_paras['create_from']]

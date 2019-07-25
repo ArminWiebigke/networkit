@@ -93,7 +93,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 		# Output timings
 		timings = algo.getTimings()
-		self.timings = timings
+		self.timings = {k: v / 1e6 for (k, v) in timings.items()}  # Time in ms
 		leading_numbers = 0
 		for name in sorted(timings.keys()):
 			t_name = name.decode('ASCII')

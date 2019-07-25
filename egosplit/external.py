@@ -7,10 +7,7 @@ import scipy
 import random
 import igraph
 import leidenalg
-import graph_tool
 import infomap
-
-from graph_tool.all import OverlapBlockState
 
 from networkit import graph
 from networkit import graphio
@@ -441,37 +438,3 @@ def getOrkutGraph():
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	c = graphio.CoverReader().read(graphs_path + '/com-orkut.top5000.cmty.txt', g)
 	return g, c
-
-
-# https://graph-tool.skewed.de/
-# Add graph-tool to Python Virtual Env: Add line
-# /usr/lib/python3/dist-packages/
-# in (change python version if necessary, create file if necessary)
-# venv/lib/python3.6/site-packages/dist-packages.pth
-def calc_entropy(G, cover, **entropy_args):
-	with tempfile.TemporaryDirectory() as tempdir:
-		graphPath = os.path.join(tempdir, 'graph.txt')
-		graphio.writeGraph(G, graphPath, fileformat=graphio.Format.GraphML)
-		gtGraph = graph_tool.load_graph(graphPath, 'graphml')
-
-		edge_property = gtGraph.new_edge_property('vector<int>')
-		no_cover_bm = OverlapBlockState(gtGraph, edge_property)
-		print('No cover:', no_cover_bm.entropy(**entropy_args))
-
-		edge_property_b = gtGraph.new_edge_property('vector<int>')
-		for source, target, edge_id in gtGraph.get_edges():
-			set_a = set(cover.subsetsOf(source))
-			set_b = set(cover.subsetsOf(target))
-			overlap = set_a.intersection(set_b)
-			if overlap:
-				comm_a = list(overlap)[0]
-				comm_b = comm_a
-				edge_property_b[gtGraph.edge(source, target)] = [comm_a, comm_b]
-
-		block_state_b = OverlapBlockState(gtGraph, edge_property_b)
-		entropy = block_state_b.entropy(**entropy_args)
-		print('Cover entropy:', entropy)
-
-	# min_bm = graph_tool.inference.minimize.minimize_blockmodel_dl(gtGraph)
-	# print('Minimize:', min_bm.entropy(**entropy_args))
-	return entropy

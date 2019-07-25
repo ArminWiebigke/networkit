@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import pyplot as plt
+import egosplit.benchmarks.evaluation.benchmark_metric as bm
 
 file_prefix = "plots/"
 opacity = 0.7
@@ -37,34 +38,28 @@ markers = {
 }
 
 metric_names = {
-	"f1": {
+	bm.F1.get_name(): {
 		"description": "F1 Score",
 		"y_val": "F1",
 		"file_name": "F1",
 		"ylim": (0, 1.05),
 	},
-	"f1_rev": {
+	bm.F1_rev.get_name(): {
 		"description": "F1 Score (reversed)",
 		"y_val": "F1",
 		"file_name": "F1_rev",
 		"ylim": (0, 1.05),
 	},
-	"nmi": {
+	bm.NMI.get_name(): {
 		"description": "NMI Score",
 		"y_val": "NMI",
 		"file_name": "NMI",
 		"ylim": (0, 1.05),
 	},
-	"time": {
+	bm.Time.get_name(): {
 		"description": "Running Time",
 		"y_val": "time (s)",
 		"file_name": "time",
-		"ylim": 0,
-	},
-	"entropy": {
-		"description": "Entropy",
-		"y_val": "Entropy",
-		"file_name": "entropy",
 		"ylim": 0,
 	},
 }
@@ -94,7 +89,10 @@ algo_sets["ego_parameters"] = [
 
 
 def set_sns_style():
-	sns.set(context="notebook", style="whitegrid", palette="bright", font_scale=0.8)
+	sns.set(context="notebook", style="whitegrid", palette="bright",
+	        # font_scale=0.8,
+	        font_scale=1.2,
+	        )
 
 
 def set_layout(ax, legend_handles=None, legend_labels=None):

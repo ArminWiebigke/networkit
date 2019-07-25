@@ -50,7 +50,7 @@ void EgoNetPartition::run() {
 	G.forEdgesOf(egoNode, [&](node, node v) {
 		egoMapping.addNode(v);
 	});
-	addTime(timer, "1    Find nodes");
+//	addTime(timer, "1    Find nodes");
 
 
 	/******************************************************************************************
@@ -69,7 +69,8 @@ void EgoNetPartition::run() {
 			}
 		});
 	});
-	addTime(timer, "2    Neighbor Triangle Search");
+//	addTime(timer, "2    Neighbor Triangle Search");
+	addTime(timer, "1    Build EgoNet");
 
 
 	/******************************************************************************************
@@ -96,14 +97,16 @@ void EgoNetPartition::run() {
 			egoMapping = nodeMappingBase;
 		}
 		INFO("Extend ego-net with strategy " + extendStrategy);
-		addTime(timer, "2" + std::to_string(it_char) + "    Copy EgoNet/Mapping");
+		addTime(timer, "2    Copy EgoNet/Mapping");
 
 		extendEgoNet(extendStrategy);
-		addTime(timer, "3" + std::to_string(it_char) + "    Extend EgoNet");
+//		addTime(timer, "3" + std::to_string(it_char) + "    Extend EgoNet it " + std::to_string(it_char));
+		addTime(timer, "3    Extend EgoNet");
 
 		partitionEgoNet();
-		addTime(timer, "4" + std::to_string(it_char) + "    Partition EgoNet");
-		++it_char;
+//		addTime(timer, "4" + std::to_string(it_char) + "    Partition EgoNet it " + std::to_string(it_char));
+		addTime(timer, "4    Partition EgoNet");
+//		++it_char;
 	}
 
 	hasRun = true;

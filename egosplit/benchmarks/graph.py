@@ -8,7 +8,8 @@ class BenchGraph:
 	cover are stored.
 	"""
 	global_id = 0
-	def __init__(self, graph, ground_truth, name, parameters=""):
+
+	def __init__(self, graph, ground_truth, name, parameters=None):
 		print("Graph '{}' with {} nodes and {} edges".format(name, graph.numberOfNodes(),
 		                                                   graph.numberOfEdges()))
 		self.graph = graph
@@ -22,8 +23,14 @@ class BenchGraph:
 class LFRGraph(BenchGraph):
 	"""An input graph created by the LFR graph generator."""
 	def __init__(self, name="LFR", parameter_dict=None):
-		parameters = ""
-		for (key, value) in parameter_dict.items():
-			parameters += key + "=" + str(value) + ","
+		assert(len(parameter_dict) == len(self.parameter_names()))
+		self.lfr_paramters = parameter_dict
 		graph, cover = genLFR(**parameter_dict)
-		super(LFRGraph, self).__init__(graph, cover, name, parameters)
+		super(LFRGraph, self).__init__(graph, cover, name, parameter_dict)
+
+	def get_lfr_parameters(self):
+		return [self.lfr_paramters[p] for p in self.parameter_names()]
+
+	@staticmethod
+	def parameter_names():
+		return ["N", "k", "maxk", "mu", "t1", "t2", "minc", "maxc", "on", "om"]

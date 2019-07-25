@@ -1,4 +1,4 @@
-from egosplit.external import calc_NMI, calc_entropy
+from egosplit.external import calc_NMI
 from networkit.community import CoverF1Similarity
 
 
@@ -23,7 +23,7 @@ class Time(BenchmarkMetric):
 
 	@staticmethod
 	def get_name():
-		return "time"
+		return "Running Time"
 
 
 class NMI(BenchmarkMetric):
@@ -34,10 +34,13 @@ class NMI(BenchmarkMetric):
 
 	@staticmethod
 	def get_name():
-		return "nmi"
+		return "NMI"
 
 
 class F1(BenchmarkMetric):
+	"""
+	F1-Score of cover->ground-truth. Average of the F1-Score of each detected community.
+	"""
 	@staticmethod
 	def get_value(benchmark):
 		return calc_F1(benchmark.get_graph(), benchmark.get_cover(),
@@ -45,10 +48,13 @@ class F1(BenchmarkMetric):
 
 	@staticmethod
 	def get_name():
-		return "f1"
+		return "F1-Score"
 
 
 class F1_rev(BenchmarkMetric):
+	"""
+	F1-Score of ground-truth->cover. Average of the F1-Score of each ground-truth community.
+	"""
 	@staticmethod
 	def get_value(benchmark):
 		return calc_F1(benchmark.get_graph(), benchmark.get_ground_truth(),
@@ -56,61 +62,7 @@ class F1_rev(BenchmarkMetric):
 
 	@staticmethod
 	def get_name():
-		return "f1_rev"
-
-
-class Entropy(BenchmarkMetric):
-	@staticmethod
-	def get_value(benchmark):
-		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover())
-		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth())
-		return (base / e) ** 4
-
-	@staticmethod
-	def get_name():
-		return "entropy"
-
-
-class Entropy2(BenchmarkMetric):
-	@staticmethod
-	def get_value(benchmark):
-		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
-		                 deg_entropy=False)
-		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
-		                    deg_entropy=False)
-		return (base / e) ** 4
-
-	@staticmethod
-	def get_name():
-		return "entropy2"
-
-
-class Entropy3(BenchmarkMetric):
-	@staticmethod
-	def get_value(benchmark):
-		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
-		                 deg_entropy=False, degree_dl=False)
-		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
-		                    deg_entropy=False, degree_dl=False)
-		return (base / e) ** 4
-
-	@staticmethod
-	def get_name():
-		return "entropy3"
-
-
-class Entropy4(BenchmarkMetric):
-	@staticmethod
-	def get_value(benchmark):
-		e = calc_entropy(benchmark.get_graph(), benchmark.get_cover(),
-		                 deg_entropy=False, degree_dl=False, edges_dl=False)
-		base = calc_entropy(benchmark.get_graph(), benchmark.get_ground_truth(),
-		                    deg_entropy=False, degree_dl=False, edges_dl=False)
-		return (base / e) ** 4
-
-	@staticmethod
-	def get_name():
-		return "entropy4"
+		return "F1-Score (reversed)"
 
 
 # Calculate the F1 score

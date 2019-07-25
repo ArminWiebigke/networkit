@@ -80,6 +80,8 @@ double ExtendEdges::normalizeScore(node v, double score) const {
 	std::string scoreStrategy = parameters.at("scoreStrategy");
 	if (scoreStrategy == "constant")
 		return 1.0;
+	if (scoreStrategy == "random")
+		return Aux::Random::real();
 	if (scoreStrategy == "score" || scoreStrategy == "none")
 		return score * 1.0;
 	if (scoreStrategy == "score_normed")

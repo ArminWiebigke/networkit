@@ -1,4 +1,6 @@
-from .context_timer import ContextTimer
+from collections import defaultdict
+
+from graph import LFRGraph
 
 
 class CoverBenchmark:
@@ -36,6 +38,12 @@ class CoverBenchmark:
 	def get_ground_truth(self):
 		return self.graph.ground_truth
 
+	def get_graph_edges(self):
+		return self.graph.graph.numberOfEdges()
+
+	def get_graph_nodes(self):
+		return self.graph.graph.numberOfNodes()
+
 	def get_cover(self):
 		return self.cover
 
@@ -59,25 +67,32 @@ class CoverBenchmark:
 		del self.clean_up
 		del self.cover
 
+	@staticmethod
+	def output_header():
+		return ["Algorithm", "Graph Name", "Graph ID", "Number of Nodes", "Number of Edges"] \
+		       + LFRGraph.parameter_names()
+
+	def output_line(self):
+		line = [self.get_algo_name(), self.get_graph_name(), self.get_graph_id(),
+		        self.get_graph_nodes(), self.get_graph_edges()]
+		try:
+			line += self.graph.get_lfr_parameters()
+		except AttributeError:
+			line += ["" for _ in LFRGraph.parameter_names()]
+		return line
+
 
 class MetricCache:
 	""" This class is used to cache metric results, so that they are only calculated once.
 	"""
 
-	def __init__(self, benchmark):
-		self.benchmark = benchmark
-		self.cached = {}
+	def __init__(self):
+		self.cache = defaultdict(lambda: dict())
 
-	def get_algo_name(self):
-		return self.benchmark.get_algo_name()
+	def get_metric(self, benchmark, metric):
+		if metric not in self.cache[benchmark]:
+			self.cache[benchmark][metric] = metric.get_value(benchmark)
+		return self.cache[benchmark][metric]
 
-	def get_graph_name(self):
-		return self.benchmark.get_graph_name()
-
-	def get_graph_id(self):
-		return self.benchmark.get_graph_id()
-
-	def get_metric(self, metric):
-		if metric not in self.cached:
-			self.cached[metric] = metric.get_value(self.benchmark)
-		return self.cached[metric]
+	def clear(self):
+		self.cache = defaultdict(lambda: dict())

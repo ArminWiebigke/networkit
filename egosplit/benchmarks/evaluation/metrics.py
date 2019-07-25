@@ -2,57 +2,52 @@ from collections import OrderedDict
 
 from egosplit.benchmarks.evaluation.cover_analysis import *
 from egosplit.benchmarks.evaluation.output import create_line
+from egosplit.benchmarks.cover_benchmark import CoverBenchmark
 
 
 # Write the metric results to the output file, one line per benchmark run
-def write_results_to_file(benchmark_results, result_dir, metrics, append):
+def write_results_to_file(benchmark_results, result_dir, metric_names, append):
 	if not append:
-		print_headers(result_dir, [m.get_name() for m in metrics])
+		print_headers(result_dir, metric_names)
 	result_file = open(result_dir + 'metrics.result', 'a')
-	for result in benchmark_results:
-		metric_values = []
-		for metric in metrics:
-			metric_values.append(result.get_metric(metric))
-
-		line = create_line(result.get_algo_name(), result.get_graph_name(),
-		                   result.get_graph_id(), *metric_values)
+	for benchmark, metric_results in benchmark_results.items():
+		metric_values = [metric_results[metric] for metric in metric_names]
+		line = create_line(*benchmark.output_line(), *metric_values)
 		result_file.write(line)
 
 
 # Print output file headers
-def print_headers(result_dir, metrics):
+def print_headers(result_dir, metric_names):
 	with open(result_dir + 'metrics.result', 'w') as f:
-		f.write(create_line('algo', 'graph', 'graph_id', *metrics))
+		f.write(create_line(*CoverBenchmark.output_header(), *metric_names))
 
 
 # Print a summary of the metric results in a compact form (table)
-def print_compact_results(results, result_dir):
+def print_compact_results(results, metric_names, result_dir):
 	output_file = open(result_dir + "compact.result", "a")
-	print_results_compact(results, output_file)
+	print_results_compact(results, metric_names, output_file)
 
 
 # Add benchmark results to the compact results
-def add_compact_results(results, benchmark_results, metrics):
-	for result in benchmark_results:
-		algo_name = result.get_algo_name()
-		if algo_name not in results.keys():
-			results[algo_name] = OrderedDict()
-		graph_name = result.get_graph_name()
-		if graph_name not in results[algo_name].keys():
+def add_compact_results(summary, benchmark_results, metric_names):
+	for benchmark, metric_results in benchmark_results.items():
+		algo_name = benchmark.get_algo_name()
+		if algo_name not in summary:
+			summary[algo_name] = OrderedDict()
+		graph_name = benchmark.get_graph_name()
+		if graph_name not in summary[algo_name]:
 			d = OrderedDict()
-			for m in metrics:
-				d[m.get_name()] = []
-			results[algo_name][graph_name] = d
-		for metric in metrics:
-			results[algo_name][graph_name][metric.get_name()].append(
-				result.get_metric(metric))
+			for m in metric_names:
+				d[m] = []
+			summary[algo_name][graph_name] = d
+		for metric in metric_names:
+			summary[algo_name][graph_name][metric].append(metric_results[metric])
 
 
 # Print the compact results to the standard output and the output file
-def print_results_compact(results, output_file):
+def print_results_compact(results, metrics, output_file):
 	algos = list(results.keys())
 	graphs = list(results[algos[0]].keys())
-	metrics = results[algos[0]][graphs[0]].keys()
 	result_decimals = 4
 	pre_dot = 6
 	str_width = max(pre_dot + 1 + result_decimals,
@@ -83,8 +78,7 @@ def print_results_compact(results, output_file):
 			for metric in metrics:
 				r = results[algo][graph][metric]
 				val = sum(r) / len(r)
-				algo_results += str(fixed_decimals(val, result_decimals)
-				                    ).rjust(str_width - 1) + ' '
+				algo_results += "{:{f}.{d}f} ".format(val, d=result_decimals, f=str_width - 1)
 		output_str += "\n" + algo_results
 	output_str += "\n"
 	print(output_str)
@@ -93,4 +87,4 @@ def print_results_compact(results, output_file):
 
 # Convert a float to a string with a fixed number of decimals
 def fixed_decimals(val, decimals=3):
-	return str("{:.{decimals}f}").format(val, decimals=decimals)
+	return "{:.{decimals}f}".format(val, decimals=decimals)

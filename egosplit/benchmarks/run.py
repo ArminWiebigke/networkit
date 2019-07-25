@@ -26,7 +26,7 @@ def start_benchmarks():
 	# setLogLevel('INFO')
 	iterations = 1
 	append_results = False
-	# append_results = True
+	# Not working anymore # append_results = True
 	evaluations = [
 		'metrics',
 		'timings',
@@ -47,59 +47,65 @@ def start_benchmarks():
 		raise RuntimeError('Too many runs to stream!')
 
 	print('Starting benchmarks...')
-	out_file_suffix = datetime.datetime.now().isoformat()
+	# result_subfolder = datetime.datetime.now().isoformat()
+	result_subfolder = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+	result_dir = '{}/{}/'.format(get_result_dir(), result_subfolder)
+	os.makedirs(result_dir)
 	result_summary = OrderedDict()
 	benchmarks = create_benchmarks(graphs, algos)
 	if stream_to_gephi:
 		run_benchmarks(benchmarks)
 		evaluate_result(graphs, benchmarks, evaluations, append_results,
-		                result_summary, out_file_suffix)
+		                result_summary, result_dir)
 	else:
 		for benchmark in benchmarks:
 			run_benchmarks([benchmark])
 			evaluate_result(graphs, [benchmark], evaluations, append_results,
-			                result_summary, out_file_suffix)
+			                result_summary, result_dir)
 			benchmark.clear()
 			append_results = True
 
-	print_result_summary(result_summary)
+	print_result_summary(result_summary, get_result_dir())
 
 
 def get_result_dir():
 	return './results/'
 
 
-def print_result_summary(summary):
-	if summary:
-		print_compact_results(summary, get_result_dir())
+def print_result_summary(summary, result_dir):
+	if not summary:
+		return
+	compact_metrics = [
+		bm.Time,
+		bm.NMI,
+		# bm.F1,
+		# bm.F1_rev,
+	]
+	compact_metric_names = [m.get_name() for m in compact_metrics]
+	print_compact_results(summary, compact_metric_names, result_dir)
 
 
 # TODO: Mehr output: GraphID, timestamp
 @clockit
-def evaluate_result(graphs, benchmarks, evaluations, append, summary, file_suffix):
-	result_dir = get_result_dir()
+def evaluate_result(graphs, benchmarks, evaluations, append, summary, result_dir):
 	if 'metrics' in evaluations:
-		metric_caches = [MetricCache(b) for b in benchmarks]
 		# Write results
 		metrics = [
-			bm.Time(),
-			bm.NMI(),
-			bm.F1(),
-			bm.F1_rev(),
-			# bm.Entropy(),
+			bm.Time,
+			bm.NMI,
+			bm.F1,
+			bm.F1_rev,
 		]
-		write_results_to_file(metric_caches, result_dir, metrics, append)
-		# Print compact as table
-		compact_metrics = [
-			bm.Time(),
-			bm.NMI(),
-			bm.F1(),
-			bm.F1_rev(),
-			# bm.Entropy(),
-		]
-		add_compact_results(summary, metric_caches, compact_metrics)
+		metric_names = [m.get_name() for m in metrics]
+		metric_results = defaultdict(lambda: dict())
+		for benchmark in benchmarks:
+			for metric in metrics:
+				metric_results[benchmark][metric.get_name()] = metric.get_value(benchmark)
+		write_results_to_file(metric_results, result_dir, metric_names, append)
+		# Store results compact in table
+		add_compact_results(summary, metric_results, metric_names)
 	if 'timings' in evaluations:
-		write_timings(benchmarks, result_dir, append, file_suffix)
+		write_timings(benchmarks, result_dir, append)
 	if 'cover' in evaluations:
 		analyse_cover(benchmarks, result_dir, append)
 	if 'ego_nets' in evaluations:
@@ -122,7 +128,7 @@ def get_graphs(iterations):
 	# graphs.append(BenchGraph(*getDBLPGraph(), 'DBLP'))
 	# graphs.append(BenchGraph(*getLiveJournalGraph(), 'LiveJournal'))
 	# graphs.append(BenchGraph(*getOrkutGraph(), 'Orkut'))
-	# graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'FB_Caltech36'))  # 769 nodes
+	graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'FB_Caltech36'))  # 769 nodes
 	# graphs.append(BenchGraph(*getFacebookGraph('Rice31', clean=True), 'FB_Rice31'))  # 4k nodes
 	# graphs.append(BenchGraph(*getFacebookGraph('Auburn71', clean=True), 'FB_Auburn71'))  # 18k nodes
 	# graphs.append(BenchGraph(*getFacebookGraph('Smith60', clean=True), 'FB_Smith60'))
@@ -134,16 +140,18 @@ def get_graphs(iterations):
 	N = 2000
 	minc = 60
 	mu = 0.25
+
 	def scale_om_graph(on, om, name):
 		pcnt_overlap = on / N
 		avg_comms = pcnt_overlap * om + (1 - pcnt_overlap)
-		k = 15 * avg_comms  # Number of neighbors per community independent of mixing_factor
+		k = 15 * avg_comms  # Number of neighbors per community independent of Mixing Factor
 		k /= (1 - mu)
 		maxk = 1.5 * k  # Scale max degree with average degree
 		LFR_graph_args[name] = {
 			'N': N, 'k': k, 'maxk': maxk, 'minc': minc, 'maxc': 100,
 			't1': 2, 't2': 2, 'mu': mu, 'on': on, 'om': om}
-	for om in range(4, 5):
+
+	for om in range(1, 4):
 		on = N
 		name = 'om_{}'.format(om)
 		scale_om_graph(on, om, name)
@@ -186,11 +194,11 @@ def get_graphs(iterations):
 	# 		'N': 2000, 'k': 20, 'maxk': 50, 'minc': 60, 'maxc': 100,
 	# 		't1': 2, 't2': 1, 'mu': 0.25, 'on': on, 'om': 2}
 
-	# # Scale mixing_factor
+	# # Scale Mixing Factor
 	# for mu_factor in range(10, 71, 10):
 	# 	om = 3
 	# 	mu = 0.01 * mu_factor
-	# 	k = om * 15  # Number of neighbors per community independent of mixing_factor
+	# 	k = om * 15  # Number of neighbors per community independent of Mixing Factor
 	# 	k /= (1 - mu)
 	# 	maxk = 1.5 * k  # Scale max degree with average degree
 	# 	name = 'mu_' + str(mu_factor).rjust(2, '0')
@@ -212,18 +220,18 @@ def get_graphs(iterations):
 # *                                     Algorithms                                       *
 # ****************************************************************************************
 def get_algos(store_ego_nets):
-	algos = [] # Elements are tuples (AlgorithmObject, list of clean up procedures)
-	algos.append((GroundTruth(), [""]))
+	algos = []  # Elements are tuples (AlgorithmObject, list of clean up procedures)
+	algos.append((GroundTruth(), ['']))
 	# for iterations in [20, 40, 60, 80, 100]:
 	# 	for threshold in [0.1]:
 	# 		algos.append(SlpaAlgorithm(name='SLPA_{}_{}'.format(threshold, iterations),
 	# 		                           threshold=threshold, numIterations=iterations))
 	# algos.append(OlpAlgorithm())
-	# algos.append((GceAlgorithm('GCE', alpha=1.0), [""]))
+	# algos.append((GceAlgorithm('GCE', alpha=1.0), ['']))
 	# algos.append(GceAlgorithm('GCE_1.0_clean', alpha=1.0, clean_up='clean-merge'))
-	# algos.append((MosesAlgorithm(), [""]))
-	# algos.append((OslomAlgorithm(), [""]))
-	# algos.append((PeacockAlgorithm(), [""]))
+	# algos.append((MosesAlgorithm(), ['']))
+	# algos.append((OslomAlgorithm(), ['']))
+	# algos.append((PeacockAlgorithm(), ['']))
 
 	partition_algos = OrderedDict()
 	# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
@@ -259,12 +267,12 @@ def get_algos(store_ego_nets):
 	# partition_algos['Leiden_SigRes'] = [lambda g: leidenSignificance(g)]
 
 	for p_algos in partition_algos.values():
-		p_algos.insert(1, lambda g: clusterInfomap(g))
+		p_algos.insert(1, lambda g: partitionInfomap(g))
 	ego_parameters = get_ego_parameters(store_ego_nets)
 	clean_ups = [
-		# 'no-clean',
+		'no-clean',
 		# 'merge-overl',
-		'remv-overl',
+		# 'remv-overl',
 		# 'clean-merge',
 		# 'clean-merge,overl',
 		# 'clean-full',
@@ -322,97 +330,49 @@ def get_ego_parameters(store_ego_nets):
 		'maxSignificance': 0.1,
 		'sortGroups': 'significance',
 		'orderedStatPos': 0.0,
-		'maxGroupsConsider': 5,
+		'maxGroupsConsider': 99,
 		'signMerge': 'Yes',
 		'useSigMemo': 'No',
 		'minEdgesToGroupSig': 1,
 		'sigSecondRoundStrat': 'updateCandidates',
-		'secondarySigExtRounds': 10,
+		'secondarySigExtRounds': 99,
 		'extendPartitionIterations': 4,
-		'onlyCheckSignOfMaxCandidates': 'No',
+		'onlyCheckSignOfMaxCandidates': 'Yes',
 		'evalSignFactor': 10,
-		'onlyUpdatedCandidates': "Yes",
+		'onlyUpdatedCandidates': 'Yes',
 	}
 
-	ego_parameters['b#'] = standard
+	ego_parameters['b!'] = standard
 	# ego_parameters['gt'] = {
 	# 	**standard,
 	# 	'partitionFromGroundTruth': 'Yes',
 	# }
-	# ego_parameters['e#'] = {
-	# 	**edge_scores_standard,
-	# }
-	# ego_parameters['s#'] = {
-	# 	**significance_scores_standard,
-	# }
-	# ego_parameters['b-s-max1'] = {
-	# 	**significance_scores_standard,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 1,
-	# }
-	# for iterations in range(0,6):
-	# 	name = 'b-s-ext{:.2f}'.format(iterations)
+	ego_parameters['e!'] = {
+		**edge_scores_standard,
+	}
+	ego_parameters['s!'] = {
+		**significance_scores_standard,
+	}
+	# for factor in [1, 2, 3, 4, 5, 8, 16]:
+	# 	name = 'e-{:02.0f}'.format(factor)
+	# 	ego_parameters[name] = {
+	# 		**edge_scores_standard,
+	# 		'addNodesFactor': factor,
+	# 	}
+
+	# for max_candidates in [1, 2, 3, 4, 5, 10, 99]:
+	# 	name = 's-{:1d}'.format(max_candidates)
 	# 	ego_parameters[name] = {
 	# 		**significance_scores_standard,
-	# 		'secondarySigExtRounds': iterations,
+	# 		'evalSignFactor': 10,
 	# 	}
-	# ego_parameters['e-s1-x2'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'edgeScore',
-	# 	'extendPartitionIterations': 2,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 2,
-	# }
-	# ego_parameters['e-s1-x10'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'edgeScore',
-	# 	'extendPartitionIterations': 2,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 10,
-	# }
-	# ego_parameters['e-s3-x2'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'edgeScore',
-	# 	'extendPartitionIterations': 4,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 2,
-	# }
-	# ego_parameters['e-s3-x10'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'edgeScore',
-	# 	'extendPartitionIterations': 4,
-	# 	'onlyCheckSignOfMaxCandidates': 'Yes',
-	# 	'evalSignFactor': 10,
-	# }
-	# ego_parameters['e-s3'] = {
-	# 	**significance_scores_standard,
-	# 	'extendStrategy': 'edgeScore',
-	# 	'extendPartitionIterations': 4,
-	# }
-	# ego_parameters['e-s'] = {
-	# 	**significance_scores_standard,
-	# }
-	# ego_parameters['s-order'] = {
-	# 	**significance_scores_standard,
-	# 	'useSigMemo': 'No',
-	# 	'sigSecondRoundStrat': 'orderStat',
-	# }
-	# ego_parameters['s-mem-update'] = {
-	# 	**significance_scores_standard,
-	# 	'useSigMemo': 'Yes',
-	# 	'sigSecondRoundStrat': 'updateCandidates',
-	# }
-	# ego_parameters['s-mem'] = {
-	# 	**significance_scores_standard,
-	# 	'useSigMemo': 'Yes',
-	# }
-	# ego_parameters['s-2'] = {
-	# 	**significance_scores_standard,
-	# 	'addNodesFactor': 1,
-	# 	'orderedStatPos': 0.1,
-	# 	'useSigMemo': 'No',
-	# 	'minEdgesToGroupSig': '1',
-	# }
+
+	# for score in ['score', 'score_normed','score^2_normed', 'random']:
+	# 	name = 'e-{}'.format(score)
+	# 	ego_parameters[name] = {
+	# 		**edge_scores_standard,
+	# 		'scoreStrategy': score,
+	# 	}
 
 	return ego_parameters
 

@@ -5,7 +5,6 @@ from collections import OrderedDict, defaultdict
 from networkit.community import CoverF1Similarity
 from networkit.structures import Cover
 from networkit import none
-from egosplit.external import calc_entropy
 
 
 def poss_combs(x):
