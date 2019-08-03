@@ -5,7 +5,7 @@ from copy import copy
 
 from networkit.community import EgoSplitting, OLP, SLPA
 from networkit import graphio
-from .context_timer import ContextTimer
+from context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'
@@ -53,7 +53,7 @@ class CoverAlgorithm:
 
 
 class GroundTruth(CoverAlgorithm):
-	def __init__(self, name='Ground_Truth'):
+	def __init__(self, name='Ground Truth'):
 		super().__init__(name)
 
 	def create_cover(self):
@@ -62,15 +62,28 @@ class GroundTruth(CoverAlgorithm):
 
 class EgoSplitAlgorithm(CoverAlgorithm):
 	def __init__(self, name, parameters, local_partition_algorithm,
-	             global_partition_algorithm=None, clean_up=''):
+	             global_partition_algorithm=None):
 		super().__init__(name)
-		self.local_partition_algorithm = local_partition_algorithm
-		self.global_partition_algorithm = global_partition_algorithm
+		# self.output_parameter['Local Clustering Algorithm'], self.local_partition_algorithm = \
+		# 	local_partition_algorithm
+		# self.output_parameter['Global Clustering Algorithm'], self.global_partition_algorithm = \
+		# 	global_partition_algorithm
+		self.local_partition_algorithm = \
+			local_partition_algorithm
+		self.global_partition_algorithm = \
+			global_partition_algorithm
 		self.executionInfo = None
 		self.egoNetPartitions = None
 		self.egoNets = None
 		self.parameters = parameters
 		self.timings = None
+
+	@staticmethod
+	def output_parameter_names():
+		return ['Local Clustering Algorithm', 'Global Clustering Algorithm', 'Extend EgoNet Strategy',
+		        'Extend and Partition Iterations', 'Maximum Extend Factor', 'Edges Score Strategy',
+		        'connectPersonasStrat', 'signMerge', 'secondarySigExtRounds',
+		        'onlyCheckSignOfMaxCandidates', 'Check Candidates Factor', 'onlyUpdatedCandidates']
 
 	def __copy__(self):
 		return EgoSplitAlgorithm(self.name, self.parameters,
@@ -80,7 +93,8 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	def create_cover(self):
 		algo = EgoSplitting(self.graph, self.local_partition_algorithm,
 		                    self.global_partition_algorithm)
-		algo.setParameters(self.parameters)
+		algo.setParameters({key.encode('utf-8'): str(value).encode('utf-8')
+		                    for (key, value) in self.parameters.items()})
 		algo.setGroundTruth(self.ground_truth)
 
 		with self.timer:

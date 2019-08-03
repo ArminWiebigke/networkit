@@ -67,6 +67,7 @@ void EgoSplitting::init() {
 	parameters["storeEgoNet"] = "No";
 	parameters["addEgoNode"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
+	parameters["maxEgoNetsStored"] = "2000";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -83,17 +84,18 @@ void EgoSplitting::init() {
 
 	// Parameters for ego-net extension
 	parameters["extendOverDirected"] = "No";
-	parameters["addNodesFactor"] = "1";
+	parameters["Maximum Extend Factor"] = "1";
 	parameters["addNodesExponent"] = "0.8";
 	parameters["edgesBetweenNeigNeig"] = "Yes";
 	parameters["minNodeDegree"] = "0";
 	parameters["triangleThreshold"] = "0";
 	parameters["onlyDirectedCandidates"] = "Yes";
 	parameters["extendDirectedBack"] = "Yes";
+	parameters["Extend and Partition Iterations"] = "1";
 
 	// Parameters for significance extension
-	parameters["extendPartitionIterations"] = "2";
-	parameters["extendStrategySecond"] = "significance";
+	parameters["Extend and Partition Iterations"] = "2";
+	parameters["Sig Extend Base Clustering"] = "None";
 	parameters["maxSignificance"] = "0.1";
 	parameters["orderedStatPos"] = "0.1";
 	parameters["sortGroups"] = "No";
@@ -105,20 +107,20 @@ void EgoSplitting::init() {
 	parameters["sigSecondRoundStrat"] = "updateCandidates";
 	parameters["secondarySigExtRounds"] = "3";
 	parameters["onlyCheckSignOfMaxCandidates"] = "Yes";
-	parameters["evalSignFactor"] = "10";
+	parameters["Check Candidates Factor"] = "10";
 	parameters["onlyUpdatedCandidates"] = "Yes";
 
-	// Parameters for edgeScores
-	parameters["extendStrategy"] = "edgeScore";
-	parameters["scoreStrategy"] = "score";
-//	parameters["extendPartitionIterations"] = "1";
+	// Parameters for Edgess
+	parameters["Extend EgoNet Strategy"] = "Edges";
+	parameters["Edges Score Strategy"] = "Edges^2 / Degree";
+	parameters["Edges Iterative"] = "No";
 
 	// Test parameters
 //	parameters["storeEgoNet"] = "Yes";
 //	parameters["connectPersonas"] = "No";
 //	parameters["processEgoNet"] = "extend";
-//	parameters["extendStrategy"] = "significance";
-//	parameters["scoreStrategy"] = "score";
+//	parameters["Extend EgoNet Strategy"] = "Significance";
+//	parameters["Edges Score Strategy"] = "score";
 
 }
 
@@ -221,8 +223,9 @@ void EgoSplitting::createEgoNets() {
 
 
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
-	// Only store 1000 ego-nets (expected)
-	double storePercnt = 1000.0 / G.numberOfNodes();
+	// Only store maxEgoNets ego-nets (expected)
+	count maxEgoNets = std::stoi(parameters.at("maxEgoNetsStored"));
+	double storePercnt = maxEgoNets * 1.0 / G.numberOfNodes();
 	if (Aux::Random::real() > storePercnt)
 		return;
 

@@ -23,14 +23,16 @@ class OslomGTest : public testing::Test {
 
 TEST_F(OslomGTest, testOslomCleanUp) {
 	for (int i = 0; i < 1; ++i) {
-		ClusteredRandomGraphGenerator gen(400, 10, 0.7, 0.05);
-		Graph G = gen.generate();
-		EdgeListReader reader('\t', 0);
-//		Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-//		Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+//		ClusteredRandomGraphGenerator gen(400, 10, 0.7, 0.05);
+//		Graph G = gen.generate();
+
+//		EdgeListReader reader('\t', 0);
+//		Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
+//		Cover C = CoverReader{}.read("/home/armin/graphs/com-amazon.all.dedup.cmty.txt",
 //		                             G);
-//		EdgeListReader reader(' ', 0);
-//		Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
+		EdgeListReader reader(' ', 0);
+		Graph G = reader.read("/home/armin/graphs/lfr_om3.txt");
+//		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
 //		G.removeSelfLoops();
 
 		EgoSplitting algo(G);

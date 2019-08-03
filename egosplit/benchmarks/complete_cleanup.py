@@ -25,54 +25,54 @@ class CleanUp:
 
 
 def clean_up_cover(graph, cover, ground_truth, clean_up):
-	if clean_up == "" or clean_up == "no-clean" or clean_up == "*":
+	if clean_up == '' or clean_up == 'No Clean Up' or clean_up == '*':
 		return cover
-	if clean_up == "clean-full":
-		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat="remove",
-		                        check_unions=True, check_minimality=True,
-		                        max_extend=100)
-	elif clean_up == "clean-remove":
+	if clean_up == 'clean-full':
+		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat='remove',
+		                          check_unions=True, check_minimality=True,
+		                          max_extend=100)
+	elif clean_up == 'OSLOM-remove':
 		cover, _ = clean_up_oslom(graph, cover)
-	elif clean_up == "clean-shrink":
-		cover, _ = clean_up_oslom(graph, cover, cleanup_strategy="check")
-	elif clean_up == "clean-merge":
-		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat="merge")
-	elif clean_up == "clean-merge,overl":
+	elif clean_up == 'clean-shrink':
+		cover, _ = clean_up_oslom(graph, cover, cleanup_strategy='check')
+	elif clean_up == 'OSLOM-merge':
+		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat='merge')
+	elif clean_up == 'OSLOM-merge & Remove Overlapping':
 		cover = remove_overlap_comms(graph, cover, min_overlap=1.0)
-		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat="merge")
+		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat='merge')
 		cover = remove_overlap_comms(graph, cover, min_overlap=0.8)
-	elif clean_up == "clean-merge-5":
-		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat="merge", runs=5)
-	elif clean_up == "clean-merge-shrink":
-		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat="merge",
-		                        discard_max_extend_groups=False)
-	elif clean_up == "clean-keep":
+	elif clean_up == 'clean-merge-5':
+		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat='merge', runs=5)
+	elif clean_up == 'clean-merge-shrink':
+		cover, _ = clean_up_oslom(graph, cover, bad_groups_strat='merge',
+		                          discard_max_extend_groups=False)
+	elif clean_up == 'clean-keep':
 		cover, bad_groups = clean_up_oslom(graph, cover)
 		cover = add_communities(cover, bad_groups)
-	elif clean_up == "trim-gt":
+	elif clean_up == 'trim-gt':
 		cover = trim_comms(graph, ground_truth, cover)
-	elif clean_up == "trim-gt,overl":
+	elif clean_up == 'trim-gt,overl':
 		cover = trim_comms(graph, ground_truth, cover)
 		cover = merge_overlap_comms(graph, cover)
-	elif clean_up == "merge-overl":
+	elif clean_up == 'merge-overl':
 		cover = merge_overlap_comms(graph, cover, min_overlap=0.7)
-	elif clean_up == "remv-overl":
+	elif clean_up == 'Remove Overlapping':
 		cover = remove_overlap_comms(graph, cover, min_overlap=0.7)
-	elif clean_up == "remove-small":
+	elif clean_up == 'remove-small':
 		pass
-	elif clean_up != "":
-		raise RuntimeError("\"{}\" is not a valid cleanup option!".format(clean_up))
+	elif clean_up != '':
+		raise RuntimeError('\'{}\' is not a valid cleanup option!'.format(clean_up))
 	cover = remove_small_comms(graph, cover)
 	return cover
 
 
 def clean_up_oslom(G, cover, threshold=0.1, simple_cleanup=True,
-                 runs=1, cleanup_strategy='both', max_extend=2,
-                 keep_bad_groups=False, bad_groups_strat="remove",
-                 discard_max_extend_groups=True,
-                 check_minimality=False, check_unions=False,
-                 ):
-	bad_groups_filename = "bad_groups.txt"
+                   runs=1, cleanup_strategy='both', max_extend=2,
+                   keep_bad_groups=False, bad_groups_strat='remove',
+                   discard_max_extend_groups=True,
+                   check_minimality=False, check_unions=False,
+                   ):
+	bad_groups_filename = 'bad_groups.txt'
 	args = [
 		'-cup_runs', str(runs),
 		'-cu_strat', cleanup_strategy,
@@ -87,18 +87,26 @@ def clean_up_oslom(G, cover, threshold=0.1, simple_cleanup=True,
 		args.append('-keep_bad')
 	if simple_cleanup:
 		args.append('-simple_cleanup')
-	if bad_groups_strat == "remove":
+	if bad_groups_strat == 'remove':
 		pass
-	elif bad_groups_strat == "keep":
+	elif bad_groups_strat == 'keep':
 		args.append('-keep_bad_groups')
-	elif bad_groups_strat == "merge":
+	elif bad_groups_strat == 'merge':
 		args.append('-merge_discarded')
 	if check_minimality:
 		args.append('-check_min')
 	if discard_max_extend_groups:
 		args.append('-discard_max_extend_groups')
-
+	# print(args)
+	# args = ["-simple_cleanup",
+	#         "-merge_discarded", "-discard_max_extend_groups",
+	#         "-max_extend", "2",
+	#         "-cup_runs", "1"]
+	# print(args)
 	args = [arg.encode('utf-8') for arg in args]
+	# print(args)
+	# exit(0)
+	# args = []
 
 	cleanAlgo = OslomCleanUp(G, cover, args)
 	cleanAlgo.run()

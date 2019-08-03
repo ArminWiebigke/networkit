@@ -77,22 +77,26 @@ void EgoNetPartition::run() {
 	 **                               Extend and Partition                                   **
 	 ******************************************************************************************/
 	INFO("Extend EgoNet");
-	count extendIterations = std::stoi(parameters.at("extendPartitionIterations"));
+	count extendIterations = std::stoi(parameters.at("Extend and Partition Iterations"));
 	INFO("Extend for " + std::to_string(extendIterations) + " iterations");
-	std::string extendStrategy = parameters.at("extendStrategy");
+	std::string extendStrategy = parameters.at("Extend EgoNet Strategy");
+	if (extendStrategy == "Significance")
+		++extendIterations; // Significance needs a base partition
 	if (extendIterations < 1) {
 		partitionEgoNet();
 		addTime(timer, "4    Partition EgoNet");
 	}
 	Graph egoGraphBase;
 	NodeMapping nodeMappingBase;
+	if (extendIterations > 1) {
+		egoGraphBase = Graph(egoGraph);
+		nodeMappingBase = NodeMapping(egoMapping);
+	}
 	for (count i = 0; i < extendIterations; ++i) {
-		if (i == 0 && extendIterations > 1) {
-			egoGraphBase = Graph(egoGraph);
-			nodeMappingBase = NodeMapping(egoMapping);
-		}
+		extendStrategy = parameters.at("Extend EgoNet Strategy");
+		if (i == 0 && extendStrategy == "Significance")
+			extendStrategy = parameters.at("Significance Base Extend");
 		if (i > 0) {
-			extendStrategy = parameters.at("extendStrategySecond");
 			egoGraph = egoGraphBase;
 			egoMapping = nodeMappingBase;
 		}
@@ -142,17 +146,17 @@ EgoNetPartition::createGroundTruthPartition() const {
 
 void
 EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
-	if (extendStrategy == "none")
+	if (extendStrategy == "None")
 		return;
 
 	Aux::Timer timer;
 	timer.start();
 	const count directNeighborsCnt = egoMapping.nodeCount();
-	bool useBasePartition = result.numberOfSubsets() > 0;
-	if (!useBasePartition) {
-		result = Partition(egoGraph.upperNodeIdBound());
-		result.allToOnePartition();
-	}
+//	bool useBasePartition = result.numberOfSubsets() > 0;
+//	if (!useBasePartition) {
+//		result = Partition(egoGraph.upperNodeIdBound());
+//		result.allToOnePartition();
+//	}
 //	addTime(timer, "3" + std::to_string(it_char) + "1    Setup");
 
 //	std::set<node> foundNeighbors;
@@ -172,15 +176,15 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	/**********************************************************************************************
 	 **                           Get node candidates with scores                                **
 	 **********************************************************************************************/
-	double addNodesFactor = Aux::stringToDouble(parameters.at("addNodesFactor"));
+	double addNodesFactor = Aux::stringToDouble(parameters.at("Maximum Extend Factor"));
 	double addNodesExponent = Aux::stringToDouble(parameters.at("addNodesExponent"));
 	count extendNodeCnt = std::ceil(
 			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	std::vector<std::pair<node, double>> nodeScores; // node and its score
 	std::unique_ptr<ExtendScore> extendScore;
-	if (extendStrategy == "edgeScore") {
+	if (extendStrategy == "Edges") {
 		extendScore.reset(new ExtendEdges(egoNetData, extendNodeCnt));
-	} else if (extendStrategy == "significance") {
+	} else if (extendStrategy == "Significance") {
 		extendScore.reset(new ExtendSignificance(egoNetData, result, extendNodeCnt));
 	} else
 		throw std::runtime_error(extendStrategy

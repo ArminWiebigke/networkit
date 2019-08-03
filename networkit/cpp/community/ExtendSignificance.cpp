@@ -27,12 +27,14 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Parti
 		  sigTable(egoNetData.sigTable),
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
 		  mergeGroups(parameters.at("signMerge") == "Yes"),
-		  sortGroupsStrat(parameters.at("sortGroups") == "significance"),
+		  sortGroupsStrat(parameters.at("sortGroups") == "Significance"),
 		  maxSignificance(Aux::stringToDouble(parameters.at("maxSignificance"))),
 		  maxGroupCnt(std::stoi(parameters.at("maxGroupsConsider"))),
 		  minEdgesToGroup(std::stoi(parameters.at("minEdgesToGroupSig"))),
 		  significantGroup(egoNetData.significantGroup),
 		  edgesToGroups(egoNetData.edgesToGroups) {
+	if (basePartition.numberOfSubsets() == 0)
+		throw std::runtime_error("Missing Base Partition for Significance!");
 	double maxSig = maxSignificance;
 	// For a given number of external nodes, calculate the minimal r-score that is significant
 	// We can then simply compare the r-values instead of calculating the ordered statistics
@@ -79,7 +81,7 @@ void ExtendSignificance::run() {
 	addTime(timer, "5    Sort candidates");
 
 	if (parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
-		double evalFactor = Aux::stringToDouble(parameters.at("evalSignFactor"));
+		double evalFactor = Aux::stringToDouble(parameters.at("Check Candidates Factor"));
 		count evalCandidates = evalFactor * maxExtendedNodes;
 		if (candidatesSorted.size() > evalCandidates)
 			candidatesSorted.resize(evalCandidates);
@@ -153,7 +155,6 @@ void ExtendSignificance::updateCandidates() {
 	for (node w : addedCandidates) {
 		node group = significantGroup[w];
 		// Update group stubs
-		// TODO?: edges between added candidates
 		groupStubs.groupTotal[group] += G.degree(w);
 		groupStubs.groupOutgoing[group] += G.degree(w) - 2 * edgesToGroups[w][group];
 		groupStubs.externalNodes[group] -= 1;
@@ -436,7 +437,7 @@ ExtendSignificance::checkMergedGroups(const std::string &t_prefix, Aux::Timer &t
 			return (groupSigs[a.second]) > groupSigs[b.second];
 		});
 	}
-	addTime(timer, t_prefix + "d    Sort groups by significance");
+	addTime(timer, t_prefix + "d    Sort groups by Significance");
 
 	auto it = groupEdges.begin();
 	node bestGroup = it->second;

@@ -39,25 +39,25 @@ markers = {
 
 metric_names = {
 	bm.F1.get_name(): {
-		"description": "F1 Score",
+		"ylabel": "F1-Score",
 		"y_val": "F1",
 		"file_name": "F1",
 		"ylim": (0, 1.05),
 	},
 	bm.F1_rev.get_name(): {
-		"description": "F1 Score (reversed)",
+		"ylabel": "F1-Score (reversed)",
 		"y_val": "F1",
 		"file_name": "F1_rev",
 		"ylim": (0, 1.05),
 	},
 	bm.NMI.get_name(): {
-		"description": "NMI Score",
+		"ylabel": "NMI",
 		"y_val": "NMI",
 		"file_name": "NMI",
 		"ylim": (0, 1.05),
 	},
 	bm.Time.get_name(): {
-		"description": "Running Time",
+		"ylabel": "Running Time [s]",
 		"y_val": "time (s)",
 		"file_name": "time",
 		"ylim": 0,
@@ -88,22 +88,39 @@ algo_sets["ego_parameters"] = [
 ]
 
 
-def set_sns_style():
+def set_sns_style(font_size=1.5):
 	sns.set(context="notebook", style="whitegrid", palette="bright",
-	        # font_scale=0.8,
-	        font_scale=1.2,
+	        font_scale=1.5,
 	        )
 
 
-def set_layout(ax, legend_handles=None, legend_labels=None):
+def set_legend(ax, legend_handles=None, legend_labels=None):
 	legend_args = {
+		**get_legend_args(),
 		"loc": "lower center",
-		"bbox_to_anchor": (0.5, 1.01),
-		"ncol": 3,
-		"prop": {'size': 9}
+		"bbox_to_anchor": (0.5, 1.01)
 	}
 	if legend_handles is None:
 		ax.legend(**legend_args)
 	else:
 		ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
+
+
+def get_legend_args():
+	legend_args = {
+		# "ncol": 3,
+		"prop": {'size': 8}
+	}
+	return legend_args
+
+
+def set_layout():
+	plt.rc('text', usetex=True)
+	preamble = \
+		r'\usepackage{siunitx} ' \
+		r'\usepackage[utf8]{inputenc}' \
+		r'\usepackage[T1]{fontenc}' \
+		r'\usepackage{upgreek}' \
+		r'\usepackage{lmodern}'
+	plt.rc('text.latex', preamble=preamble)
 	plt.tight_layout(rect=(0, 0, 1, 0.96))

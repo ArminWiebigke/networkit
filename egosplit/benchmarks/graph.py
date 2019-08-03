@@ -24,12 +24,12 @@ class LFRGraph(BenchGraph):
 	"""An input graph created by the LFR graph generator."""
 	def __init__(self, name="LFR", parameter_dict=None):
 		assert(len(parameter_dict) == len(self.parameter_names()))
-		self.lfr_paramters = parameter_dict
+		self.lfr_parameters = parameter_dict or {}
 		graph, cover = genLFR(**parameter_dict)
 		super(LFRGraph, self).__init__(graph, cover, name, parameter_dict)
 
-	def get_lfr_parameters(self):
-		return [self.lfr_paramters[p] for p in self.parameter_names()]
+	# def get_lfr_parameters(self):
+	# 	return self.lfr_paramters
 
 	@staticmethod
 	def parameter_names():

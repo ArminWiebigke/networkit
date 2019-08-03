@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from algorithms import EgoSplitAlgorithm
 from graph import LFRGraph
 
 
@@ -59,7 +60,7 @@ class CoverBenchmark:
 	def get_algo_name(self):
 		name = self.algo.name
 		if self.clean_up.name:
-			name += "_" + self.clean_up.name
+			name += " | " + self.clean_up.name
 		return name
 
 	def clear(self):
@@ -69,16 +70,30 @@ class CoverBenchmark:
 
 	@staticmethod
 	def output_header():
-		return ["Algorithm", "Graph Name", "Graph ID", "Number of Nodes", "Number of Edges"] \
-		       + LFRGraph.parameter_names()
+		header = ["Algorithm"]
+		header += EgoSplitAlgorithm.output_parameter_names()
+		header += ["Graph Name", "Graph ID", "Number of Nodes", "Number of Edges"]
+		header += LFRGraph.parameter_names()
+		return header
 
 	def output_line(self):
-		line = [self.get_algo_name(), self.get_graph_name(), self.get_graph_id(),
-		        self.get_graph_nodes(), self.get_graph_edges()]
+		# Algo
+		line = [self.get_algo_name()]
 		try:
-			line += self.graph.get_lfr_parameters()
+			algo_params = self.algo.parameters
 		except AttributeError:
-			line += ["" for _ in LFRGraph.parameter_names()]
+			algo_params = {}
+		line += [algo_params.get(p, "")
+		         for p in EgoSplitAlgorithm.output_parameter_names()]
+		# Graph
+		line += [self.get_graph_name(), self.get_graph_id(),
+		         self.get_graph_nodes(), self.get_graph_edges()]
+		try:
+			graph_params = self.graph.lfr_parameters
+		except AttributeError:
+			graph_params = {}
+		line += [graph_params.get(p, "")
+		         for p in LFRGraph.parameter_names()]
 		return line
 
 

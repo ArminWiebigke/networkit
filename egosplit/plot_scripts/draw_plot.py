@@ -1,13 +1,17 @@
+import os
+import subprocess
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from enum import Enum
 
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
-	StrMethodFormatter, Formatter
+	StrMethodFormatter, Formatter, FuncFormatter
 from pandas import DataFrame, Series
 
-from .config import set_layout
+from networkit.stopwatch import clockit
+from .config import set_layout, set_legend, get_legend_args, set_sns_style
 from .read_data import create_column_if_missing
 
 
@@ -21,21 +25,29 @@ class PlotType(Enum):
 # Create a plot
 def make_plot(data,
               output_dir,
+              plot_subdir,
+              file_name,
+              legend_file_name,
+              x,
+              y,
+              hue,
+              plot_args,
+              ax_set,
               filter_data=None,
               x_filter=None,
               graph_filter='',
               algo_matches='',
+              algos_filter='',
+              replace_legend=None,
               add_algos=None,
               remove_algo_part=None,
               one_plot_per_graph=False,
               title=None,
-              file_name='',
-              plot_type=PlotType.line,
-              x=None,
-              y=None,
-              hue=None,
-              plot_args=None,
-              ax_set=None):
+              plot_type=PlotType.line,):
+	replace_legend = replace_legend or {}
+	add_algos = add_algos or []
+	remove_algo_part = remove_algo_part or []
+
 	# Create the columns for x, y, hue if not already present in data
 	for column in [x, y, hue]:
 		create_column_if_missing(data, column)
@@ -51,18 +63,21 @@ def make_plot(data,
 		filtered_data.query(x_filter, inplace=True)
 	graphs = get_unique_values(filtered_data, 'Graph Name')
 	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
+	algo_list = [a for a in algo_list if a not in algos_filter]
+
 	filtered_data.query('`Algorithm` in @algo_list', inplace=True)
 	if len(filtered_data) is 0:
 		return
 
 	# Create plots
-	if not output_dir[-1] == "/":
-		output_dir += "/"
-
-	def create_plot(graph_data):
+	# set_sns_style(font_size)  # TODO: This is not working, does not change font size
+	@clockit
+	def create_plot(graph_data, single_x_value=False):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
 		this_plot_args = get_plot_args(algo_list, hue, plot_args, this_plot_type, x, y)
+		a4_dims = (7, 5)
+		# fig, ax = plt.subplots(figsize=a4_dims)
 		fig, ax = plt.subplots()
 		this_plot_args = {
 			**this_plot_args,
@@ -72,57 +87,115 @@ def make_plot(data,
 		draw_plot(this_plot_type, this_plot_args)
 
 		sns.despine(ax=ax)
-		set_ax(ax, ax_set, fig, x)
-		clean_legend(algo_matches, ax, remove_algo_part)
+		set_ax(fig, ax, ax_set, x)
+		# clean_legend(ax, remove_algo_part)
+		ax.legend().remove()
+		if single_x_value:
+			ax.get_xaxis().set_visible(False)
+		set_layout()
+
 		if title:
 			fig.suptitle(title)
-		fig.savefig(output_dir + file_name + '.pdf')
+		fig.savefig(output_dir + plot_subdir + file_name + '.pdf')
 		plt.close(fig)
-		with open(output_dir + file_name + '-table.tex', 'w') as f:
-			f.write(latex_table(filtered_data, hue, x, y, remove_algo_part))
+
+		def replace_label_func(l):
+			return replace_legend_entry(l, remove_algo_part, replace_legend)
+		with open(output_dir + 'tables/' + plot_subdir + file_name + '.tex', 'w') as f:
+			f.write(latex_table(graph_data, hue, x, y, replace_label_func))
+
+		legend_file = output_dir + plot_subdir + '{}.pdf'.format(legend_file_name)
+		save_legend(ax, legend_file, hue, replace_label_func)
 
 	# Make one plot per graph if graph is not on the x-axis
 	if one_plot_per_graph:
 		file_name_base = file_name
-		title_base = title
+		# title_base = title or ''
 		for graph in graphs:
-			file_name = file_name_base + "_" + graph
-			title = "{} ({})".format(title_base, graph)
+			file_name = file_name_base + '_' + graph
 			graph_data = filtered_data.query('`Graph Name` == @graph')
-			create_plot(graph_data)
+			remove_xlabel = x == 'Graph Name'
+			create_plot(graph_data, remove_xlabel)
 	else:
 		create_plot(filtered_data)
 
 
-def latex_table(data, hue, x, y, remove_algo_part):
+def save_legend(ax, legend_file, hue, replace_label_func):
+	fig_leg = plt.figure()
+	ax_leg = fig_leg.add_subplot(111)
+	handles, labels = ax.get_legend_handles_labels()
+	if hue in labels:
+		idx = labels.index(hue)
+		del labels[idx]
+		del handles[idx]
+	# labels, handles = zip(*(sorted(zip(labels, handles), key=lambda t: t)))
+	# Remove/replace labels
+	labels = [replace_label_func(l) for l in labels]
+	num_columns = 5
+	while legend_too_long(labels, num_columns):
+		num_columns -=1
+	handles, labels = transpose_legend(handles, labels, num_columns)
+	ax_leg.legend(
+		# title=hue,
+		handles=handles,
+		labels=labels,
+		ncol=num_columns,
+		**get_legend_args(),
+		loc='center')
+	# hide the axes frame and the x/y labels
+	ax_leg.axis('off')
+	fig_leg.savefig(legend_file)
+	plt.close(fig_leg)
+
+
+def transpose_legend(handles, labels, num_columns):
+	new_handles = []
+	new_labels = []
+	for i in range(num_columns):
+		new_handles.extend(handles[i::num_columns])
+		new_labels.extend(labels[i::num_columns])
+	return new_handles, new_labels
+
+
+def legend_too_long(labels, num_columns):
+	if num_columns == 1:
+		return False
+	max_width = 90 - 9 * num_columns
+	for line in [labels[i:i + num_columns] for i in range(0, len(labels), num_columns)]:
+		length = sum([len(l) for l in line])
+		if length > max_width:
+			return True
+	return False
+
+
+def replace_legend_entry(label, remove_algo_part, replace_legend):
+	for remove in remove_algo_part:
+		label = label.replace(remove, '')
+	for remove, with_value in replace_legend.items():
+		if label == remove:
+			label = with_value
+	return label
+
+
+@clockit
+def latex_table(data, hue, x, y, replace_label_func):
 	hue_values = sorted(get_unique_values(data, hue))
 	x_values = sorted(get_unique_values(data, x))
 	table_data = DataFrame(columns=x_values)
 	for hue_value in hue_values:
-		hue_data = data.query("{} == @hue_value".format(hue))
+		hue_data = data.query('`{}` == @hue_value'.format(hue))
 		mean_data = hue_data.groupby(x).mean()
 		name = hue_value
-		for remove in remove_algo_part:
-			name = name.replace(remove, '')
+		if hue == 'Algorithm':
+			name = replace_label_func(name)
 		series = Series(mean_data[y], name=name)
 		table_data = table_data.append(series)
-	return table_data.to_latex(float_format=float_format)
+	return table_data.to_latex(float_format=float_format, escape=False)
 
 
-def float_format(x, decimals=2):
+def float_format(x, decimals=3):
 	format_str = '{:.' + str(decimals) + 'f}'
 	return format_str.format(x)
-	# if x > 10:
-	# 	return '{:.1f}'.format(x)
-	# if x > 0.1:
-	# 	return '{:.3f}'.format(x)
-	# if x > 0.01:
-	# 	return '{:.4f}'.format(x)
-	# if x > 0.001:
-	# 	return '{:.5f}'.format(x)
-	# if x > 0.0001:
-	# 	return '{:.6f}'.format(x)
-	# return '{:.7f}'.format(x)
 
 
 def confirm_plot_type(plot_type, graph_data, x_values):
@@ -138,16 +211,13 @@ def get_unique_values(filtered_data, column):
 	return filtered_data.groupby(column).mean().index.values
 
 
-def clean_legend(algo_matches, ax, remove_algo_part):
+def clean_legend(ax, remove_algo_part):
 	legend_handles, legend_labels = ax.get_legend_handles_labels()
-	if remove_algo_part:
-		assert (isinstance(remove_algo_part, list))
-		remove_list = remove_algo_part
-	else:
-		remove_list = algo_matches
+	assert (isinstance(remove_algo_part, list))
+	remove_list = remove_algo_part
 	for remove in remove_list:
 		legend_labels = [l.replace(remove, '') for l in legend_labels]
-	set_layout(ax, legend_handles, legend_labels)
+	set_legend(ax, legend_handles, legend_labels)
 
 
 def draw_plot(plot_type, plot_args):
@@ -157,44 +227,62 @@ def draw_plot(plot_type, plot_args):
 		PlotType.swarm: sns.swarmplot,
 		PlotType.violin: sns.violinplot,
 	}
-	plot_functions[plot_type](**plot_args)
+	return plot_functions[plot_type](**plot_args)
 
 
 class MinorFormatter(Formatter):
 	def __call__(self, x, pos=None):
-		s = "{:.1f}".format(x)
+		s = '{:.1f}'.format(x)
 		return s[-2:]
 
 
-def set_ax(ax, ax_set, fig, x):
+def set_ax(fig, ax, ax_set, x):
 	ax_set = ax_set or {}
 	ax.set(
 		**ax_set,
 	)
-	if x == "Communities per Node":
+	if x == 'Communities per Node':
 		ax.xaxis.set(
 			major_locator=MultipleLocator(1),
 			major_formatter=StrMethodFormatter('{x:.0f}'),
 			minor_formatter=MinorFormatter(),
 		)
-		min_x, max_x = ax.get_xlim()
-		if min_x <= 1.2 and max_x >= 1.8:
-			minor_xticks = [1.2, 1.4, 1.6, 1.8]
-			ax.set_xticks(minor_xticks, minor=True)
-			ax.tick_params(axis='both', which='minor', labelsize=6)
+		minor_ticks = [x_val for x_val in ax.lines[0].get_xdata() if 1 < x_val < 2]
+		if minor_ticks:
+			ax.set_xticks(minor_ticks, minor=True)
+			ax.tick_params(axis='both', which='minor', labelsize=9)
+
+	# for barplot
+	xlabels = [l.get_text() for l in ax.get_xticklabels()]
+	if 'FB_' in xlabels[0]:
+		xlabels = [remove_facebook_prefix(l) for l in xlabels]
+		ax.set_xticklabels(xlabels)
+	# for lineplot
+	if ax.lines:
+		ticks = [x_val for x_val in ax.lines[0].get_xdata()]
+		if isinstance(ticks[0], str) and 'FB_' in ticks[0]:
+			ax.set_xticks(ax.get_xticks())
+			ax.set_xticklabels([remove_facebook_prefix(t) for t in ticks])
+
 	fig.canvas.draw()
+
+
+def remove_facebook_prefix(label):
+	if 'FB_' in label:
+		label = label[5:]
+	return label
 
 
 def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
 	if plot_type == PlotType.line:
 		default_plot_args = {
 			'markers': True,
+			'markersize': 9,
 			'linewidth': 2,
 			'ci': None,
 			'style': hue,
+			'dashes': False,
 		}
-		if len(algo_list) > 4:
-			default_plot_args['dashes'] = False
 		if len(algo_list) > 8:
 			default_plot_args['markers'] = False
 	elif plot_type == PlotType.swarm:
@@ -233,18 +321,16 @@ def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
 
 def get_algo_list(algo_matches, add_algos, data):
 	algo_set = set()
-	if algo_matches:
-		assert (isinstance(algo_matches, list))
-		for algo_match in algo_matches:
-			algo_data = data.query('Algorithm.str.contains(@algo_match)')
-			algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
+	assert (isinstance(algo_matches, list))
+	for algo_match in algo_matches:
+		algo_data = data.query('Algorithm.str.contains(@algo_match)')
+		algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
 	else:
 		algo_set = set(get_unique_values(data, 'Algorithm'))
-	if add_algos:
-		for algo in add_algos:
-			algo_set.add(algo)
+	for algo in add_algos:
+		algo_set.add(algo)
 	# Set ground truth as last algorithm
-	gt = 'Ground_Truth'
+	gt = 'Ground Truth'
 	if gt in algo_set:
 		algo_set.remove(gt)
 		algo_list = sorted(list(algo_set)) + [gt]

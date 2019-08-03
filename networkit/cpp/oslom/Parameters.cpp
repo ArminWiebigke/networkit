@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "Parameters.h"
+#include "../auxiliary/ParseString.h"
 
 void remove_element(std::vector<std::string> &arguments, int index) {
 	for (size_t i = index; i < arguments.size() - 1; ++i) {
@@ -19,7 +20,7 @@ std::string get_value<std::string>(const std::string &value) {
 
 template<>
 double get_value<double>(const std::string &value) {
-	return std::stod(value);
+	return Aux::stringToDouble(value);
 }
 
 template<>

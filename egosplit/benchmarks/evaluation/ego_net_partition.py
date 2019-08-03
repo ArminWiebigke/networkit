@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from copy import copy
 
@@ -7,14 +8,18 @@ from networkit.components import ConnectedComponents
 from egosplit.benchmarks.evaluation.output import *
 from networkit.stopwatch import clockit
 
+
 # Evaluate the partition of the ego-nets
-def analyse_ego_net_partitions(benchmarks, result_dir, append):
+def analyse_ego_net_partitions(benchmarks, result_dir, append, write_scores_per_egonet):
 	open_mode = 'w'
 	if append:
 		open_mode = 'a'
 	out_file_comm = open(result_dir + 'ego_net_communities.result', open_mode)
 	out_file_part = open(result_dir + 'ego_net_partitions.result', open_mode)
-	out_file_ego_metrics = open(result_dir + 'ego_net_ego_metrics.result', open_mode)
+	if write_scores_per_egonet:
+		out_file_ego_metrics = open(result_dir + 'ego_net_ego_metrics.result', open_mode)
+	else:
+		out_file_ego_metrics = open(os.devnull, 'w')
 	out_file_metrics = open(result_dir + 'ego_net_metrics.result', open_mode)
 	out_file_conduct = open(result_dir + 'ego_net_conductance.result', open_mode)
 	if not append:
@@ -53,9 +58,9 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 		*CoverBenchmark.output_header(),
 		"Ego-Node",
 		"Ego-Net Size",
-		"num_comms",
-		"metric_name",
-		"value",
+		"Number of GT Communities",
+		"Metric",
+		"Value",
 	))
 	out_file_metrics.write(create_line(
 		*CoverBenchmark.output_header(),
@@ -66,9 +71,9 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 		*CoverBenchmark.output_header(),
 		"Ego-Node",
 		"Community Size",
-		"cut",
-		"volume",
-		"conductance"
+		"Cut",
+		"Volume",
+		"Conductance"
 	))
 
 
@@ -76,12 +81,10 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
 def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
                               out_metrics, out_conduct):
 	try:
-		ego_net_partitions = benchmark.algo.ego_net_partition_of(0)
+		benchmark.algo.ego_net_partition_of(0)
 	except AttributeError:
 		return
 	ground_truth = benchmark.get_ground_truth()
-	algo_name = benchmark.get_algo_name()
-	graph_name = benchmark.get_graph_name()
 	graph = benchmark.get_graph()
 	total_sums = defaultdict(lambda: 0)
 	avg_metrics = defaultdict(lambda: 0)
@@ -113,10 +116,10 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		ego_sums["ext_num_gt_comms"] = len(result_list_comms_struct)
 		for result in result_list_comms_struct:
 			ego_sums["ext_conductance"] += result["conductance"]
+			ego_sums["ext_comm_fitness_0.5"] += result["comm_fitness_0.5"]
+			ego_sums["ext_comm_fitness_0.6"] += result["comm_fitness_0.6"]
+			ego_sums["ext_comm_fitness_0.7"] += result["comm_fitness_0.7"]
 			ego_sums["ext_comm_fitness_0.8"] += result["comm_fitness_0.8"]
-			ego_sums["ext_comm_fitness_0.9"] += result["comm_fitness_0.9"]
-			ego_sums["ext_comm_fitness_1.0"] += result["comm_fitness_1.0"]
-			ego_sums["ext_comm_fitness_1.1"] += result["comm_fitness_1.1"]
 			ego_sums["ext_cut"] += result["cut"]
 			ego_sums["ext_cut_comm"] += result["cut_comm"]
 			ego_sums["ext_volume"] += result["volume"]
@@ -252,7 +255,13 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		# Summary metrics
 		# TODO: Calculate scores per community/partition, take the average?
 		#   makes small communities more/equally important
+		for key, value in ego_sums.items():
+			total_sums[key] += value
 		ego_metrics = calc_metrics(ego_sums)
+		for key, value in ego_metrics.items():
+			avg_metrics[key] += value
+		avg_metrics['num_values'] += 1
+
 		for key, value in ego_metrics.items():
 			out_ego_metrics.write(create_line(
 				*benchmark.output_line(),
@@ -262,11 +271,6 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 				key,
 				value,
 			))
-		for key, value in ego_sums.items():
-			total_sums[key] += value
-		for key, value in ego_metrics.items():
-			avg_metrics[key] += value
-		avg_metrics['num_values'] += 1
 
 	total_metrics = {key: (value / avg_metrics['num_values'])
 	                 for (key, value) in avg_metrics.items()}
@@ -298,25 +302,24 @@ def calc_metrics(sums):
 		"Extended Nodes / Ego-Net Size": safe_div(sums["extended_nodes"], sums["ego_net_size"]),
 		"External Nodes Ratio": safe_div(sums["external_nodes_extended"],
 		                           sums["extended_ego_net_size"]),
-		"Added External Nodes / Added Nodes": safe_div(
+		"Added External Nodes Ratio": safe_div(
 			sums["external_nodes_extended"] - sums["external_nodes"],
 			sums["extended_ego_net_size"] - sums["ego_net_size"]),
 		"Conductance": safe_div(sums["ext_conductance"], sums["ext_num_gt_comms"]),
 		# "conductance_ratio": safe_div(
 		# 	(sums["ext_conductance"] / sums["ext_num_gt_comms"]),
 		# 	(sums["conductance"] / sums["num_gt_comms"]), 1),
-		"Community Fitness (alpha=0.8)": safe_div(sums["ext_comm_fitness_0.8"], sums["ext_num_gt_comms"]),
-		"Community Fitness (alpha=0.9)": safe_div(sums["ext_comm_fitness_0.9"], sums["ext_num_gt_comms"]),
-		"Community Fitness (alpha=1.0)": safe_div(sums["ext_comm_fitness_1.0"], sums["ext_num_gt_comms"]),
-		"Community Fitness (alpha=1.1)": safe_div(sums["ext_comm_fitness_1.1"], sums["ext_num_gt_comms"]),
+		"Community Fitness": safe_div(sums["ext_comm_fitness_0.8"], sums["ext_num_gt_comms"]),
 		"Ratio of Intra-Community Edges": safe_div(sums["ext_intra_edges"], sums["ext_egonet_edges"]),
-		"Change of Ratio of Intra-Community Edges": safe_div(
+		"Change of Intra-Edges": safe_div(
 			safe_div(sums["ext_intra_edges"], sums["ext_egonet_edges"]),
 			safe_div(sums["intra_edges"], sums["egonet_edges"]), 1) - 1,
 		"Components per Community": safe_div(sums["num_components"], sums["ext_num_gt_comms"]),
 		"Ratio of Disconnected Nodes": safe_div(sums["separate_nodes"], sums["ext_num_gt_comms"]),
 		"Persona Recall": safe_div(sums["persona_recall"], sums["num_gt_comms"]),
 		"Community Coverage": safe_div(sums["coverage"], sums["num_gt_comms"]),
+		"Number of Personas": sums["num_partitions"],
+		'Number of Ground-Truth Communities': sums["num_gt_comms"],
 	}
 
 	# a = 1 - metrics["Community Segmentation"]
@@ -448,12 +451,12 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 		else:
 			conductance = cut / volume
 		if volume == 0:
-			fitness_0_8, fitness_0_9, fitness_1_0, fitness_1_1 = 0, 0, 0, 0
+			fitness_0_5, fitness_0_6, fitness_0_7, fitness_0_8 = 0, 0, 0, 0
 		else:
+			fitness_0_5 = inner_degree / (volume ** 0.5)
+			fitness_0_6 = inner_degree / (volume ** 0.6)
+			fitness_0_7 = inner_degree / (volume ** 0.7)
 			fitness_0_8 = inner_degree / (volume ** 0.8)
-			fitness_0_9 = inner_degree / (volume ** 0.9)
-			fitness_1_0 = inner_degree / (volume ** 1.0)
-			fitness_1_1 = inner_degree / (volume ** 1.1)
 
 		result_list.append({
 			'comm_size': len(nodes),
@@ -461,10 +464,10 @@ def eval_comms_structure(ground_truth, truth_communities, ego_net):
 			'cut_comm': cut_comm,
 			'volume': volume,
 			'conductance': conductance,
+			'comm_fitness_0.5': fitness_0_5,
+			'comm_fitness_0.6': fitness_0_6,
+			'comm_fitness_0.7': fitness_0_7,
 			'comm_fitness_0.8': fitness_0_8,
-			'comm_fitness_0.9': fitness_0_9,
-			'comm_fitness_1.0': fitness_1_0,
-			'comm_fitness_1.1': fitness_1_1,
 		})
 	return result_list
 

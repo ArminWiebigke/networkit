@@ -10,7 +10,7 @@ def write_timings(benchmarks, result_dir, append):
 	for bm in benchmarks:
 		timings = bm.get_timings()
 		for name, value in timings.items():
-			name_str = str(name, 'utf-8').replace(" ", "_")
+			name_str = str(name, 'utf-8')
 			out_file.write(create_line(*bm.output_line(), name_str, value))
 
 
