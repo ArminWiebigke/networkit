@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from copy import copy
 
-from cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.cover_benchmark import CoverBenchmark
 from networkit import none
 from networkit.components import ConnectedComponents
 from egosplit.benchmarks.evaluation.output import *

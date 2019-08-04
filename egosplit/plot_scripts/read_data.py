@@ -37,9 +37,12 @@ class DataReader:
 		return self.data[name]
 
 	def read_file(self, name):
-		filename = '{}.result'.format(name)
-		file_path = os.path.join(self.result_dir, filename)
-		files = glob.glob(file_path)
+		files = []
+		for filename in ['*/{}.result', '{}.result']:
+			filename = filename.format(name)
+			file_path = os.path.join(self.result_dir, filename)
+			files += glob.glob(file_path)
+
 		if not files:
 			raise FileNotFoundError("File " + file_path + " not found")
 		else:

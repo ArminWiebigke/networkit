@@ -19,9 +19,8 @@ from egosplit.benchmarks.cover_benchmark import CoverBenchmark
 from egosplit.benchmarks.complete_cleanup import CleanUp
 
 
-def start_benchmarks(benchmark_config):
+def start_benchmarks(benchmark_config, iteration):
 	# setLogLevel('INFO')
-	iterations = 1
 	append_results = False
 	evaluations = [
 		'metrics',
@@ -37,36 +36,36 @@ def start_benchmarks(benchmark_config):
 		store_ego_nets = True
 
 	result_subfolder = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-	result_dir = '{}/{}-{}/'.format(get_result_dir(), result_subfolder, benchmark_config['result_dir'])
+	result_dir = '{}/{}-{}/{}/'.format(get_result_dir(), result_subfolder,
+	                                   benchmark_config['result_dir'], iteration)
 	os.makedirs(result_dir)
 	result_summary = OrderedDict()
 
-	for iteration in range(iterations):
-		print('Creating Graphs...')
-		graphs = get_graphs(benchmark_config['graph_sets'], 1)
+	print('Creating Graphs...')
+	graphs = get_graphs(benchmark_config['graph_sets'], 1)
 
-		ego_algos = get_ego_algos(benchmark_config['ego_part_algos'], benchmark_config['ego_params'],
-		                          store_ego_nets)
-		other_algos = get_other_algos(benchmark_config.get('other_algos', None))
-		algos = ego_algos + other_algos
+	ego_algos = get_ego_algos(benchmark_config['ego_part_algos'], benchmark_config['ego_params'],
+	                          store_ego_nets)
+	other_algos = get_other_algos(benchmark_config.get('other_algos', None))
+	algos = ego_algos + other_algos
 
-		if stream_to_gephi and len(graphs) * len(algos) > 8:
-			raise RuntimeError('Too many runs to stream!')
+	if stream_to_gephi and len(graphs) * len(algos) > 8:
+		raise RuntimeError('Too many runs to stream!')
 
-		print('Starting benchmarks...')
-		benchmarks = create_benchmarks(graphs, algos)
-		write_scores_per_egonet = benchmark_config['score_per_egonet']
-		if stream_to_gephi:
-			run_benchmarks(benchmarks)
-			evaluate_result(graphs, benchmarks, evaluations, append_results,
+	print('Starting benchmarks...')
+	benchmarks = create_benchmarks(graphs, algos)
+	write_scores_per_egonet = benchmark_config['score_per_egonet']
+	if stream_to_gephi:
+		run_benchmarks(benchmarks)
+		evaluate_result(graphs, benchmarks, evaluations, append_results,
+		                result_summary, result_dir, write_scores_per_egonet)
+	else:
+		for benchmark in benchmarks:
+			run_benchmarks([benchmark])
+			evaluate_result(graphs, [benchmark], evaluations, append_results,
 			                result_summary, result_dir, write_scores_per_egonet)
-		else:
-			for benchmark in benchmarks:
-				run_benchmarks([benchmark])
-				evaluate_result(graphs, [benchmark], evaluations, append_results,
-				                result_summary, result_dir, write_scores_per_egonet)
-				benchmark.clear()
-				append_results = True
+			benchmark.clear()
+			append_results = True
 
 	print_result_summary(result_summary, get_result_dir())
 

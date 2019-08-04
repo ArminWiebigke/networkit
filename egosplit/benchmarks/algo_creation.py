@@ -55,7 +55,7 @@ def egosplit_partition_algorithms(ego_part_algos):
 		partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 		# partition_algos['Potts_0.01'] = [lambda g: LPPotts(g, 0.01, 1, 20).run().getPartition()]
 		# partition_algos['Potts_0.05'] = [lambda g: LPPotts(g, 0.05, 1, 20).run().getPartition()]
-		partition_algos['Potts_0.1'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
+		partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 		# partition_algos['LPPotts_par'] = [
 		# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 		# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
@@ -168,7 +168,7 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 				'Maximum Extend Factor': factor,
 			}
 	if "extend" in ego_parameter_config:
-		ego_parameters['Edges'] = {
+		ego_parameters['EdgesScore'] = {
 			**edge_scores_standard,
 		}
 		ego_parameters['Significance'] = {
@@ -223,13 +223,6 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 				**significance_scores_standard,
 				'Extend and Partition Iterations': iterations,
 			}
-	if "ext-compare" in ego_parameter_config:
-		ego_parameters['EdgesScore'] = {
-			**edge_scores_standard,
-		}
-		ego_parameters['Significance'] = {
-			**significance_scores_standard,
-		}
 
 	if "test" in ego_parameter_config:
 		ego_parameters['EdgesScore'] = {
@@ -286,7 +279,7 @@ def create_egosplit_algorithms(partition_algos, ego_parameters, clean_ups):
 	i = 0
 	for part_name in partition_algos:
 		for para_name, parameters in ego_parameters.items():
-			name = '{}{}{}'.format('Ego({})'.format(i), part_name,
+			name = '{}{}{}'.format('Ego({:03.0f})'.format(i), part_name,
 			                       ' | ' + para_name if para_name else '')
 			algo = EgoSplitAlgorithm(
 				name,

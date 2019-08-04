@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -64,6 +66,9 @@ metric_names = {
 		"ylim": 0,
 	},
 }
+
+ego_metric_ylim = defaultdict(lambda: 0)
+ego_metric_ylim['Persona Recall'] = (0, 1.05)
 
 algo_sets = dict()
 algo_sets["clean"] = [

@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
-from egosplit.plot_scripts.config import metric_names
+from egosplit.plot_scripts.config import metric_names, ego_metric_ylim
 from egosplit.plot_scripts.draw_plot import make_plot, PlotType
 
 ego_extend_metrics = {
@@ -30,11 +30,11 @@ ego_cluster_metrics = {
 }
 
 algo_sets = {
-	# 'base': ['b!'],
-	# 'edges': ['e!'],
-	# 'signif': ['s!'],
+	'base': ['No Extension'],
+	'edges': ['Edges'],
+	'sig': ['Significance'],
 	'all': ['Ego', 'GCE', 'OSLOM', 'MOSES'],
-	# 'ego': ['Ego'],
+	'ego': ['Ego'],
 }
 
 graph_sets = {
@@ -71,6 +71,18 @@ graph_sets = {
 		},
 		# 'bar_plot': True,
 	},
+	'facebook_bar': {
+		'graph_filter': 'FB_',
+		'x': 'Graph Name',
+		'x_filter': None,
+		'plot_args': {
+			# 'dashes': [(5, 6) for _ in range(10)],
+		},
+		'ax_set': {
+		},
+		'bar_plot': True,
+	},
+	'overlap': None
 }
 
 timings = [
@@ -102,11 +114,13 @@ def run(data, output_dir, config):
 	for plot_func in config['plots']:
 		for graph_set_name in config['graph_sets']:
 			graph_set_params = graph_sets[graph_set_name]
-			algo_set_name = config['plot_algo_set']
-			algo_match = algo_sets[algo_set_name]
-			params = (data, output_dir, graph_set_name, graph_set_params, algo_set_name,
-			          algo_match, config)
-			plot_funcs[plot_func](*params)
+			if not graph_set_params:
+				continue
+			for algo_set_name in config['plot_algo_set']:
+				algo_match = algo_sets[algo_set_name]
+				params = (data, output_dir, graph_set_name, graph_set_params, algo_set_name,
+				          algo_match, config)
+				plot_funcs[plot_func](*params)
 
 
 def safe_filename(filename):
@@ -295,7 +309,7 @@ def ego_net_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_n
 			},
 			ax_set={
 				# 'ylim': (0, 1.05),
-				'ylim': 0,
+				'ylim': ego_metric_ylim[ego_metric],
 				'ylabel': ego_metric,
 			}
 		)

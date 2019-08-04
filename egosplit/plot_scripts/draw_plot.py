@@ -172,6 +172,7 @@ def replace_legend_entry(label, remove_algo_part, replace_legend):
 	for remove, with_value in replace_legend.items():
 		if label == remove:
 			label = with_value
+	label = label.replace('_', ' ')
 	return label
 
 
@@ -189,7 +190,6 @@ def latex_table(data, hue, x, y, replace_label_func):
 		series = Series(mean_data[y], name=name)
 		table_data = table_data.append(series)
 	x_values = [str(remove_facebook_prefix(l)) for l in x_values]
-	print(x_values)
 	return table_data.to_latex(float_format=float_format, escape=False, header=x_values)
 
 
