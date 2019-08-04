@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from egosplit.external import getFacebookGraph, getAmazonGraph5000
-from graph import BenchGraph, LFRGraph
+from egosplit.benchmarks.graph import BenchGraph, LFRGraph
 
 
 def get_graphs(graph_sets, iterations):

@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 from networkit.stopwatch import clockit
-from .extract_data_column import create_new_column_from_string
+from egosplit.plot_scripts.extract_data_column import create_new_column_from_string
 
 
 # @clockit
@@ -57,6 +57,9 @@ def create_column_if_missing(data, column):
 		elif column == 'Running Time / Average Degree':
 			data[column] = (data['Running Time'] /
 			                (data['Number of Edges'] / data['Number of Nodes'])).astype('float64')
+		elif column == 'time / (n + m)':
+			data[column] = 1e6 * (data['Running Time'] /
+			                (data['Number of Edges'] + data['Number of Nodes'])).astype('float64')
 		elif column == 'Running Time / (n + m)':
 			data[column] = 1000 * (data['Running Time'] /
 			                (data['Number of Edges'] + data['Number of Nodes'])).astype('float64')

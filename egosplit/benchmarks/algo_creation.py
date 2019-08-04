@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from networkit.community import PLM, PLP, LPPotts, SLPA, OslomCleanUp
-from algorithms import *
+from egosplit.benchmarks.algorithms import *
 from egosplit.external import *
 
 
@@ -232,7 +232,16 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 		}
 
 	if "test" in ego_parameter_config:
-		pass
+		ego_parameters['EdgesScore'] = {
+			**edge_scores_standard,
+		}
+		ego_parameters['Significance 1x'] = {
+			**significance_scores_standard,
+			'Extend and Partition Iterations': 1,
+		}
+		ego_parameters['Significance 3x'] = {
+			**significance_scores_standard,
+		}
 
 	# ego_parameters['gt'] = {
 	# 	**standard,

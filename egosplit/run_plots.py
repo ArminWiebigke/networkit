@@ -4,12 +4,12 @@ import os
 import sys
 import shutil
 import subprocess
+from multiprocessing import Pool
 
 from egosplit.benchmark_sets import get_benchmark_configs
 from egosplit.plot_scripts.read_data import DataReader
 from egosplit.plot_scripts.config import set_sns_style
 from egosplit.plot_scripts.create_plots import run
-from multiprocessing import Pool
 
 num_args = len(sys.argv)
 result_dir = sys.argv[1] if num_args > 1 else "results/"

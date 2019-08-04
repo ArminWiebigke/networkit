@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-from egosplit.benchmark_sets import get_benchmark_configs
-from networkit.stopwatch import Timer
-from egosplit.benchmarks.run import start_benchmarks
 from multiprocessing import Pool
+
+from networkit.stopwatch import Timer
+from egosplit.benchmark_sets import get_benchmark_configs
+from egosplit.benchmarks.run import start_benchmarks
 
 
 def run_benchmark(b):

@@ -1,10 +1,8 @@
 from collections import defaultdict
 
-from matplotlib.ticker import MultipleLocator
-
-from .config import metric_names
-from .draw_plot import make_plot, PlotType
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
+from egosplit.plot_scripts.config import metric_names
+from egosplit.plot_scripts.draw_plot import make_plot, PlotType
 
 ego_extend_metrics = {
 	'Community Coverage': 'coverage',
@@ -17,6 +15,7 @@ ego_extend_metrics = {
 	# 'Change of Intra-Edges': 'intra_change',
 	'Components per Community': 'components',
 	'Ratio of Disconnected Nodes': 'disconnected_nodes',
+	'Number of Ground-Truth Communities': 'gt_comms',
 }
 
 ego_cluster_metrics = {
@@ -66,7 +65,7 @@ graph_sets = {
 		'x': 'Graph Name',
 		'x_filter': None,
 		'plot_args': {
-			'dashes': [(1, 2) for _ in range(10)],
+			'dashes': [(5, 6) for _ in range(10)],
 		},
 		'ax_set': {
 		},
@@ -174,9 +173,10 @@ def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_na
 			legend_file_name='legend_{}_{}'.format(graph_set_name, algo_set_name),
 			one_plot_per_graph=False,
 			x=graph_set_params['x'],
-			y=metric,
+			y=metric_names[metric]['y_val'],
 			hue=config['hue'],
 			plot_args={
+				**graph_set_params.get('plot_args', {}),
 				'ci': 'sd' if config.get('show_deviation', False) else None,
 			},
 			ax_set={
@@ -247,6 +247,7 @@ def num_comms_plots(data, output_dir, graph_set_name, graph_set_params, algo_set
 		y='Number of Communities',
 		hue=config['hue'],
 		plot_args={
+			**graph_set_params.get('plot_args', {}),
 		},
 		ax_set={
 			'ylim': 0,
@@ -288,6 +289,7 @@ def ego_net_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_n
 			y='Value',
 			hue=config['hue'],
 			plot_args={
+				**graph_set_params.get('plot_args', {}),
 				# 'style': 'metric_name',
 				'ci': 'sd' if config.get('show_deviation', False) else None,
 			},

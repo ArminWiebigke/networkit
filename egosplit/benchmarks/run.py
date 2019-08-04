@@ -4,20 +4,19 @@ from collections import OrderedDict, defaultdict
 from copy import copy
 
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
-from algo_creation import get_ego_algos, get_other_algos
-from evaluation.timings import write_timings
-from graph_creation import get_graphs
-
 from networkit.stopwatch import clockit
 from networkit import setLogLevel
-from .evaluation.metrics import write_results_to_file, add_compact_results, \
+from egosplit.benchmarks.evaluation.metrics import write_results_to_file, add_compact_results, \
 	print_compact_results
-from .evaluation.ego_net_partition import analyse_ego_net_partitions
-from .evaluation.stream_to_gephi import stream_partition
-from .evaluation.cover_analysis import analyse_cover
+from egosplit.benchmarks.algo_creation import get_ego_algos, get_other_algos
+from egosplit.benchmarks.evaluation.timings import write_timings
+from egosplit.benchmarks.graph_creation import get_graphs
+from egosplit.benchmarks.evaluation.ego_net_partition import analyse_ego_net_partitions
+from egosplit.benchmarks.evaluation.stream_to_gephi import stream_partition
+from egosplit.benchmarks.evaluation.cover_analysis import analyse_cover
 from egosplit.benchmarks.cleanup import cleanup_test
-from .cover_benchmark import CoverBenchmark
-from .complete_cleanup import CleanUp
+from egosplit.benchmarks.cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.complete_cleanup import CleanUp
 
 
 def start_benchmarks(benchmark_config):

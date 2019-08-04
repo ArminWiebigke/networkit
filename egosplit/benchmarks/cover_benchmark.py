@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from algorithms import EgoSplitAlgorithm
-from graph import LFRGraph
+from egosplit.benchmarks.algorithms import EgoSplitAlgorithm
+from egosplit.benchmarks.graph import LFRGraph
 
 
 class CoverBenchmark:

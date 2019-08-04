@@ -2,7 +2,7 @@ import sys
 
 from networkit import gephi
 
-from ..algorithms import EgoSplitAlgorithm
+from egosplit.benchmarks.algorithms import EgoSplitAlgorithm
 
 
 def create_ground_truth_partition(node_id, egonet, ground_truth):

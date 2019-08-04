@@ -1,5 +1,5 @@
-from cover_benchmark import CoverBenchmark
-from evaluation.output import create_line
+from egosplit.benchmarks.cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.evaluation.output import create_line
 
 
 def write_timings(benchmarks, result_dir, append):

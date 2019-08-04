@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import pyplot as plt
+
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
 
 file_prefix = "plots/"
@@ -40,13 +41,13 @@ markers = {
 metric_names = {
 	bm.F1.get_name(): {
 		"ylabel": "F1-Score",
-		"y_val": "F1",
+		"y_val": "F1-Score",
 		"file_name": "F1",
 		"ylim": (0, 1.05),
 	},
 	bm.F1_rev.get_name(): {
 		"ylabel": "F1-Score (reversed)",
-		"y_val": "F1",
+		"y_val": "F1-Score (reversed)",
 		"file_name": "F1_rev",
 		"ylim": (0, 1.05),
 	},
@@ -57,8 +58,8 @@ metric_names = {
 		"ylim": (0, 1.05),
 	},
 	bm.Time.get_name(): {
-		"ylabel": "Running Time [s]",
-		"y_val": "time (s)",
+		"ylabel": r"Running Time / (n + m) [\SI{}{\micro\second}]",
+		"y_val": "time / (n + m)",
 		"file_name": "time",
 		"ylim": 0,
 	},
@@ -88,9 +89,17 @@ algo_sets["ego_parameters"] = [
 ]
 
 
-def set_sns_style(font_size=1.5):
+def set_sns_style():
+	plt.rc('text', usetex=True)
+	preamble = \
+		r'\usepackage{siunitx} ' \
+		r'\usepackage[utf8]{inputenc}' \
+		r'\usepackage[T1]{fontenc}' \
+		r'\usepackage{upgreek}' \
+		r'\usepackage{lmodern}'
+	plt.rc('text.latex', preamble=preamble)
 	sns.set(context="notebook", style="whitegrid", palette="bright",
-	        font_scale=1.5,
+	        font_scale=1.8,
 	        )
 
 
@@ -115,12 +124,4 @@ def get_legend_args():
 
 
 def set_layout():
-	plt.rc('text', usetex=True)
-	preamble = \
-		r'\usepackage{siunitx} ' \
-		r'\usepackage[utf8]{inputenc}' \
-		r'\usepackage[T1]{fontenc}' \
-		r'\usepackage{upgreek}' \
-		r'\usepackage{lmodern}'
-	plt.rc('text.latex', preamble=preamble)
 	plt.tight_layout(rect=(0, 0, 1, 0.96))

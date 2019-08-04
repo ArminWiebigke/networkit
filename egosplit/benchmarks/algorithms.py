@@ -5,7 +5,7 @@ from copy import copy
 
 from networkit.community import EgoSplitting, OLP, SLPA
 from networkit import graphio
-from context_timer import ContextTimer
+from egosplit.benchmarks.context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
 code_path = home_path + '/Code'

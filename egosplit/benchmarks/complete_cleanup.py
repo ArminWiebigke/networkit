@@ -1,10 +1,10 @@
 from copy import copy
 
-from .cleanup import merge_overlap_comms, merge_comms_entropy, trim_comms, \
+from egosplit.benchmarks.cleanup import merge_overlap_comms, merge_comms_entropy, trim_comms, \
 	add_communities, \
 	remove_small_comms, remove_overlap_comms
 from networkit.community import OslomCleanUp
-from .context_timer import ContextTimer
+from egosplit.benchmarks.context_timer import ContextTimer
 
 
 class CleanUp:

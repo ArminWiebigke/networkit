@@ -1,18 +1,16 @@
 import os
 import subprocess
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from enum import Enum
-
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
 	StrMethodFormatter, Formatter, FuncFormatter
 from pandas import DataFrame, Series
 
 from networkit.stopwatch import clockit
-from .config import set_layout, set_legend, get_legend_args, set_sns_style
-from .read_data import create_column_if_missing
+from egosplit.plot_scripts.config import set_layout, set_legend, get_legend_args, set_sns_style
+from egosplit.plot_scripts.read_data import create_column_if_missing
 
 
 class PlotType(Enum):
@@ -190,7 +188,9 @@ def latex_table(data, hue, x, y, replace_label_func):
 			name = replace_label_func(name)
 		series = Series(mean_data[y], name=name)
 		table_data = table_data.append(series)
-	return table_data.to_latex(float_format=float_format, escape=False)
+	x_values = [str(remove_facebook_prefix(l)) for l in x_values]
+	print(x_values)
+	return table_data.to_latex(float_format=float_format, escape=False, header=x_values)
 
 
 def float_format(x, decimals=3):
@@ -268,6 +268,8 @@ def set_ax(fig, ax, ax_set, x):
 
 
 def remove_facebook_prefix(label):
+	if not isinstance(label, str):
+		return label
 	if 'FB_' in label:
 		label = label[5:]
 	return label
@@ -325,8 +327,7 @@ def get_algo_list(algo_matches, add_algos, data):
 	for algo_match in algo_matches:
 		algo_data = data.query('Algorithm.str.contains(@algo_match)')
 		algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
-	else:
-		algo_set = set(get_unique_values(data, 'Algorithm'))
+	# algo_set = set(get_unique_values(data, 'Algorithm'))
 	for algo in add_algos:
 		algo_set.add(algo)
 	# Set ground truth as last algorithm
