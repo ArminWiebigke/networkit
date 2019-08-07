@@ -15,7 +15,7 @@ def run_benchmark(b, iteration):
 if __name__ == '__main__':
 	for b in get_benchmark_configs():
 		pool = Pool(4)
-		iterations = 2
+		iterations = 3
 		parameters = [(b, i) for i in range(iterations)]
 		print(parameters)
 		pool.starmap(run_benchmark, parameters, 1)

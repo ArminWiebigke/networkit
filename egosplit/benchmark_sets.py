@@ -1,5 +1,8 @@
 
 def get_benchmark_configs():
+	for config in benchmark_configs.values():
+		set_default_args(config)
+
 	configs = []
 	for b in benchmark_sets:
 		configs.append(benchmark_configs[b])
@@ -16,18 +19,33 @@ benchmark_sets = [
 	# 'sig-check-updated',
 	# 'sig-cluster-iter',
 	# 'ext-compare',
-	'local-cluster',
+	# 'local-cluster',
+	# 'connect-persona',
+	# 'global-cluster',
+	'clean-up',
 ]
+
+
+def set_default_args(config):
+	default_args = {
+		'clean_up_set': 'No Cleanup',
+		'hue': 'Algorithm',
+		'score_per_egonet': False,
+		'store_ego_nets': False,
+		'other_algos': None,
+	}
+	for key, value in default_args.items():
+		if key not in config:
+			config[key] = value
 
 
 benchmark_configs = {
 	'edges-score': {
 		'result_dir': 'edges-score',
 		'plot_dir': 'extend/edges/score_norm/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'fast',
 		'ego_params': ['no-extend', 'edges-score'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -44,9 +62,9 @@ benchmark_configs = {
 	'edges-factor': {
 		'result_dir': 'edges-factor',
 		'plot_dir': 'extend/edges/add_factor/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'fast',
 		'ego_params': ['no-extend', 'edges-factor'],
+		'store_ego_nets': True,
 		'score_per_egonet': True,
 		'graph_sets': [
 			'om',
@@ -62,10 +80,9 @@ benchmark_configs = {
 	'sig-merge': {
 		'result_dir': 'sig-merge',
 		'plot_dir': 'extend/sig/merge_groups/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'sig-merge'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -80,10 +97,9 @@ benchmark_configs = {
 	'sig-ext-iter': {
 		'result_dir': 'sig-ext-iter',
 		'plot_dir': 'extend/sig/extend_iterative/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'sig-ext-iter'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -98,10 +114,9 @@ benchmark_configs = {
 	'sig-check-updated': {
 		'result_dir': 'sig-check-updated',
 		'plot_dir': 'extend/sig/check_updated/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'sig-check-updated'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -116,10 +131,9 @@ benchmark_configs = {
 	'sig-max-candidates': {
 		'result_dir': 'sig-max-candidates',
 		'plot_dir': 'extend/sig/max_candidates/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'sig-max-candidates'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -134,10 +148,9 @@ benchmark_configs = {
 	'sig-cluster-iter': {
 		'result_dir': 'sig-cluser-iter',
 		'plot_dir': 'extend/sig/cluster_iterative/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'sig-cluster-iter'],
-		'score_per_egonet': False,
+		'store_ego_nets': True,
 		'graph_sets': [
 			'om',
 			# 'mu',
@@ -152,9 +165,9 @@ benchmark_configs = {
 	'ext-compare': {
 		'result_dir': 'ext-compare',
 		'plot_dir': 'extend/compare/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'leiden local',
 		'ego_params': ['no-extend', 'extend'],
+		'store_ego_nets': True,
 		'score_per_egonet': True,
 		'graph_sets': [
 			'om',
@@ -171,9 +184,9 @@ benchmark_configs = {
 	'local-cluster': {
 		'result_dir': 'local-cluster',
 		'plot_dir': 'local_cluster/',
-		'hue': 'Algorithm',
 		'ego_part_algos': 'local',
 		'ego_params': ['no-extend', 'extend'],
+		'store_ego_nets': True,
 		'score_per_egonet': True,
 		'graph_sets': [
 			'om',
@@ -183,61 +196,111 @@ benchmark_configs = {
 			'facebook_bar'
 		],
 		'remove_algo_parts': ['Ego', ' + Infomap', ' | No Clean Up', '!', ' | No Extension',
-		                      ' | Edges', ' | Significance'
+		                      ' | EdgesScore', ' | Significance'
 		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
 		'replace_legend': {},
 		'plots': ['ego_net_cluster', 'metrics', 'timings'],
 		'plot_algo_set': ['base', 'edges', 'sig'],
 	},
-	# 'ext-compare': {
-	# 	'result_dir': '*15:18:42',
-	# 	'plot_dir': 'extend/comparison/',
-	# 	'hue': 'Algorithm',
-	# 	'graph_sets': ['om', 'mu', 'facebook'],
-	# 	'remove_algo_parts': ['Ego', 'Leiden', ' + Infomap_', '_no-clean', '!',
-	# 	                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)]
-	# },
-	# 'sig-max-checked-cand': {
-	# 	'result_dir': '*-sig-max-checked-cand',
-	# 	'plot_dir': "extend/sig/max_candidates_checked/",
-	# 	'hue': 'Algorithm',
-	# 	'graph_sets': ['om'],
-	# 	'remove_algo_parts': ['Ego', 'Leiden', ' + Infomap_', '_no-clean', '!',
-	# 	                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)]
-	# },
-	# 'glob-compare-ext': {
-	# 	'result_dir': '*-glob-compare-ext',
-	# 	'plot_dir': "global_compare_ext/",
-	# 	'hue': 'Algorithm',
-	# 	'graph_sets': ['om'],
-	# 	'remove_algo_parts': ['Ego', '_no-clean', '!',
-	# 	                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)]
-	# },
-	# 'clean-up': {
-	# 	'result_dir': '*-clean-up*',
-	# 	'plot_dir': "clean_up/",
-	# 	'hue': 'Algorithm',
-	# 	'graph_sets': ['om', 'mu', 'facebook'],
-	# 	'remove_algo_parts': ['Ego', 'map' '!',
-	# 	                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)]
-	# },
+	'connect-persona': {
+		'result_dir': 'connect-persona',
+		'plot_dir': 'connect_persona/',
+		'ego_part_algos': "Leiden/Infomap + Infomap",
+		'ego_params': ['connect-persona'],
+		'store_ego_nets': True,
+		'graph_sets': [
+			'om',
+			'overlap',
+			'mu',
+			'facebook',
+		],
+		'plot_graph_sets': [
+			'om',
+			'mu',
+			# 'facebook',
+			'facebook_bar',
+		],
+		'remove_algo_parts': ['Ego', 'Leiden + Infomap', 'Infomap + Infomap', ' | No Clean Up',
+		                      ' | No Extension',
+		                      ' | EdgesScore | ',
+		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
+		'replace_legend': {'No Connection': 'NoConnection',
+		                   'Max Spanning Unweighted': 'MaxSpanUnweight',
+		                   'All Unweighted': 'AllUnweight',
+		                   'All Density Max Weight 1': 'AllWeight'},
+		'plots': ['metrics', 'timings'],
+		'plot_algo_set': ['Leiden-Info', 'Info-Info'],
+	},
+	'global-cluster': {
+		'result_dir': 'global-cluster',
+		'plot_dir': 'global_cluster/',
+		'ego_part_algos': "global",
+		'ego_params': ['edges'],
+		'graph_sets': [
+			'om',
+			'overlap',
+			'mu',
+			# 'facebook',
+		],
+		'plot_graph_sets': [
+			'om',
+			'mu',
+			'facebook',
+			'facebook_bar',
+		],
+		'remove_algo_parts': ['Ego', ' | No Clean Up', 'Infomap + ', 'Leiden + ',
+		                      ' | No Extension',
+		                      ' | EdgesScore',
+		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
+		'replace_legend': {},
+		'plots': ['metrics', 'comm_sizes', 'timings'],
+		'plot_algo_set': ['Info-local', 'Leiden-local'],
+	},
+	'clean-up': {
+		'result_dir': 'clean-up',
+		'plot_dir': 'clean_up/',
+		'ego_part_algos': "best",
+		'ego_params': ['edges'],
+		'clean_up_set': 'all',
+		'graph_sets': [
+			'om',
+			'overlap',
+			'mu',
+			'facebook',
+		],
+		'plot_graph_sets': [
+			'om',
+			'mu',
+			'facebook',
+			'facebook_bar',
+		],
+		'remove_algo_parts': ['Ego', ' | EdgesScore', 'Infomap + Surprise | ', 'Leiden + Infomap | ',
+		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
+		'replace_legend': {},
+		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
+		'plot_algo_set': ['Leiden-Info', 'Info-Surprise', 'Leiden-Info-noOSLOM',
+		                  'Info-Surprise-noOSLOM'],
+	},
 	'test': {
 		'result_dir': 'test',
 		'plot_dir': 'test/',
-		'hue': 'Algorithm',
-		'ego_part_algos': 'leiden local',
-		'ego_params': ['no-extend', 'test'],
-		'score_per_egonet': True,
+		'ego_part_algos': 'global',
+		'ego_params': ['test'],
+		'score_per_egonet': False,
 		'graph_sets': [
-			'om',
+			'test',
+			# 'om',
 			# 'mu',
 			# 'facebook'
 		],
-		'remove_algo_parts': ['Ego', 'Leiden + Infomap | ', ' | No Clean Up', '!',
+		'remove_algo_parts': ['Ego', ' | No Clean Up', ' | EdgesScore',
 		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
 		'replace_legend': {},
+		'plot_graph_sets': [
+			'facebook_bar',
+		],
 		# 'plots': ['ego_net_extend', 'ego_net_x_extend', 'timings'],
-		'plots': ['metrics'],
+		'plots': ['metrics', 'ego_net_cluster', 'comm_sizes'],
 		'plot_algo_set': ['all'],
 	},
 }

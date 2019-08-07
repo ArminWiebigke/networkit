@@ -1,6 +1,7 @@
 wheel
 seaborn
 sklearn
+pandas >= 0.25
 Cython
 python-igraph
 leidenalg

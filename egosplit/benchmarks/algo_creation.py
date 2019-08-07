@@ -27,22 +27,30 @@ def get_other_algos(algo_set):
 	return algos
 
 
-def get_ego_algos(ego_part_algos, ego_parameter_config, store_ego_nets):
+def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_nets):
+	if not ego_parameter_config:
+		return []
 	algos = []
-	if ego_parameter_config:
-		part_algos = egosplit_partition_algorithms(ego_part_algos)
+	part_algos = egosplit_partition_algorithms(ego_part_algos)
 
-		ego_parameters = get_ego_parameters(ego_parameter_config, store_ego_nets)
+	ego_parameters = get_ego_parameters(ego_parameter_config, store_ego_nets)
+	if clean_up_set == 'No Cleanup':
+		clean_ups = ['']
+	elif clean_up_set == 'all':
 		clean_ups = [
 			'No Clean Up',
 			# 'merge-overl',
 			# 'Remove Overlapping',
-			# 'OSLOM-merge',
-			# 'OSLOM-merge & Remove Overlapping',
+			'Clean-merge',
+			# 'Clean-merge & Remove Overlapping',
 			# 'clean-full',
-			# 'OSLOM-remove',
+			'Clean-remove',
+			'OSLOM-full',
 		]
-		algos += create_egosplit_algorithms(part_algos, ego_parameters, clean_ups)
+		clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
+	else:
+		raise RuntimeError("No clean-up set provided!")
+	algos += create_egosplit_algorithms(part_algos, ego_parameters, clean_ups)
 
 	return algos
 
@@ -68,11 +76,12 @@ def egosplit_partition_algorithms(ego_part_algos):
 		new_p_algos = {}
 		for name, p_algos in partition_algos.items():
 			if ego_part_algos == "local":
-				new_p_algos[name + ' + Infomap'] = [*p_algos,
+				new_p_algos[name + ' + Infomap'] = [p_algos[0],
 				                                    lambda g: partitionInfomap(g)]  # Infomap global
 			if ego_part_algos == 'global':
-				new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g),
-				                                    *p_algos]  # Infomap local
+				new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g), p_algos[0]]
+				# new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
+				#                                    p_algos[0]]
 		partition_algos = new_p_algos
 
 	if ego_part_algos == "best":
@@ -80,6 +89,11 @@ def egosplit_partition_algorithms(ego_part_algos):
 		                                       lambda g: partitionInfomap(g)]
 		partition_algos['Infomap + Surprise'] = [lambda g: partitionInfomap(g),
 		                                         lambda g: partitionLeiden(g, 'surprise')]
+	if ego_part_algos == "Leiden/Infomap + Infomap":
+		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
+		                                       lambda g: partitionInfomap(g)]
+		partition_algos['Infomap + Infomap'] = [lambda g: partitionInfomap(g),
+		                                        lambda g: partitionInfomap(g)]
 	if ego_part_algos == "standard":
 		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 		                                       lambda g: partitionInfomap(g)]
@@ -167,13 +181,6 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 				**edge_scores_standard,
 				'Maximum Extend Factor': factor,
 			}
-	if "extend" in ego_parameter_config:
-		ego_parameters['EdgesScore'] = {
-			**edge_scores_standard,
-		}
-		ego_parameters['Significance'] = {
-			**significance_scores_standard,
-		}
 	if "sig-merge" in ego_parameter_config:
 		for merge in [False, True]:
 			name = 'Single + Merged Clusters' if merge else 'Single Clusters'
@@ -215,7 +222,6 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 				# 'onlyCheckSignOfMaxCandidates': 'No',
 				'Extend and Partition Iterations': 1,
 			}
-
 	if "sig-cluster-iter" in ego_parameter_config:
 		for iterations in [1, 2, 3, 5, 8]:
 			name = '$I_c$ = {}'.format(iterations)
@@ -223,17 +229,48 @@ def get_ego_parameters(ego_parameter_config, store_ego_nets):
 				**significance_scores_standard,
 				'Extend and Partition Iterations': iterations,
 			}
-
-	if "test" in ego_parameter_config:
+	if "extend" in ego_parameter_config:
 		ego_parameters['EdgesScore'] = {
 			**edge_scores_standard,
 		}
-		ego_parameters['Significance 1x'] = {
+		ego_parameters['Significance'] = {
 			**significance_scores_standard,
-			'Extend and Partition Iterations': 1,
 		}
-		ego_parameters['Significance 3x'] = {
-			**significance_scores_standard,
+	if "connect-persona" in ego_parameter_config:
+		ego_parameters['EdgesScore | No Connection'] = {
+			**edge_scores_standard,
+			'connectPersonas': 'No',
+		}
+		ego_parameters['EdgesScore | Max Spanning Unweighted'] = {
+			**edge_scores_standard,
+			'connectPersonas': 'Yes',
+			'connectPersonasStrat': 'spanning',
+			'normalizePersonaCut': 'No',
+			'maxPersonaEdges': 1,
+			'normalizePersonaWeights': 'unweighted',
+			'iterationWeight': 'No',
+		}
+		ego_parameters['EdgesScore | All Density Max Weight 1'] = {
+			**edge_scores_standard,
+			'connectPersonas': 'Yes',
+			'connectPersonasStrat': 'all',
+			'normalizePersonaCut': 'density',
+			'normalizePersonaWeights': 'max1',
+		}
+		ego_parameters['EdgesScore | All Unweighted'] = {
+			**edge_scores_standard,
+			'connectPersonas': 'Yes',
+			'connectPersonasStrat': 'all',
+			'normalizePersonaCut': 'No',
+			'normalizePersonaWeights': 'unweighted',
+		}
+	if "edges" in ego_parameter_config:
+		ego_parameters['EdgesScore'] = {
+			**edge_scores_standard,
+		}
+	if "test" in ego_parameter_config:
+		ego_parameters['EdgesScore'] = {
+			**edge_scores_standard,
 		}
 
 	# ego_parameters['gt'] = {

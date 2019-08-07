@@ -35,16 +35,16 @@ algo_sets = {
 	'sig': ['Significance'],
 	'all': ['Ego', 'GCE', 'OSLOM', 'MOSES'],
 	'ego': ['Ego'],
+	'Info-Info': ['Infomap + Infomap'],
+	'Info-local': ['Infomap + '],
+	'Leiden-local': ['Leiden + '],
+	'Info-Surprise': ['Infomap + Surprise', '!Remove Overlapping'],
+	'Info-Surprise-noOSLOM': ['Infomap + Surprise', '!OSLOM-full', '!Remove Overlapping'],
+	'Leiden-Info': ['Leiden + Infomap', '!Remove Overlapping'],
+	'Leiden-Info-noOSLOM': ['Leiden + Infomap', '!OSLOM-full', '!Remove Overlapping'],
 }
 
 graph_sets = {
-	'om': {
-		'graph_filter': '_om_',
-		'x': 'Communities per Node',
-		'x_filter': None,
-		'ax_set': {
-		}
-	},
 	'all': {
 		'graph_filter': '',
 		'x': 'Graph Name',
@@ -53,12 +53,27 @@ graph_sets = {
 		},
 		'bar_plot': True,
 	},
+	'om': {
+		'graph_filter': '_om_',
+		'x': 'Communities per Node',
+		'x_filter': None,
+		'ax_set': {
+		}
+	},
 	'mu': {
 		'graph_filter': '_mu_',
 		'x': 'Mixing Factor',
 		'x_filter': None,
 		'ax_set': {
 		}
+	},
+	'om_bar': {
+		'graph_filter': '_om_',
+		'x': 'Communities per Node',
+		'x_filter': None,
+		'ax_set': {
+		},
+		'bar_plot': True,
 	},
 	'facebook': {
 		'graph_filter': 'FB_',
@@ -70,6 +85,7 @@ graph_sets = {
 		'ax_set': {
 		},
 		# 'bar_plot': True,
+		'set_ylim': False,
 	},
 	'facebook_bar': {
 		'graph_filter': 'FB_',
@@ -81,6 +97,7 @@ graph_sets = {
 		'ax_set': {
 		},
 		'bar_plot': True,
+		'set_ylim': False,
 	},
 	'overlap': None
 }
@@ -89,6 +106,7 @@ timings = [
 	'   Partition EgoNet',
 	'   Extend EgoNet',
 	'   Extend and Partition EgoNet',
+	'  Persona Clustering'
 ]
 
 metrics = [
@@ -112,7 +130,8 @@ def run(data, output_dir, config):
 		'comm_sizes': comm_sizes_plots,
 	}
 	for plot_func in config['plots']:
-		for graph_set_name in config['graph_sets']:
+		plot_graph_sets = config.get('plot_graph_sets', config['graph_sets'])
+		for graph_set_name in plot_graph_sets:
 			graph_set_params = graph_sets[graph_set_name]
 			if not graph_set_params:
 				continue
@@ -182,6 +201,7 @@ def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_na
 			x_filter=graph_set_params['x_filter'],
 			algo_matches=algo_match,
 			remove_algo_part=config['remove_algo_parts'],
+			replace_legend=config['replace_legend'],
 			# title=metric,
 			file_name='{}_{}_{}'.format(metric, graph_set_name, algo_set_name),
 			legend_file_name='legend_{}_{}'.format(graph_set_name, algo_set_name),
@@ -195,7 +215,7 @@ def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_na
 			},
 			ax_set={
 				**graph_set_params['ax_set'],
-				'ylim': metric_names[metric]['ylim'],
+				'ylim': metric_names[metric]['ylim'] if graph_set_params.get('set_ylim', True) else 0,
 				'ylabel': metric_names[metric]['ylabel'],
 			}
 		)
@@ -220,6 +240,7 @@ def comm_sizes_plots(data, output_dir, graph_set_name, graph_set_params, algo_se
 		file_name='comm_sizes_{}_{}'.format(graph_set_name, algo_set_name),
 		legend_file_name='legend_{}_{}'.format(graph_set_name, algo_set_name),
 		one_plot_per_graph=True,
+		use_graph_id=True,
 		x='Graph Name',
 		hue=config['hue'],
 		y='Community Size',
@@ -309,7 +330,7 @@ def ego_net_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_n
 			},
 			ax_set={
 				# 'ylim': (0, 1.05),
-				'ylim': ego_metric_ylim[ego_metric],
+				'ylim': ego_metric_ylim[ego_metric] if graph_set_params.get('set_ylim', True) else 0,
 				'ylabel': ego_metric,
 			}
 		)
@@ -350,7 +371,7 @@ def ego_net_plots_per_graph(data, output_dir, graph_set_name, graph_set_params, 
 			},
 			ax_set={
 				# 'ylim': (0, 1.05),
-				'ylim': 0,
+				'ylim': ego_metric_ylim[ego_metric] if graph_set_params.get('set_ylim', True) else 0,
 				'ylabel': ego_metric,
 			}
 		)

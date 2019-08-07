@@ -60,10 +60,10 @@ def partitionInfomap(G):
 	                                 + ' -2'
 	                                 + ' -z'
 	                                 )
+	# G.forEdges(lambda u, v, weight: infomapWrapper.addLink(u, v, weight))
 	for e in G.edges():
-		infomapWrapper.addLink(e[0], e[1])
+		infomapWrapper.addLink(e[0], e[1], G.weight(e[0], e[1]))
 	infomapWrapper.run()
-	# infomapWrapper.
 
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(G.upperNodeIdBound())
@@ -104,39 +104,21 @@ def clusterOSLOM(G):
 		return result
 
 
-# def cleanUpOslom(G, cover, merge_bad=False, runs=1, cleanup_strategy='both',
-#                  check_minimality=False, simple_cleanup=True, max_extend=2, tolerance=0.1):
-# 	with tempfile.TemporaryDirectory() as tempdir:
-# 		graph_filename = os.path.join(tempdir, 'network.dat')
-# 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
-# 		cover_filename = os.path.join(tempdir, 'cover.dat')
-# 		graphio.CoverWriter().write(cover, cover_filename)
-# 		bad_groups_filename = os.path.join(tempdir, 'bad_groups.txt')
-# 		params = [code_path + '/OSLOM-clean/oslom_undir', '-r', '0', '-hr', '0', '-uw',
-# 		          '-singlet',
-# 		          '-f', graph_filename, '-hint', cover_filename,
-# 		          '-t', str(tolerance),
-# 		          '-cup_runs', str(runs),
-# 		          '-cu_strat', cleanup_strategy,
-# 		          '-max_extend', str(max_extend),
-# 		          '-bad_groups_file', bad_groups_filename
-# 		          ]
-# 		if merge_bad:
-# 			params.append('-merge_bad')
-# 		if check_minimality:
-# 			params.append('-check_min')
-# 		if not simple_cleanup:
-# 			params.append('-equiv_cup')
-# 		print(params)
-# 		subprocess.call(params)
-# 		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files',
-# 		                                                 'tp'), G)
-# 		bad_groups_file = open(bad_groups_filename, 'r')
-# 		bad_groups = []
-# 		for group in bad_groups_file:
-# 			nodes = group.split(' ')[:-1]  # Last item is the newline character
-# 			bad_groups.append([int(u) for u in nodes])
-# 		return result, bad_groups
+def cleanUpOslom(G, cover, tolerance=0.1):
+	with tempfile.TemporaryDirectory() as tempdir:
+		graph_filename = os.path.join(tempdir, 'network.dat')
+		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+		cover_filename = os.path.join(tempdir, 'cover.dat')
+		graphio.CoverWriter().write(cover, cover_filename)
+		params = [code_path + '/OSLOM2/oslom_undir', '-r', '0', '-hr', '0', '-uw',
+		          '-singlet',
+		          '-f', graph_filename, '-hint', cover_filename,
+		          '-t', str(tolerance),
+		          ]
+		subprocess.call(params)
+		result = graphio.CoverReader().read(os.path.join(graph_filename + '_oslo_files',
+		                                                 'tp'), G)
+		return result
 
 
 # https://sites.google.com/site/aaronmcdaid/downloads
@@ -339,8 +321,15 @@ def calc_NMI(graph, cover, ref_cover):
 def getFacebookGraph(name, clean=False):
 	f_graph = graphio.readMat(graphs_path + '/facebook100/{0}.mat'.format(name), key='A')
 	cover = structures.Cover(f_graph.upperNodeIdBound())
-	attributes = ['student_fac', 'gender', 'major_index', 'second_major', 'dorm', 'year',
-	              'high_school']
+	attributes = [
+		'student_fac',
+		'gender',
+		'major_index',
+		'second_major',
+		'dorm',
+		'year',
+		'high_school'
+	]
 	id_offset = 0
 	for attribute in attributes:
 		partition = getFacebookData(name, attribute)

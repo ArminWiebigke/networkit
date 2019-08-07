@@ -45,8 +45,8 @@ def start_benchmarks(benchmark_config, iteration):
 	graphs = get_graphs(benchmark_config['graph_sets'], 1)
 
 	ego_algos = get_ego_algos(benchmark_config['ego_part_algos'], benchmark_config['ego_params'],
-	                          store_ego_nets)
-	other_algos = get_other_algos(benchmark_config.get('other_algos', None))
+	                          benchmark_config['clean_up_set'], store_ego_nets)
+	other_algos = get_other_algos(benchmark_config['other_algos'])
 	algos = ego_algos + other_algos
 
 	if stream_to_gephi and len(graphs) * len(algos) > 8:

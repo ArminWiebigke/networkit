@@ -9,6 +9,8 @@ def get_graphs(graph_sets, iterations):
 	for graph_set in graph_sets:
 		if graph_set == "om":
 			graphs.extend(om_graphs(iterations))
+		if graph_set == "test":
+			graphs.extend(facebook_graphs()[0:1])
 		if graph_set == "overlap":
 			graphs.extend(overlap_graphs(iterations))
 		if graph_set == "mu":
@@ -63,11 +65,11 @@ def mu_graphs(iterations):
 	return graphs
 
 
-def om_graphs(iterations):
+def om_graphs(iterations, min=1, max=7):
 	""" Scale the number of communities per node. """
 	lfr_graph_args = OrderedDict()
 	N = 2000
-	for om in range(1, 8):
+	for om in range(min, max+1):
 		on = N
 		name = 'om_{}'.format(om)
 		graph_name, graph_args = om_graph(N, on, om, name)

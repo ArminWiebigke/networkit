@@ -35,11 +35,11 @@ def make_plot(data,
               x_filter=None,
               graph_filter='',
               algo_matches='',
-              algos_filter='',
               replace_legend=None,
               add_algos=None,
               remove_algo_part=None,
               one_plot_per_graph=False,
+              use_graph_id=False,
               title=None,
               plot_type=PlotType.line,):
 	replace_legend = replace_legend or {}
@@ -60,8 +60,10 @@ def make_plot(data,
 	if x_filter:
 		filtered_data.query(x_filter, inplace=True)
 	graphs = get_unique_values(filtered_data, 'Graph Name')
-	algo_list = get_algo_list(algo_matches, add_algos, filtered_data)
-	algo_list = [a for a in algo_list if a not in algos_filter]
+	# print(filtered_data['Algorithm'])
+	filter_algos = [a[1:] for a in algo_matches if a[0] == '!']
+	algo_matches = [a for a in algo_matches if a[0] != '!']
+	algo_list = get_algo_list(algo_matches, add_algos, filter_algos, filtered_data)
 
 	filtered_data.query('`Algorithm` in @algo_list', inplace=True)
 	if len(filtered_data) is 0:
@@ -86,7 +88,7 @@ def make_plot(data,
 
 		sns.despine(ax=ax)
 		set_ax(fig, ax, ax_set, x)
-		# clean_legend(ax, remove_algo_part)
+		clean_legend(ax, remove_algo_part)
 		ax.legend().remove()
 		if single_x_value:
 			ax.get_xaxis().set_visible(False)
@@ -112,6 +114,13 @@ def make_plot(data,
 		for graph in graphs:
 			file_name = file_name_base + '_' + graph
 			graph_data = filtered_data.query('`Graph Name` == @graph')
+			if use_graph_id:
+				graph_ids = get_unique_values(graph_data.query('Algorithm != \'Ground Truth\''),
+				                              'Graph ID')
+				if len(graph_ids) == 0:
+					continue
+				first_graph_id = graph_ids[0]
+				graph_data = graph_data.query('`Graph ID` == @first_graph_id')
 			remove_xlabel = x == 'Graph Name'
 			create_plot(graph_data, remove_xlabel)
 	else:
@@ -131,7 +140,7 @@ def save_legend(ax, legend_file, hue, replace_label_func):
 	labels = [replace_label_func(l) for l in labels]
 	num_columns = 5
 	while legend_too_long(labels, num_columns):
-		num_columns -=1
+		num_columns -= 1
 	handles, labels = transpose_legend(handles, labels, num_columns)
 	ax_leg.legend(
 		# title=hue,
@@ -170,9 +179,10 @@ def replace_legend_entry(label, remove_algo_part, replace_legend):
 	for remove in remove_algo_part:
 		label = label.replace(remove, '')
 	for remove, with_value in replace_legend.items():
-		if label == remove:
+		if label.strip(' ') == remove:
 			label = with_value
 	label = label.replace('_', ' ')
+	label = label.replace('&', '+')
 	return label
 
 
@@ -199,7 +209,7 @@ def float_format(x, decimals=3):
 
 
 def confirm_plot_type(plot_type, graph_data, x_values):
-	if plot_type == PlotType.swarm and len(graph_data) > 10000:
+	if plot_type == PlotType.swarm and len(graph_data) > 2000:
 		return PlotType.violin
 
 	if x_values == 1 and plot_type == PlotType.line:
@@ -241,7 +251,7 @@ def set_ax(fig, ax, ax_set, x):
 	ax.set(
 		**ax_set,
 	)
-	if x == 'Communities per Node':
+	if x == 'Communities per Node' and ax.lines:
 		ax.xaxis.set(
 			major_locator=MultipleLocator(1),
 			major_formatter=StrMethodFormatter('{x:.0f}'),
@@ -321,10 +331,11 @@ def get_plot_args(algo_list, hue, plot_args, plot_type, x, y):
 	return plot_args
 
 
-def get_algo_list(algo_matches, add_algos, data):
+def get_algo_list(algo_matches, add_algos, filter_algos, data):
 	algo_set = set()
 	assert (isinstance(algo_matches, list))
 	for algo_match in algo_matches:
+		algo_match = algo_match.replace('+', r'\+')  # Pandas uses regex syntax in str.contains
 		algo_data = data.query('Algorithm.str.contains(@algo_match)')
 		algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
 	# algo_set = set(get_unique_values(data, 'Algorithm'))
@@ -337,6 +348,8 @@ def get_algo_list(algo_matches, add_algos, data):
 		algo_list = sorted(list(algo_set)) + [gt]
 	else:
 		algo_list = sorted(list(algo_set))
+	for filter in filter_algos:
+		algo_list = [a for a in algo_list if filter not in a]
 	return algo_list
 
 

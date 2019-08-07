@@ -277,7 +277,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	// Normalize edgeweights of the coarse graph
 	if (parameters.at("normalizePersonaCut") == "volume") {
 		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
-			double volume = coarseGraph.weight(u, u) + coarseGraph.weight(v, v);
+			double volume = w + coarseGraph.weight(u, u) + coarseGraph.weight(v, v);
 			edgeweight newWeight = w / volume;
 			coarseGraph.setWeight(u, v, newWeight);
 		});
@@ -352,6 +352,12 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	} else if (parameters.at("normalizePersonaWeights") == "unweighted") {
 		for (auto &edge : edges)
 			edge.weight = 1;
+	} else if (parameters.at("normalizePersonaWeights") == "max1") {
+		edgeweight maxWeight = 0.0;
+		for (auto &edge : edges)
+			maxWeight = std::max(maxWeight, edge.weight);
+		for (auto &edge : edges)
+			edge.weight /= maxWeight;
 	} else if (parameters.at("normalizePersonaWeights") == "sameWeights") {
 		for (auto &edge : edges)
 			edge.weight = spanSize / edges.size();
