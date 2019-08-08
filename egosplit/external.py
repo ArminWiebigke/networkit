@@ -233,22 +233,30 @@ def convertLeidenPartition(G, la_partition, graph_i):
 	return partition
 
 
-def clusterPeacock(G, part_algorithm):
+# http://gregory.org/research/networks/peacockpaper/
+def clusterPeacock(G):
 	with tempfile.TemporaryDirectory() as tempdir:
+		tempdir = '.'
 		old_dir = os.getcwd()
 		try:
 			os.chdir(tempdir)
 			graph_filename = os.path.join(tempdir, 'graph.txt')
 			graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
-			subprocess.call([code_path + '/conga/java -cp conga.jar CONGA',
-			                 graph_filename, '–e',
-			                 '-peacock 0.1'])
-			with open(tempdir + "/split-graph.txt", "r") as f:
-				for line in f:
-					print(line[:-1])
+			args = ['java', '-cp', code_path + '/conga/conga.jar', 'CONGA',
+			        graph_filename, '-e',
+			        '-n', '2',
+			        # '-peacock', '0.1'
+			        ]
+			print(args)
+			subprocess.call(args)
+			print(os.listdir(tempdir))
 
-		except:
-			print('Error')
+			# with open(tempdir + "/clustering-graph.txt", "r") as f:
+			# 	for line in f:
+			# 		print(line[:-1])
+
+		except Exception as e:
+			print(e)
 		finally:
 			os.chdir(old_dir)
 

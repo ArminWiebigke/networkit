@@ -12,12 +12,12 @@ def get_other_algos(algo_set):
 		return algos
 
 	algo_dict = {
-		'GCE': GceAlgorithm('GCE', alpha=1.0),
-		'Moses': MosesAlgorithm(),
-		'Oslom': OslomAlgorithm(),
+		'GCE': lambda: GceAlgorithm('GCE', alpha=1.1),
+		'Moses': lambda: MosesAlgorithm(),
+		'Oslom': lambda: OslomAlgorithm(),
 	}
 	for algo in algo_set:
-		algos.append((algo_dict[algo], ['']))
+		algos.append((algo_dict[algo](), ['']))
 
 	# algos.append(OlpAlgorithm())
 	# algos.append((GceAlgorithm('GCE', alpha=1.0), ['', 'OSLOM-merge']))
@@ -28,7 +28,7 @@ def get_other_algos(algo_set):
 
 
 def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_nets):
-	if not ego_parameter_config:
+	if not ego_part_algos or not ego_parameter_config:
 		return []
 	algos = []
 	part_algos = egosplit_partition_algorithms(ego_part_algos)
@@ -48,8 +48,18 @@ def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_
 			'OSLOM-full',
 		]
 		clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
+	elif clean_up_set == 'best-ego':
+		clean_ups = [
+			'No Clean Up',
+			'Clean-merge',
+		]
+	elif clean_up_set == 'best':
+		clean_ups = [
+			'Clean-merge',
+		]
 	else:
 		raise RuntimeError("No clean-up set provided!")
+	clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
 	algos += create_egosplit_algorithms(part_algos, ego_parameters, clean_ups)
 
 	return algos

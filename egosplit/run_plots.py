@@ -22,6 +22,8 @@ set_sns_style()
 
 
 def create_plots(config):
+	if config['no_plots']:
+		return
 	print("Reading results...")
 	filter_subdir = "*{}".format(config['result_dir'])
 	data = DataReader(os.path.join(result_dir, filter_subdir))

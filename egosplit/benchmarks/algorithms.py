@@ -19,6 +19,7 @@ class CoverAlgorithm:
 	"""
 
 	def __init__(self, name):
+		print('Algorithm', name)
 		self.name = name
 		self.timer = ContextTimer()
 		self.graph = None
@@ -178,10 +179,10 @@ class PeacockAlgorithm(CoverAlgorithm):
 				graphio.writeGraph(self.graph, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
 				params = ['java', '-cp', code_path + '/conga/conga.jar', 'CONGA',
 				          graph_filename, '-e',
-				          '-peacock', '0.1'
+				          # '-peacock', '0.1'
 				          ]
 				print(params)
-				subprocess.run(params)
+				# subprocess.run(params)
 				with open(tempdir + "/split-graph.txt", "r") as f:
 					for line in f:
 						print(line[:-1])

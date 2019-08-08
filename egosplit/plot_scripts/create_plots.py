@@ -34,6 +34,7 @@ algo_sets = {
 	'edges': ['Edges'],
 	'sig': ['Significance'],
 	'all': ['Ego', 'GCE', 'OSLOM', 'MOSES'],
+	'noOslom': ['Ego', 'GCE', 'MOSES'],
 	'ego': ['Ego'],
 	'Info-Info': ['Infomap + Infomap'],
 	'Info-local': ['Infomap + '],
@@ -130,7 +131,7 @@ def run(data, output_dir, config):
 		'comm_sizes': comm_sizes_plots,
 	}
 	for plot_func in config['plots']:
-		plot_graph_sets = config.get('plot_graph_sets', config['graph_sets'])
+		plot_graph_sets = config['plot_graph_sets']
 		for graph_set_name in plot_graph_sets:
 			graph_set_params = graph_sets[graph_set_name]
 			if not graph_set_params:

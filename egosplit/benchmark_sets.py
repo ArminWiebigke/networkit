@@ -22,22 +22,12 @@ benchmark_sets = [
 	# 'local-cluster',
 	# 'connect-persona',
 	# 'global-cluster',
-	'clean-up',
+	# 'clean-up',
+	# 'best-ego',
+	# 'moses',
+	# 'oslom',
+	'compare-other',
 ]
-
-
-def set_default_args(config):
-	default_args = {
-		'clean_up_set': 'No Cleanup',
-		'hue': 'Algorithm',
-		'score_per_egonet': False,
-		'store_ego_nets': False,
-		'other_algos': None,
-	}
-	for key, value in default_args.items():
-		if key not in config:
-			config[key] = value
-
 
 benchmark_configs = {
 	'edges-score': {
@@ -281,6 +271,79 @@ benchmark_configs = {
 		'plot_algo_set': ['Leiden-Info', 'Info-Surprise', 'Leiden-Info-noOSLOM',
 		                  'Info-Surprise-noOSLOM'],
 	},
+	'best-ego': {
+		'result_dir': 'best-ego',
+		'plot_dir': 'best_ego/',
+		'ego_part_algos': "best",
+		'ego_params': ['no-extend', 'extend'],
+		'clean_up_set': 'best-ego',
+		'graph_sets': [
+			# 'om',
+			# 'overlap',
+			# 'mu',
+			'facebook',
+		],
+		'plot_graph_sets': [
+			# 'om',
+			# 'mu',
+			'facebook',
+			'facebook_bar',
+		],
+		'remove_algo_parts': ['Ego', 'Infomap + Surprise | ', 'Leiden + Infomap | ',
+		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
+		'replace_legend': {},
+		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
+		'plot_algo_set': ['Leiden-Info', 'Info-Surprise'],
+	},
+	'moses': {
+		'result_dir': 'moses-compare-other',
+		'other_algos': ['Moses'],
+		'ego_part_algos': None,
+		'graph_sets': [
+			'om',
+			# 'overlap',
+			# 'mu',
+			# 'facebook',
+		],
+		'no_plots': True,
+	},
+	'oslom': {
+		'result_dir': 'oslom-compare-other',
+		'other_algos': ['Oslom'],
+		'ego_part_algos': None,
+		'graph_sets': [
+			'om',
+			'overlap',
+			'mu',
+			'facebook',
+		],
+		'no_plots': True,
+	},
+	'compare-other': {
+		'result_dir': 'compare-other',
+		'plot_dir': 'compare_other/',
+		'ego_part_algos': "standard",
+		'ego_params': ['edges'],
+		'clean_up_set': 'best',
+		'other_algos': ['GCE', 'Moses'],
+		'graph_sets': [
+			'om',
+			'overlap',
+			'mu',
+			'facebook',
+		],
+		'plot_graph_sets': [
+			'om',
+			'mu',
+			'facebook',
+			'facebook_bar',
+		],
+		'remove_algo_parts': ['Leiden + Infomap', ' | ', 'EdgesScore', 'Clean-merge',
+		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
+		'replace_legend': {'Ego': 'Ego-Splitting'},
+		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
+		'plot_algo_set': ['all', 'noOslom'],
+	},
 	'test': {
 		'result_dir': 'test',
 		'plot_dir': 'test/',
@@ -295,7 +358,6 @@ benchmark_configs = {
 		],
 		'remove_algo_parts': ['Ego', ' | No Clean Up', ' | EdgesScore',
 		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
-		'replace_legend': {},
 		'plot_graph_sets': [
 			'facebook_bar',
 		],
@@ -304,3 +366,21 @@ benchmark_configs = {
 		'plot_algo_set': ['all'],
 	},
 }
+
+
+def set_default_args(config):
+	default_args = {
+		'clean_up_set': 'No Cleanup',
+		'hue': 'Algorithm',
+		'score_per_egonet': False,
+		'store_ego_nets': False,
+		'other_algos': None,
+		'no_plots': False,
+		'remove_algo_parts': [],
+		'replace_legend': {},
+		'ego_params': None,
+		'plot_graph_sets': config['graph_sets'],
+	}
+	for key, value in default_args.items():
+		if key not in config:
+			config[key] = value
