@@ -15,6 +15,11 @@ def get_other_algos(algo_set):
 		'GCE': lambda: GceAlgorithm('GCE', alpha=1.1),
 		'Moses': lambda: MosesAlgorithm(),
 		'Oslom': lambda: OslomAlgorithm(),
+		'Ego-original': lambda: EgoSplitAlgorithm(
+			'Ego-original', original_ego_parameters(),
+			lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
+			lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()
+		),
 	}
 	for algo in algo_set:
 		algos.append((algo_dict[algo](), ['']))
@@ -115,6 +120,23 @@ def egosplit_partition_algorithms(ego_part_algos):
 		                                lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 
 	return partition_algos
+
+
+def original_ego_parameters():
+	return {
+		'weightFactor': 0,
+		'weightOffset': 1,
+		'storeEgoNet': 'No',
+		'addEgoNode': 'No',
+		'Extend EgoNet Strategy': 'None',
+		'Extend and Partition Iterations': 1,
+		'Maximum Extend Factor': 0,
+		'addNodesExponent': 0,
+		'partitionFromGroundTruth': 'No',
+		'connectPersonas': 'No',
+		'personaEdgeWeightFactor': 1,
+		'maxEgoNetsStored': 2000,
+	}
 
 
 def get_ego_parameters(ego_parameter_config, store_ego_nets):

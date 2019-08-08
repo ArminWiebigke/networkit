@@ -65,11 +65,11 @@ def mu_graphs(iterations):
 	return graphs
 
 
-def om_graphs(iterations, min=1, max=7):
+def om_graphs(iterations, min_om=1, max_om=7):
 	""" Scale the number of communities per node. """
 	lfr_graph_args = OrderedDict()
 	N = 2000
-	for om in range(min, max+1):
+	for om in range(min_om, max_om + 1):
 		on = N
 		name = 'om_{}'.format(om)
 		graph_name, graph_args = om_graph(N, on, om, name)

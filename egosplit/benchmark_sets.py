@@ -325,7 +325,7 @@ benchmark_configs = {
 		'ego_part_algos': "standard",
 		'ego_params': ['edges'],
 		'clean_up_set': 'best',
-		'other_algos': ['GCE', 'Moses'],
+		'other_algos': ['GCE', 'Moses', 'Oslom', 'Ego-original'],
 		'graph_sets': [
 			'om',
 			'overlap',
@@ -340,7 +340,7 @@ benchmark_configs = {
 		],
 		'remove_algo_parts': ['Leiden + Infomap', ' | ', 'EdgesScore', 'Clean-merge',
 		                      ] + ['({:03.0f})'.format(i) for i in range(0, 30)],
-		'replace_legend': {'Ego': 'Ego-Splitting'},
+		'replace_legend': {'Ego': 'Ego-Splitting', 'Ego-original': 'Ego-Splitting (original)'},
 		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
 		'plot_algo_set': ['all', 'noOslom'],
 	},
