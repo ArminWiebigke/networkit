@@ -34,7 +34,6 @@ algo_sets = {
 	'edges': ['Edges'],
 	'sig': ['Significance'],
 	'all': ['Ego', 'GCE', 'OSLOM', 'MOSES'],
-	'noOslom': ['Ego', 'GCE', 'MOSES'],
 	'ego': ['Ego'],
 	'Info-Info': ['Infomap + Infomap'],
 	'Info-local': ['Infomap + '],
@@ -61,11 +60,27 @@ graph_sets = {
 		'ax_set': {
 		}
 	},
+	'om_max': {
+		'graph_filter': '_om_',
+		'x': 'Communities per Node',
+		'x_filter': None,
+		'ax_set': {
+			'ylim': (0, 1190),
+		}
+	},
 	'mu': {
 		'graph_filter': '_mu_',
 		'x': 'Mixing Factor',
 		'x_filter': None,
 		'ax_set': {
+		}
+	},
+	'mu_max': {
+		'graph_filter': '_mu_',
+		'x': 'Mixing Factor',
+		'x_filter': None,
+		'ax_set': {
+			'ylim': (0, 990),
 		}
 	},
 	'om_bar': {
@@ -211,13 +226,13 @@ def metric_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_na
 			y=metric_names[metric]['y_val'],
 			hue=config['hue'],
 			plot_args={
-				**graph_set_params.get('plot_args', {}),
 				'ci': 'sd' if config.get('show_deviation', False) else None,
+				**graph_set_params.get('plot_args', {}),
 			},
 			ax_set={
-				**graph_set_params['ax_set'],
 				'ylim': metric_names[metric]['ylim'] if graph_set_params.get('set_ylim', True) else 0,
 				'ylabel': metric_names[metric]['ylabel'],
+				**graph_set_params['ax_set'],
 			}
 		)
 
