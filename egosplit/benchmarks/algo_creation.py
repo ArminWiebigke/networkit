@@ -95,8 +95,8 @@ def egosplit_partition_algorithms(ego_part_algos):
 				                                    lambda g: partitionInfomap(g)]  # Infomap global
 			if ego_part_algos == 'global':
 				new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g), p_algos[0]]
-				# new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
-				#                                    p_algos[0]]
+				new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
+				                                   p_algos[0]]
 		partition_algos = new_p_algos
 
 	if ego_part_algos == "best":

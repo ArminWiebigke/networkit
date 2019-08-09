@@ -57,7 +57,6 @@ EgoSplitting::EgoSplitting(const Graph &G,
 
 void EgoSplitting::init() {
 	hasRun = false;
-	egoNets.resize(G.upperNodeIdBound());
 	personaEdges.resize(G.upperNodeIdBound());
 	egoNetPartitions.resize(G.upperNodeIdBound());
 	egoNetPartitionCounts.resize(G.upperNodeIdBound(), 0);
@@ -223,26 +222,23 @@ void EgoSplitting::createEgoNets() {
 
 
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
-	// Only store maxEgoNets ego-nets (expected)
+	// Only store a given maximum of ego-nets (expected)
 	count maxEgoNets = std::stoi(parameters.at("maxEgoNetsStored"));
 	double storePercnt = maxEgoNets * 1.0 / G.numberOfNodes();
 	if (Aux::Random::real() > storePercnt)
 		return;
 
 	// Get EgoNet with gloabl node ids
-	Graph egoNetGraph(G.upperNodeIdBound(), egoGraph.isWeighted());
-	egoGraph.forEdges([&](node v, node w, edgeweight weight) {
-		egoNetGraph.addEdge(egoMapping.global(v), egoMapping.global(w), weight);
+	std::vector<WeightedEdge> edges;
+	edges.reserve(egoGraph.numberOfEdges());
+	egoGraph.forNodes([&](node u){
+		node globalId = egoMapping.global(u);
+		edges.emplace_back(globalId, globalId, 1);
 	});
-	for (node v : egoNetGraph.nodes()) {
-		if (!egoGraph.hasNode(egoMapping.local(v)))
-			egoNetGraph.removeNode(v);
-	}
-//	if (egoGraph.isWeighted() && egoNetGraph.numberOfNodes() >= 2)
-//		egoNetGraph.addEdge(egoNetGraph.nodes()[0], egoNetGraph.nodes()[1],
-//		                    0.000001);
-	egoNetGraph.shrinkToFit();
-	egoNets[egoNode] = egoNetGraph;
+	egoGraph.forEdges([&](node u, node v, edgeweight weight){
+		edges.emplace_back(egoMapping.global(u), egoMapping.global(v), weight);
+	});
+	egoNets[egoNode] = edges;
 }
 
 std::vector<EgoSplitting::Edge>
@@ -467,7 +463,7 @@ std::unordered_map<std::string, double> EgoSplitting::getExecutionInfo() {
 	return executionInfo;
 }
 
-std::vector<Graph> EgoSplitting::getEgoNets() {
+std::unordered_map<node, std::vector<WeightedEdge>> EgoSplitting::getEgoNets() {
 	return egoNets;
 }
 

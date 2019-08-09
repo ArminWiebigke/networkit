@@ -91,7 +91,7 @@ public:
 	 */
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
 
-	std::vector<Graph> getEgoNets();
+	std::unordered_map<node, std::vector<WeightedEdge>> getEgoNets();
 
 	void setParameters(std::map<std::string, std::string> const &new_parameters);
 
@@ -108,7 +108,7 @@ private:
 	Partition personaPartition;
 	Cover cover; // the result of the algorithm
 	mutable std::unordered_map<std::string, double> executionInfo;
-	std::vector<Graph> egoNets;
+	std::unordered_map<node, std::vector<WeightedEdge>> egoNets;
 	std::unordered_map<std::string, std::string> parameters;
 	AdjacencyArray directedG;
 	Cover groundTruth;

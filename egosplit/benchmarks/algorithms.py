@@ -5,6 +5,7 @@ from copy import copy
 
 from networkit.community import EgoSplitting, OLP, SLPA
 from networkit import graphio
+from networkit.graph import Graph
 from egosplit.benchmarks.context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
@@ -134,7 +135,14 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		return copy(self.egoNetPartitions[u])
 
 	def ego_net_of(self, u):
-		return copy(self.egoNets[u])
+		graph = Graph(self.graph.upperNodeIdBound())
+		for edge in self.egoNets[u]:
+			graph.addEdge(edge['u'], edge['v'], edge['weight'])
+		for v in graph.nodes():
+			if graph.isIsolated(v):
+				graph.removeNode(v)
+		graph.removeSelfLoops()
+		return graph
 
 
 class OlpAlgorithm(CoverAlgorithm):

@@ -4909,6 +4909,12 @@ cdef cppclass ClusteringFunctionWrapper:
 
 			return move((<Partition>(pyP))._this)
 
+cdef extern from "cpp/graph/Graph.h":
+	cdef struct _WeightedEdge "NetworKit::WeightedEdge":
+		node u
+		node v
+		edgeweight weight
+
 cdef extern from "cpp/community/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
 		_EgoSplitting(_Graph G) except +
@@ -4918,7 +4924,7 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		unordered_map[string, double] getTimings() except +
 		unordered_map[string, double] getExecutionInfo() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
-		vector[_Graph] getEgoNets() except +
+		unordered_map[node, vector[_WeightedEdge]] getEgoNets() except +
 		void setParameters(map[string, string]) except +
 		void setGroundTruth(_Cover) except +
 
@@ -4994,12 +5000,7 @@ cdef class EgoSplitting(Algorithm):
 	Get the EgoNet graphs.
 	"""
 	def getEgoNets(self):
-		cdef vector[_Graph] _egoNets
-		_egoNets = (<_EgoSplitting*>(self._this)).getEgoNets()
-		egoNets = []
-		for _graph in _egoNets:
-			egoNets.append(Graph().setThis(_graph))
-		return egoNets
+		return (<_EgoSplitting*>(self._this)).getEgoNets()
 
 	"""
 	Set parameters of the algorithm.
@@ -5022,7 +5023,7 @@ cdef extern from "cpp/oslom/OslomCleanUp.h":
 
 cdef class OslomCleanUp(Algorithm):
 	"""
-	Constructor to the Ego-Splitting community detection algorithm.
+	Constructor to the clean up algorithm.
 
 	Parameters
 	----------

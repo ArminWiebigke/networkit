@@ -95,6 +95,7 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		ego_sums = defaultdict(lambda: 0)
 		ego_net = benchmark.algo.ego_net_of(u)
 		if ego_net.numberOfNodes() == 0:
+			del ego_net
 			continue
 
 		# Count nodes
@@ -271,6 +272,8 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 				key,
 				value,
 			))
+
+		del ego_net
 
 	total_metrics = {key: (value / avg_metrics['num_values'])
 	                 for (key, value) in avg_metrics.items()}
