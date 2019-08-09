@@ -49,14 +49,14 @@ def large_graphs():
 def mu_graphs(iterations):
 	""" Scale the mixing factor. """
 	lfr_graph_args = OrderedDict()
-	for mu_factor in range(10, 81, 10):
+	for mu_factor in range(10, 81, 5):
 		om = 3
 		mu = 0.01 * mu_factor
 		k = 10 * om  # Number of neighbors per community independent of Mixing Factor
 		k /= (1 - mu)
 		maxk = 20 + 10 * om  # Scale max degree with average degree
 		maxk /= (1 - mu)
-		name = 'mu_' + str(mu_factor).rjust(2, '0')
+		name = 'mu_{:02.0f}'.format(mu_factor)
 		lfr_graph_args[name] = {
 			'N': 2000, 'k': k, 'maxk': maxk, 'minc': 30, 'maxc': 60,
 			't1': 2, 't2': 2, 'mu': 0.01 * mu_factor, 'on': 2000, 'om': om}

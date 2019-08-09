@@ -266,14 +266,14 @@ def set_ax(fig, ax, ax_set, x):
 	xlabels = [l.get_text() for l in ax.get_xticklabels()]
 	if 'FB_' in xlabels[0]:
 		xlabels = [remove_facebook_prefix(l) for l in xlabels]
-		ax.set_xticklabels(xlabels)
+	xlabels = [l.replace("_", ' ') for l in xlabels]
+	ax.set_xticklabels(xlabels)
 	# for lineplot
 	if ax.lines:
 		ticks = [x_val for x_val in ax.lines[0].get_xdata()]
 		if isinstance(ticks[0], str) and 'FB_' in ticks[0]:
 			ax.set_xticks(ax.get_xticks())
 			ax.set_xticklabels([remove_facebook_prefix(t) for t in ticks])
-
 	fig.canvas.draw()
 
 

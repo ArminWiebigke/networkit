@@ -18,14 +18,11 @@ benchmark_sets = [
 	# 'sig-ext-iter',
 	# 'sig-check-updated',
 	# 'sig-cluster-iter',
-	# 'ext-compare',
-	# 'local-cluster',
-	# 'connect-persona',
-	# 'global-cluster',
-	# 'clean-up',
-	# 'best-ego',
-	# 'moses',
-	# 'oslom',
+	'ext-compare',
+	'local-cluster',
+	'connect-persona',
+	'global-cluster',
+	'clean-up',
 	'compare-other',
 ]
 
@@ -207,7 +204,7 @@ benchmark_configs = {
 		'plot_graph_sets': [
 			'om',
 			'mu',
-			# 'facebook',
+			'facebook',
 			'facebook_bar',
 		],
 		'remove_algo_parts': ['Ego', 'Leiden + Infomap', 'Infomap + Infomap', ' | No Clean Up',
@@ -230,7 +227,7 @@ benchmark_configs = {
 			'om',
 			'overlap',
 			'mu',
-			# 'facebook',
+			'facebook',
 		],
 		'plot_graph_sets': [
 			'om',
