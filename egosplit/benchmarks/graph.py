@@ -9,15 +9,44 @@ class BenchGraph:
 	"""
 	global_id = 0
 
-	def __init__(self, graph, ground_truth, name, parameters=None):
-		print("Graph '{}' with {} nodes and {} edges".format(name, graph.numberOfNodes(),
-		                                                   graph.numberOfEdges()))
-		self.graph = graph
-		self.ground_truth = ground_truth
+	def __init__(self, name, parameters=None):
 		self.name = name
 		self.parameters = parameters
+		self._graph = None
+		self._ground_truth = None
 		self.id = "{}({})".format(datetime.datetime.now().isoformat(), self.global_id)
 		self.global_id += 1
+		# print("Graph '{}' with {} nodes and {} edges".format(name, self.graph.numberOfNodes(),
+		#                                                      self.graph.numberOfEdges()))
+
+	def create_graph(self):
+		"""
+		Returns graph, ground_truth
+		"""
+		raise NotImplementedError("Can't create graph")
+
+	def set_graph_and_gt(self):
+		if not self._graph:
+			self._graph, self._ground_truth = self.create_graph()
+
+	@property
+	def graph(self):
+		self.set_graph_and_gt()
+		return self._graph
+
+	@property
+	def ground_truth(self):
+		self.set_graph_and_gt()
+		return self._ground_truth
+
+
+class ReadGraph(BenchGraph):
+	def __init__(self, create_func, name, parameters=None):
+		self.create_func = create_func
+		super().__init__(name, parameters)
+
+	def create_graph(self):
+		return self.create_func()
 
 
 class LFRGraph(BenchGraph):
@@ -25,11 +54,10 @@ class LFRGraph(BenchGraph):
 	def __init__(self, name="LFR", parameter_dict=None):
 		assert(len(parameter_dict) == len(self.parameter_names()))
 		self.lfr_parameters = parameter_dict or {}
-		graph, cover = genLFR(**parameter_dict)
-		super(LFRGraph, self).__init__(graph, cover, name, parameter_dict)
+		super().__init__(name, parameter_dict)
 
-	# def get_lfr_parameters(self):
-	# 	return self.lfr_paramters
+	def create_graph(self):
+		return genLFR(**self.lfr_parameters)
 
 	@staticmethod
 	def parameter_names():

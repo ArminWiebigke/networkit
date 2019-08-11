@@ -49,8 +49,6 @@ def create_plots(config):
 	print("Creating plots...")
 	run(data, plot_sub_dir, config)
 
-	subprocess.call(["bash", "crop.sh", plot_sub_dir])
-
 	for dir in dirs:
 		path = os.path.join(plot_sub_dir, dir)
 		files = os.listdir(path)

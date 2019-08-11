@@ -21,6 +21,7 @@ class CoverBenchmark:
 		self.algo.run(self.graph)
 		algo_cover = self.algo.get_cover()
 		print("Ran algorithm in {:.3f}s".format(self.algo.get_time()))
+		print("Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
 
 		self.clean_up.run(self.graph.graph, algo_cover,
 		                  self.graph.ground_truth)

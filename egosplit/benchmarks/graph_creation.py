@@ -1,7 +1,8 @@
 from collections import OrderedDict
 
-from egosplit.external import getFacebookGraph, getAmazonGraph5000
-from egosplit.benchmarks.graph import BenchGraph, LFRGraph
+from egosplit.external import getFacebookGraph, getAmazonGraph5000, getDBLPGraph, getAmazonGraphAll, \
+	getOrkutGraph, getLiveJournalGraph
+from egosplit.benchmarks.graph import LFRGraph, ReadGraph
 
 
 def get_graphs(graph_sets, iterations):
@@ -26,23 +27,23 @@ def get_graphs(graph_sets, iterations):
 
 def facebook_graphs():
 	graphs = []
-	graphs.append(BenchGraph(*getFacebookGraph('Caltech36', clean=True), 'FB_1_Caltech36'))  # 769 nodes
-	graphs.append(BenchGraph(*getFacebookGraph('Smith60', clean=True), 'FB_2_Smith60'))  # 3k nodes
-	graphs.append(BenchGraph(*getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31'))  # 4k nodes
-	graphs.append(BenchGraph(*getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71'))  # 18k nodes
-	# graphs.append(BenchGraph(*getFacebookGraph('Oklahoma97', clean=True), 'FB_Oklahoma97'))  # 17k nodes
+	graphs.append(ReadGraph(lambda: getFacebookGraph('Caltech36', clean=True), 'FB_1_Caltech36'))  # 769 nodes
+	graphs.append(ReadGraph(lambda: getFacebookGraph('Smith60', clean=True), 'FB_2_Smith60'))  # 3k nodes
+	graphs.append(ReadGraph(lambda: getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31'))  # 4k nodes
+	graphs.append(ReadGraph(lambda: getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71'))  # 18k nodes
+	# graphs.append(ReadGraph(lambda: getFacebookGraph('Oklahoma97', clean=True), 'FB_Oklahoma97'))  # 17k nodes
 	return graphs
 
 
 def large_graphs():
 	graphs = []
-	# graphs.append(BenchGraph(*getAmazonGraph5000(), 'Amazon_5000'))
-	graphs.append(BenchGraph(*getAmazonGraph5000(True), 'Amazon_5000_no_small'))
-	# graphs.append(BenchGraph(*getAmazonGraphAll(), 'Amazon_All'))
-	# graphs.append(BenchGraph(*getAmazonGraphAll(True), 'Amazon_All_no_small'))
-	# graphs.append(BenchGraph(*getDBLPGraph(), 'DBLP'))
-	# graphs.append(BenchGraph(*getLiveJournalGraph(), 'LiveJournal'))
-	# graphs.append(BenchGraph(*getOrkutGraph(), 'Orkut'))
+	# graphs.append(ReadGraph(lambda: getAmazonGraph5000(), 'Amazon_5000'))
+	graphs.append(ReadGraph(lambda: getAmazonGraph5000(True), 'Amazon_5000_no_small'))
+	# graphs.append(ReadGraph(lambda: getAmazonGraphAll(), 'Amazon_All'))
+	# graphs.append(ReadGraph(lambda: getAmazonGraphAll(True), 'Amazon_All_no_small'))
+	graphs.append(ReadGraph(lambda: getDBLPGraph(), 'DBLP'))
+	# graphs.append(ReadGraph(lambda: getLiveJournalGraph(), 'LiveJournal'))
+	# graphs.append(ReadGraph(lambda: getOrkutGraph(), 'Orkut'))
 	return graphs
 
 

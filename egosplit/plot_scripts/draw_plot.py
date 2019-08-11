@@ -96,7 +96,9 @@ def make_plot(data,
 
 		if title:
 			fig.suptitle(title)
-		fig.savefig(output_dir + plot_subdir + file_name + '.pdf')
+		plot_file = output_dir + plot_subdir + file_name + '.pdf'
+		fig.savefig(plot_file)
+		crop_pdf(plot_file)
 		plt.close(fig)
 
 		def replace_label_func(l):
@@ -128,6 +130,8 @@ def make_plot(data,
 
 
 def save_legend(ax, legend_file, hue, replace_label_func):
+	if os.path.exists(legend_file):
+		return
 	fig_leg = plt.figure()
 	ax_leg = fig_leg.add_subplot(111)
 	handles, labels = ax.get_legend_handles_labels()
@@ -152,7 +156,12 @@ def save_legend(ax, legend_file, hue, replace_label_func):
 	# hide the axes frame and the x/y labels
 	ax_leg.axis('off')
 	fig_leg.savefig(legend_file)
+	crop_pdf(legend_file)
 	plt.close(fig_leg)
+
+
+def crop_pdf(file_name):
+	subprocess.call(["pdfcrop", "--margins", "0 0 0 0", file_name, file_name])
 
 
 def transpose_legend(handles, labels, num_columns):
@@ -266,8 +275,9 @@ def set_ax(fig, ax, ax_set, x):
 	xlabels = [l.get_text() for l in ax.get_xticklabels()]
 	if 'FB_' in xlabels[0]:
 		xlabels = [remove_facebook_prefix(l) for l in xlabels]
-	xlabels = [l.replace("_", ' ') for l in xlabels]
-	ax.set_xticklabels(xlabels)
+	if xlabels[0] != '':
+		xlabels = [l.replace("_", ' ') for l in xlabels]
+		ax.set_xticklabels(xlabels)
 	# for lineplot
 	if ax.lines:
 		ticks = [x_val for x_val in ax.lines[0].get_xdata()]

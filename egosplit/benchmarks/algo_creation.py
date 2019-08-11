@@ -63,8 +63,8 @@ def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_
 		]
 	elif clean_up_set == 'test':
 		clean_ups = [
+			'No Clean Up',
 			'Clean-merge',
-			'Clean-search',
 		]
 	else:
 		raise RuntimeError("No clean-up set provided!")
