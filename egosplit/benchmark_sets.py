@@ -9,7 +9,7 @@ def get_benchmark_configs():
 
 
 benchmark_sets = [
-	# 'test',
+	'test',
 	# 'edges-score',
 	# 'edges-factor',
 	# 'sig-merge',
@@ -22,7 +22,7 @@ benchmark_sets = [
 	# 'connect-persona',
 	# 'global-cluster',
 	# 'clean-up',
-	'compare-other',
+	# 'compare-other',
 ]
 
 benchmark_configs = {
@@ -313,22 +313,28 @@ benchmark_configs = {
 	'test': {
 		'result_dir': 'test',
 		'plot_dir': 'test/',
-		'ego_part_algos': 'global',
-		'ego_params': ['test'],
-		'score_per_egonet': False,
+		'ego_part_algos': "standard",
+		'ego_params': ['edges'],
+		'clean_up_set': 'test',
 		'graph_sets': [
-			'test',
-			# 'om',
+			'om',
+			# 'overlap',
 			# 'mu',
-			# 'facebook'
+			# 'facebook',
 		],
-		'remove_algo_parts': ['Ego', ' | No Clean Up', ' | EdgesScore'],
 		'plot_graph_sets': [
-			'facebook_bar',
+			'om',
+			# 'mu',
+			# 'facebook',
+			# 'facebook_bar',
 		],
-		# 'plots': ['ego_net_extend', 'ego_net_x_extend', 'timings'],
-		'plots': ['metrics', 'ego_net_cluster', 'comm_sizes'],
-		'plot_algo_set': ['all'],
+		'remove_algo_parts': ['Ego', ' | EdgesScore', 'Infomap + Surprise | ',
+		                      'Leiden + Infomap | ',
+		                      ],
+		'replace_legend': {},
+		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
+		'plot_algo_set': ['Leiden-Info', 'Info-Surprise', 'Leiden-Info-noOSLOM',
+		                  'Info-Surprise-noOSLOM'],
 	},
 }
 

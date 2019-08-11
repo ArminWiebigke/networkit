@@ -82,7 +82,8 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 	@staticmethod
 	def output_parameter_names():
-		return ['Local Clustering Algorithm', 'Global Clustering Algorithm', 'Extend EgoNet Strategy',
+		return ['Local Clustering Algorithm', 'Global Clustering Algorithm',
+		        'Extend EgoNet Strategy',
 		        'Extend and Partition Iterations', 'Maximum Extend Factor', 'Edges Score Strategy',
 		        'connectPersonasStrat', 'signMerge', 'secondarySigExtRounds',
 		        'onlyCheckSignOfMaxCandidates', 'Check Candidates Factor', 'onlyUpdatedCandidates']
@@ -136,7 +137,11 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 	def ego_net_of(self, u):
 		graph = Graph(self.graph.upperNodeIdBound())
-		for edge in self.egoNets[u]:
+		try:
+			edges = self.egoNets[u]
+		except KeyError:
+			return graph
+		for edge in edges:
 			graph.addEdge(edge['u'], edge['v'], edge['weight'])
 		for v in graph.nodes():
 			if graph.isIsolated(v):
@@ -184,7 +189,8 @@ class PeacockAlgorithm(CoverAlgorithm):
 			try:
 				os.chdir(tempdir)
 				graph_filename = os.path.join(tempdir, 'graph.txt')
-				graphio.writeGraph(self.graph, graph_filename, fileformat=graphio.Format.EdgeListSpaceZero)
+				graphio.writeGraph(self.graph, graph_filename,
+				                   fileformat=graphio.Format.EdgeListSpaceZero)
 				params = ['java', '-cp', code_path + '/conga/conga.jar', 'CONGA',
 				          graph_filename, '-e',
 				          # '-peacock', '0.1'
@@ -200,7 +206,6 @@ class PeacockAlgorithm(CoverAlgorithm):
 				exit(1)
 			finally:
 				os.chdir(old_dir)
-
 
 
 class GceAlgorithm(CoverAlgorithm):

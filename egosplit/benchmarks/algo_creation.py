@@ -52,7 +52,6 @@ def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_
 			'Clean-remove',
 			'OSLOM-full',
 		]
-		clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
 	elif clean_up_set == 'best-ego':
 		clean_ups = [
 			'No Clean Up',
@@ -61,6 +60,11 @@ def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_
 	elif clean_up_set == 'best':
 		clean_ups = [
 			'Clean-merge',
+		]
+	elif clean_up_set == 'test':
+		clean_ups = [
+			'Clean-merge',
+			'Clean-search',
 		]
 	else:
 		raise RuntimeError("No clean-up set provided!")
