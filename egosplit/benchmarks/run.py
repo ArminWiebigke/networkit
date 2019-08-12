@@ -31,7 +31,7 @@ def start_benchmarks(benchmark_config, iteration):
 		# 'cleanup',
 	]
 	stream_to_gephi = 'stream_to_gephi' in evaluations
-	store_ego_nets = 'ego_nets' in evaluations and benchmark_config.get('store_ego_nets', True)
+	store_ego_nets = 'ego_nets' in evaluations and benchmark_config['store_ego_nets']
 	if stream_to_gephi:
 		store_ego_nets = True
 

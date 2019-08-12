@@ -100,7 +100,6 @@ graph_sets = {
 		},
 		'ax_set': {
 		},
-		# 'bar_plot': True,
 		'set_ylim': False,
 	},
 	'facebook_bar': {
@@ -108,7 +107,17 @@ graph_sets = {
 		'x': 'Graph Name',
 		'x_filter': None,
 		'plot_args': {
-			# 'dashes': [(5, 6) for _ in range(10)],
+		},
+		'ax_set': {
+		},
+		'bar_plot': True,
+		'set_ylim': False,
+	},
+	'large': {
+		'graph_filter': ['Amazon', 'DBLP'],
+		'x': 'Graph Name',
+		'x_filter': None,
+		'plot_args': {
 		},
 		'ax_set': {
 		},

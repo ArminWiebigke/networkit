@@ -400,7 +400,7 @@ def remove_small_communities(filename):
 
 
 # https://snap.stanford.edu/data/
-def getAmazonGraph5000(clean=False):
+def getAmazonGraph(clean=True):
 	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.top5000.cmty.txt'
@@ -408,7 +408,7 @@ def getAmazonGraph5000(clean=False):
 	return g, c
 
 
-def getAmazonGraphAll(clean=False):
+def getAmazonGraphAll(clean=True):
 	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.all.dedup.cmty.txt'
@@ -416,22 +416,25 @@ def getAmazonGraphAll(clean=False):
 	return g, c
 
 
-def getDBLPGraph():
+def getDBLPGraph(clean=True):
 	g = graphio.readGraph(graphs_path + '/com-dblp.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(graphs_path + '/com-dblp.top5000.cmty.txt', g)
+	filename = graphs_path + '/com-dblp.top5000.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
-def getLiveJournalGraph():
+def getLiveJournalGraph(clean=True):
 	g = graphio.readGraph(graphs_path + '/com-lj.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(graphs_path + '/com-lj.top5000.cmty.txt', g)
+	filename = graphs_path + '/com-lj.top5000.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c
 
 
-def getOrkutGraph():
+def getOrkutGraph(clean=True):
 	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
-	c = graphio.CoverReader().read(graphs_path + '/com-orkut.top5000.cmty.txt', g)
+	filename = graphs_path + '/com-orkut.top5000.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c

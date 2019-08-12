@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from egosplit.external import getFacebookGraph, getAmazonGraph5000, getDBLPGraph, getAmazonGraphAll, \
+from egosplit.external import getFacebookGraph, getAmazonGraph, getDBLPGraph, getAmazonGraphAll, \
 	getOrkutGraph, getLiveJournalGraph
 from egosplit.benchmarks.graph import LFRGraph, ReadGraph
 
@@ -11,7 +11,7 @@ def get_graphs(graph_sets, iterations):
 		if graph_set == "om":
 			graphs.extend(om_graphs(iterations))
 		if graph_set == "test":
-			graphs.extend(facebook_graphs()[0:1])
+			graphs.extend(om_graphs(1, 3, 3))
 		if graph_set == "overlap":
 			graphs.extend(overlap_graphs(iterations))
 		if graph_set == "mu":
@@ -37,10 +37,7 @@ def facebook_graphs():
 
 def large_graphs():
 	graphs = []
-	# graphs.append(ReadGraph(lambda: getAmazonGraph5000(), 'Amazon_5000'))
-	graphs.append(ReadGraph(lambda: getAmazonGraph5000(True), 'Amazon_5000_no_small'))
-	# graphs.append(ReadGraph(lambda: getAmazonGraphAll(), 'Amazon_All'))
-	# graphs.append(ReadGraph(lambda: getAmazonGraphAll(True), 'Amazon_All_no_small'))
+	graphs.append(ReadGraph(lambda: getAmazonGraph(), 'Amazon'))
 	graphs.append(ReadGraph(lambda: getDBLPGraph(), 'DBLP'))
 	# graphs.append(ReadGraph(lambda: getLiveJournalGraph(), 'LiveJournal'))
 	# graphs.append(ReadGraph(lambda: getOrkutGraph(), 'Orkut'))
