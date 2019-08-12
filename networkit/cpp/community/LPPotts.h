@@ -1,8 +1,8 @@
 /*
  * LPPotts.h
  *
- *  Created on: 2019-01-14
- *  Author: Armin Wiebigke
+ * Created on: 2019-01-14
+ * Author: Armin Wiebigke
  */
 
 #ifndef LPPOTTS_H_

@@ -161,7 +161,9 @@ def save_legend(ax, legend_file, hue, replace_label_func):
 
 
 def crop_pdf(file_name):
-	subprocess.call(["pdfcrop", "--margins", "0 0 0 0", file_name, file_name])
+	subprocess.call(["pdfcrop",
+	                 # "--margins", "0 0 0 0",
+	                 file_name, file_name])
 
 
 def transpose_legend(handles, labels, num_columns):
@@ -190,8 +192,8 @@ def replace_legend_entry(label, remove_algo_part, replace_legend):
 	for remove, with_value in replace_legend.items():
 		if label.strip(' ') == remove:
 			label = with_value
-	label = label.replace('_', ' ')
-	label = label.replace('&', '+')
+	# label = label.replace('_', ' ')
+	# label = label.replace('&', '+')
 	return label
 
 

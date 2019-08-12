@@ -122,7 +122,7 @@ benchmark_configs = {
 		'graph_sets': [
 			'om',
 		],
-		'remove_algo_parts': ['Ego', ' | ' 'Leiden + Infomap', 'No Clean Up'],
+		'remove_algo_parts': ['Ego', ' | ', 'Leiden + Infomap', 'No Clean Up'],
 		'replace_legend': {},
 		'plots': ['ego_net_extend', 'timings'],
 		'plot_algo_set': ['all'],

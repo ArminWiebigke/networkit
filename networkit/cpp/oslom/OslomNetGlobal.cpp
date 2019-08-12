@@ -63,11 +63,11 @@ int OslomNetGlobal::try_to_merge_discarded(IntMatrix &discarded,
 
 			bool added = try_add_good_group(cleaned_group, b_score, merged_group, good_modules,
 			                                bscores_good, new_discarded);
-			if (added) {
-				std::cout << "merged " << merged_modules.size() << " discarded modules "
-				          << std::endl;
-				std::cout << merged_group.size() << " -> " << cleaned_group.size() << std::endl;
-			}
+//			if (added) {
+//				std::cout << "merged " << merged_modules.size() << " discarded modules "
+//				          << std::endl;
+//				std::cout << merged_group.size() << " -> " << cleaned_group.size() << std::endl;
+//			}
 		}
 	}
 	return 0;
@@ -512,8 +512,8 @@ bool OslomNetGlobal::check_fusion_with_gather(ModuleCollection &mall) {
 				++fused_modules;
 				bs_to_insert.push_back(bs);
 			}
-			if (i % 100 == 0)
-				std::cout << "checked " << i << " unions. Fused: " << fused_modules << std::endl;
+//			if (i % 100 == 0)
+//				std::cout << "checked " << i << " unions. Fused: " << fused_modules << std::endl;
 		}
 
 	for (count i = 0; i < module_to_insert.size(); i++)
@@ -865,6 +865,8 @@ OslomNetGlobal::clean_up(const std::vector<std::deque<int>> &modules, int upper_
 			bcu = CUP_both(module, group);
 		else if (paras->cleanup_strategy == "check")
 			bcu = CUP_check(module, group);
+		else if (paras->cleanup_strategy == "search")
+			bcu = CUP_search(module, group);
 		else
 			throw std::runtime_error("No cleanup strategy!");
 //        std::cout << modules[gr_id].size() << " -> " << group.size() << std::endl;
