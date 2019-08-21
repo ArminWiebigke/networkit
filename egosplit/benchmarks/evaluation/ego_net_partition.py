@@ -522,7 +522,7 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 		max_partition = max(max_partition, id)
 	partitions = [[] for _ in range(max_partition + 1)]
 	for v, p_id in partition_map.items():
-		if v != none and p_id != none:  # TODO: Why does leidenalg assign partition = none, but no other algorithm?
+		if v != none and p_id != none:
 			partitions[p_id].append(v)
 	# Remove empty partitions
 	partitions = [p for p in partitions if len(p) > 0]

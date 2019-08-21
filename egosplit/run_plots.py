@@ -36,6 +36,7 @@ def create_plots(config):
 		'metrics',
 		'timings',
 		'comm_sizes',
+		'comm_f1',
 		'num_comms',
 		'ego_size_metrics',
 		'ego_metrics',

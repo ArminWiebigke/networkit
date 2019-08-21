@@ -1,4 +1,5 @@
 import sys
+from collections import defaultdict
 
 from networkit import gephi
 
@@ -20,14 +21,33 @@ def create_ground_truth_partition(node_id, egonet, ground_truth):
 	return partition
 
 
+def create_ground_truth_coloring(node_id, egonet, ground_truth, color_dict):
+	gt_comms = ground_truth.subsetsOf(node_id)
+	partition = dict()
+	for u in egonet.nodes():
+		comms = ground_truth.subsetsOf(u).intersection(gt_comms)
+		if len(comms) == 0:
+			color = color_dict['none']
+		elif len(comms) > 1:
+			color = color_dict['multiple']
+		else:
+			comm = comms.pop()
+			# if comm not in color_dict:
+			# 	color_dict[comm] = colors.pop(0)
+			color = color_dict[comm]
+
+		partition[u] = color
+	return partition
+
+
 def mark_direct_neighbors(graph, egonet, node_id):
 	neighbors = graph.neighbors(node_id)
 	neighbor_map = dict()
 	for u in egonet.nodes():
 		if u in neighbors:
-			neighbor_map[u] = 1
+			neighbor_map[u] = 20
 		else:
-			neighbor_map[u] = 0
+			neighbor_map[u] = 10
 	return neighbor_map
 
 
@@ -55,6 +75,19 @@ def stream_partition(graphs, benchmarks):
 
 	keep_streaming = True
 	while keep_streaming:
+		colors = [
+			'#3379D9',  # blue
+			'#2AA925',  # green
+			'#FF2000',  # red
+			'#000000',
+			'#000000',
+			'#000000',
+			'#000000',
+		]
+		color_dict = defaultdict(lambda: colors.pop(0))
+		color_dict['none'] = '#cccccc'
+		color_dict['multiple'] = '#333333'
+
 		for graph in graphs:
 			node_id = graph.graph.randomNode()
 			for benchmark, client in benchmarks_and_clients:
@@ -74,8 +107,14 @@ def stream_partition(graphs, benchmarks):
 				                                             graph.ground_truth)
 				client.exportNodeValues(egonet, gt_partition, "ground_truth")
 
+				gt_colors = create_ground_truth_coloring(node_id, egonet, graph.ground_truth,
+				                                         color_dict)
+				client.exportNodeValues(egonet, gt_colors, "color")
+				client.exportNodeValues(egonet, gt_colors, "color2")
+
 				neighbors = mark_direct_neighbors(graph.graph, egonet, node_id)
 				client.exportNodeValues(egonet, neighbors, "neighbors")
+				client.exportNodeValues(egonet, neighbors, "size")
 
 				partition = benchmark.algo.ego_net_partition_of(node_id)
 				client.exportNodeValues(egonet, partition, benchmark.get_algo_name())

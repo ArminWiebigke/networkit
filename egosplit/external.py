@@ -330,13 +330,13 @@ def getFacebookGraph(name, clean=False):
 	f_graph = graphio.readMat(graphs_path + '/facebook100/{0}.mat'.format(name), key='A')
 	cover = structures.Cover(f_graph.upperNodeIdBound())
 	attributes = [
-		'student_fac',
-		'gender',
-		'major_index',
-		'second_major',
+		# 'student_fac',
+		# 'gender',
+		# 'major_index',
+		# 'second_major',
 		'dorm',
 		'year',
-		'high_school'
+		# 'high_school'
 	]
 	id_offset = 0
 	for attribute in attributes:

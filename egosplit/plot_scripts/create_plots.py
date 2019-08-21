@@ -112,6 +112,7 @@ graph_sets = {
 		},
 		'bar_plot': True,
 		'set_ylim': False,
+		'show_deviation': True,
 	},
 	'large': {
 		'graph_filter': ['Amazon', 'DBLP'],
@@ -153,6 +154,7 @@ def run(data, output_dir, config):
 		'ego_net_x_cluster': ego_net_x_cluster_plots,
 		'num_comms': num_comms_plots,
 		'comm_sizes': comm_sizes_plots,
+		'comm_f1': comm_f1_plots,
 	}
 	for plot_func in config['plots']:
 		plot_graph_sets = config['plot_graph_sets']
@@ -279,7 +281,42 @@ def comm_sizes_plots(data, output_dir, graph_set_name, graph_set_params, algo_se
 			'ylabel': 'Community Size ($\log_2$)',
 			# 'xticklabels': [''],
 		},
-		# font_size=0.6,
+	)
+
+
+# *****************************************************************************
+# *                                Comm F1 Score                              *
+# *****************************************************************************
+def comm_f1_plots(data, output_dir, graph_set_name, graph_set_params, algo_set_name, algo_match,
+                     config):
+	print('Plots for comm sizes')
+	make_plot(
+		plot_subdir='comm_f1/',
+		output_dir=output_dir,
+		plot_type=PlotType.swarm,
+		data=data['cover_comm_sizes'],
+		graph_filter=graph_set_params['graph_filter'],
+		algo_matches=algo_match,
+		# add_algos=['Ground Truth'],
+		remove_algo_part=config['remove_algo_parts'],
+		# title='Community Sizes',
+		file_name='{}_{}'.format(graph_set_name, algo_set_name),
+		legend_file_name='legend_{}_{}'.format(graph_set_name, algo_set_name),
+		one_plot_per_graph=True,
+		use_graph_id=True,
+		x='Graph Name',
+		hue=config['hue'],
+		y='F1 Score',
+		plot_args={
+			# 'size': 2.5,
+			'dodge': True,
+		},
+		ax_set={
+			# 'ylim': (2, 8),
+			# 'ylim': 2,
+			'ylabel': 'F1 Score',
+			# 'xticklabels': [''],
+		},
 	)
 
 

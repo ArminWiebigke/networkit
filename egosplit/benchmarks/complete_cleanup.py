@@ -41,7 +41,7 @@ def clean_up_cover(graph, cover, ground_truth, clean_up):
 	elif clean_up == 'Clean-merge':
 		cover = clean_up_oslom(graph, cover, bad_groups_strat='merge')
 	elif clean_up == 'Clean-search':
-		cover = clean_up_oslom(graph, cover, cleanup_strategy='search')
+		cover = clean_up_oslom(graph, cover, bad_groups_strat='merge', cleanup_strategy='search')
 	elif clean_up == 'Clean-merge & Remove Overlapping':
 		cover = remove_overlap_comms(graph, cover, min_overlap=1.0)
 		cover = clean_up_oslom(graph, cover, bad_groups_strat='merge')
