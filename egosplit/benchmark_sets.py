@@ -170,7 +170,7 @@ benchmark_configs = {
 		'remove_algo_parts': ['Ego', ' + Infomap', ' | ', 'No Clean Up', 'No Extension',
 		                      'EdgesScore', 'Significance'
 		                      ],
-		'replace_legend': {'Leiden': 'LeidenMod'},
+		'replace_legend': {'Leiden': 'LeidenMod', 'Potts': 'LPPotts'},
 		'plots': ['ego_net_cluster', 'metrics', 'timings'],
 		'plot_algo_set': ['base', 'edges', 'sig'],
 	},
@@ -224,8 +224,13 @@ benchmark_configs = {
 		                      'No Extension',
 		                      'EdgesScore',
 		                      ],
-		'replace_legend': {'Leiden': 'LeidenMod'},
-		'plots': ['metrics', 'comm_sizes', 'comm_f1', 'timings'],
+		'replace_legend': {'Leiden': 'LeidenMod', 'Potts': 'LPPotts'},
+		'plots': [
+			'metrics',
+			'timings',
+			'comm_sizes',
+			'comm_f1',
+			],
 		'plot_algo_set': ['Info-local', 'Leiden-local'],
 	},
 	'clean-up': {
@@ -252,7 +257,8 @@ benchmark_configs = {
 		'replace_legend': {'No Clean Up': 'NoClean', 'Clean-merge': 'CleanMerge',
 		                   'Clean-remove': 'CleanRemove', 'OSLOM-full': 'OSLOM'},
 		'plots': ['metrics', 'comm_sizes', 'comm_f1', 'timings', 'num_comms'],
-		'plot_algo_set': ['Leiden-Info', 'Info-Surprise'],
+		'plot_algo_set': ['Leiden-Info', 'Info-Surprise',
+		                  'Leiden-Info-noOSLOM', 'Info-Surprise-noOSLOM'],
 	},
 	'compare-other': {
 		'result_dir': 'compare-other',

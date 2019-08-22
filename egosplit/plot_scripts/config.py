@@ -42,13 +42,13 @@ markers = {
 
 metric_names = {
 	bm.F1.get_name(): {
-		"ylabel": "F1-Score",
+		"ylabel": "F1 Score",
 		"y_val": "F1-Score",
 		"file_name": "F1",
 		"ylim": (0, 1.05),
 	},
 	bm.F1_rev.get_name(): {
-		"ylabel": "F1-Score (reversed)",
+		"ylabel": "F1 Score (reversed)",
 		"y_val": "F1-Score (reversed)",
 		"file_name": "F1_rev",
 		"ylim": (0, 1.05),

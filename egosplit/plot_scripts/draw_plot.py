@@ -192,6 +192,7 @@ def replace_legend_entry(label, remove_algo_part, replace_legend):
 	for remove, with_value in replace_legend.items():
 		if label.strip(' ') == remove:
 			label = with_value
+			break
 	# label = label.replace('_', ' ')
 	# label = label.replace('&', '+')
 	return label
