@@ -251,7 +251,7 @@ benchmark_configs = {
 		                      ],
 		'replace_legend': {'No Clean Up': 'NoClean', 'Clean-merge': 'CleanMerge',
 		                   'Clean-remove': 'CleanRemove', 'OSLOM-full': 'OSLOM'},
-		'plots': ['metrics', 'comm_sizes', 'timings', 'num_comms'],
+		'plots': ['metrics', 'comm_sizes', 'comm_f1', 'timings', 'num_comms'],
 		'plot_algo_set': ['Leiden-Info', 'Info-Surprise'],
 	},
 	'compare-other': {
