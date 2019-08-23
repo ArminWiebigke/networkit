@@ -33,7 +33,7 @@ algo_sets = {
 	'base': ['No Extension'],
 	'edges': ['Edges'],
 	'sig': ['Significance'],
-	'all': ['Ego', 'GCE', 'OSLOM', 'MOSES'],
+	'all': ['!Ground Truth', ''],
 	'ego': ['Ego'],
 	'Info-Info': ['Infomap + Infomap'],
 	'Info-local': ['Infomap + '],

@@ -9,7 +9,7 @@ def get_graphs(graph_sets, iterations):
 	graphs = []
 	for graph_set in graph_sets:
 		if graph_set == "om":
-			graphs.extend(om_graphs(iterations))
+			graphs.extend(om_graphs(iterations, 1, 7))
 		if graph_set == "test":
 			graphs.extend(om_graphs(1, 3, 3))
 		if graph_set == "overlap":

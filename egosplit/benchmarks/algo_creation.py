@@ -20,6 +20,11 @@ def get_other_algos(algo_set):
 			lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
 			lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()
 		),
+		'Ego-base': lambda: EgoSplitAlgorithm(
+			'Ego-base', original_ego_parameters(),
+			 lambda g: partitionLeiden(g, 'modularity'),
+			 lambda g: partitionInfomap(g)
+		),
 	}
 	for algo in algo_set:
 		algos.append((algo_dict[algo](), ['']))

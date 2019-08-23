@@ -61,8 +61,8 @@ def make_plot(data,
 		filtered_data.query(x_filter, inplace=True)
 	graphs = get_unique_values(filtered_data, 'Graph Name')
 	# print(filtered_data['Algorithm'])
-	filter_algos = [a[1:] for a in algo_matches if a[0] == '!']
-	algo_matches = [a for a in algo_matches if a[0] != '!']
+	filter_algos = [a[1:] for a in algo_matches if len(a) > 0 and a[0] == '!']
+	algo_matches = [a for a in algo_matches if len(a) == 0 or a[0] != '!']
 	algo_list = get_algo_list(algo_matches, add_algos, filter_algos, filtered_data)
 
 	filtered_data.query('`Algorithm` in @algo_list', inplace=True)
