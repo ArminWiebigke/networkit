@@ -41,6 +41,8 @@ def make_plot(data,
               one_plot_per_graph=False,
               use_graph_id=False,
               title=None,
+              max_legend_cols=5,
+              max_legend_width=90,
               plot_type=PlotType.line,):
 	replace_legend = replace_legend or {}
 	add_algos = add_algos or []
@@ -107,7 +109,7 @@ def make_plot(data,
 			f.write(latex_table(graph_data, hue, x, y, replace_label_func))
 
 		legend_file = output_dir + plot_subdir + '{}.pdf'.format(legend_file_name)
-		save_legend(ax, legend_file, hue, replace_label_func)
+		save_legend(ax, legend_file, hue, replace_label_func, max_legend_cols, max_legend_width)
 
 	# Make one plot per graph if graph is not on the x-axis
 	if one_plot_per_graph:
@@ -129,7 +131,7 @@ def make_plot(data,
 		create_plot(filtered_data)
 
 
-def save_legend(ax, legend_file, hue, replace_label_func):
+def save_legend(ax, legend_file, hue, replace_label_func, max_cols, max_width):
 	if os.path.exists(legend_file):
 		return
 	fig_leg = plt.figure()
@@ -142,9 +144,11 @@ def save_legend(ax, legend_file, hue, replace_label_func):
 	# labels, handles = zip(*(sorted(zip(labels, handles), key=lambda t: t)))
 	# Remove/replace labels
 	labels = [replace_label_func(l) for l in labels]
-	num_columns = 5
-	while legend_too_long(labels, num_columns):
+	num_columns = max_cols
+
+	while legend_too_long(labels, num_columns, max_width):
 		num_columns -= 1
+
 	handles, labels = transpose_legend(handles, labels, num_columns)
 	ax_leg.legend(
 		# title=hue,
@@ -175,10 +179,10 @@ def transpose_legend(handles, labels, num_columns):
 	return new_handles, new_labels
 
 
-def legend_too_long(labels, num_columns):
+def legend_too_long(labels, num_columns, max_width):
+	max_width = max_width - 9 * num_columns
 	if num_columns == 1:
 		return False
-	max_width = 90 - 9 * num_columns
 	for line in [labels[i:i + num_columns] for i in range(0, len(labels), num_columns)]:
 		length = sum([len(l) for l in line])
 		if length > max_width:
