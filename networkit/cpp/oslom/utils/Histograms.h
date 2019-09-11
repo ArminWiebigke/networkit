@@ -525,7 +525,7 @@ int print_cumulative(std::vector<int> &kws, const std::string &file, int number_
 
 void int_histogram(const std::string &infile, const std::string &outfile);
 
-void int_histogram(int c, std::map<int, int> &hist, int w);
+void int_histogram(std::map<int, int> &hist, int c, int w);
 
 void int_histogram(const int &c, std::map<int, std::pair<int, double> > &hist, const int &w1,
                    const double &w2);

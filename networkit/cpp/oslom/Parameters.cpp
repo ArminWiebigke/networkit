@@ -128,7 +128,7 @@ Parameters::Parameters() {
 
 	//********************* collect_groups
 	max_iteration_convergence = 10;                  // parameter for the convergence of the collect_groups function
-
+	only_test_pos_1 = false;
 	set({});
 }
 

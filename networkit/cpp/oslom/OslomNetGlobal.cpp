@@ -825,6 +825,7 @@ bool OslomNetGlobal::try_add_good_group(
 	if (!group.empty() && group.size() > paras->max_group_extend * original_group.size()) {
 		group.clear();
 		if (!paras->discard_max_extend_groups) {
+			throw std::runtime_error("Discard");
 			b_score = CUP_check(original_group, group);
 //			std::cout << original_group.size() << " -> " << group.size() << std::endl;
 		}

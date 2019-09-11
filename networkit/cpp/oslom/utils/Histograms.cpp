@@ -402,10 +402,15 @@ void int_histogram(int c, std::map<int, std::pair<int, int> > &hist, int w1, int
     }
 }
 
-void int_histogram(int c, std::map<int, int> &hist, int w) {
-    auto itf = hist.find(c);
-    if (itf == hist.end())
-        hist.insert(std::make_pair(c, w));
-    else
-        itf->second += w;
+/**
+ *
+ * @param hist Insert result here
+ * @param c Neighbor node
+ * @param w Weight of edge to neighbor
+ */
+void int_histogram(std::map<int, int> &hist, int c, int w) {
+	if (hist.count(c))
+		hist[c] += w;
+	else
+		hist[c] = w;
 }

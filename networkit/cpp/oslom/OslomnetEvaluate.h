@@ -87,7 +87,7 @@ private:
     double
     clean_up_procedure(WeightedTabdeg &previous_tab_c, WeightedTabdeg &previous_tab_n,
                        int kin_cgroup_prev, int ktot_cgroup_prev,
-                       std::deque<int> &border_group,
+                       std::deque<int> &cleaned_group,
                        bool only_c);
 
     void set_changendi_cum();

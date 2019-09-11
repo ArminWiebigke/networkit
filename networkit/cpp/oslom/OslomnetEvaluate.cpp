@@ -201,6 +201,15 @@ double oslom_net_evaluate::CUP_search(const std::deque<int> &_c_, std::deque<int
 	bscore = CUP_runs(previous_tab_c, previous_tab_n, kin_cgroup_prev, ktot_cgroup_prev,
 	                  gr_cleaned, false, number_of_runs);
 
+//	paras->only_test_pos_1 = true;
+//	initialize_for_evaluation(gr_cleaned, previous_tab_c, previous_tab_n, kin_cgroup_prev,
+//	                          ktot_cgroup_prev);
+//	bscore = CUP_runs(previous_tab_c, previous_tab_n, kin_cgroup_prev, ktot_cgroup_prev,
+//	                  gr_cleaned,
+//	                  true, /*this "true" means I can only look at nodes in previous_tab_c */
+//	                  number_of_runs);
+//	paras->only_test_pos_1 = false;
+
 	return bscore;
 }
 
@@ -307,7 +316,7 @@ double oslom_net_evaluate::CUP_runs(WeightedTabdeg &previous_tab_c,
  * @param previous_tab_n
  * @param kin_cgroup_prev
  * @param ktot_cgroup_prev
- * @param border_group (out): The neighbors that were added to the module.
+ * @param cleaned_group (out): The neighbors that were added to the module.
  * @param only_c (in): If true, only consider nodes inside the module, so no neighbors are added
  * @return The B-Score of the module
  */
@@ -316,12 +325,12 @@ double oslom_net_evaluate::clean_up_procedure(
 		WeightedTabdeg &previous_tab_n,  // Neighbors
 		int kin_cgroup_prev,
 		int ktot_cgroup_prev,
-		std::deque<int> &border_group,
+		std::deque<int> &cleaned_group,
 		bool only_c) {
 	// still there is some stochasticity due to possible ties
 	/*	previous_stuff is the module-stuff before the CUP (Clean Up Procedure)
-		cgroup + border_group is the module cleaned	*/
-	border_group.clear();
+		cgroup + cleaned_group is the module cleaned	*/
+	cleaned_group.clear();
 	cgroup._set_(previous_tab_c);
 	neighs._set_(previous_tab_n);
 	kin_cgroup = kin_cgroup_prev;
@@ -346,12 +355,12 @@ double oslom_net_evaluate::clean_up_procedure(
 		get_external_scores(neighs, fitness_label_to_sort, kout_g, tm, Nstar, nneighs, max_r,
 		                    only_c, previous_tab_c);
 		if (paras->simple_cleanup)
-			bscore = CUP_from_list_simple(fitness_label_to_sort, border_group);
+			bscore = CUP_from_list_simple(fitness_label_to_sort, cleaned_group);
 		else
-			bscore = CUP_from_list(fitness_label_to_sort, border_group);
+			bscore = CUP_from_list(fitness_label_to_sort, cleaned_group);
 
 		// If the group is not empty, the module is considered significant
-		if (!border_group.empty())
+		if (!cleaned_group.empty())
 			break;
 		// If all nodes have been removed, the module is insignificant
 		if (cgroup.size() == 0)
@@ -359,7 +368,7 @@ double oslom_net_evaluate::clean_up_procedure(
 
 		erase_the_worst();
 	}
-//    if (only_c && !border_group.empty())
+//    if (only_c && !cleaned_group.empty())
 //        throw std::runtime_error("Added neighbors!");
 	return bscore;
 }
@@ -564,7 +573,6 @@ double oslom_net_evaluate::CUP_from_list_simple(CupDataStruct &a, std::deque<int
 				break;
 			}
 		}
-
 		--pos;
 		++itl;
 	}

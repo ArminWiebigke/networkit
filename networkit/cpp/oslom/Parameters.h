@@ -67,6 +67,7 @@ public:
     std::string bad_groups_filename;
     bool merge_discarded;
     bool discard_max_extend_groups;
+    bool only_test_pos_1;
 };
 
 #endif // PARAMETERS_HPP

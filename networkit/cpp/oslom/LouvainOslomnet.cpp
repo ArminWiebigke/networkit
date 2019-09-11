@@ -27,24 +27,26 @@ void
 oslomnet_louvain::unweighted_favorite_of(const int &node, int &new_label, int &stubs_into_new,
                                          int &stubs_into_old) {
     double min_fitness = 10;
-    new_label = vertex_label[node];
-    stubs_into_new = 0;
+	int cur_label = vertex_label[node];
+	new_label = cur_label;
+	stubs_into_new = 0;
     stubs_into_old = 0;
     std::map<int, int> M; // M is a map module_label -> kin (internal stubs)
-    for (int j = 0; j < vertices[node]->links->size(); j++)
-        int_histogram(vertex_label[vertices[node]->links->l[j]], M,
-                      vertices[node]->links->w[j].first); // neighbor, (insert into M), number of edges
+    for (int j = 0; j < vertices[node]->links->size(); j++) // for each neighbor of the node
+	    int_histogram(M, vertex_label[vertices[node]->links->l[j]],
+	                  vertices[node]->links->w[j].first); // (insert into M), neighbor, number of edges
     for (auto &itM : M) {
         int module_label = itM.first;
         int num_edges = itM.second;
         const oslom_module &module = label_module.find(module_label)->second;
         double fitness;
-        if (module_label != vertex_label[node]) {
+	    if (module_label != cur_label) {
             fitness = Stochastics::topological_05(num_edges, module.kout,
                                                  total_stubs - module.ktot,
                                                  vertices[node]->stub_number);
         } else {
-            stubs_into_old = num_edges;
+	    	// Calc fitness of current module
+            stubs_into_old = num_edges; // Current internal degree
             int kout_prime = module.kout - vertices[node]->stub_number + 2 * stubs_into_old;
             fitness = Stochastics::topological_05(
                     num_edges, kout_prime, total_stubs - module.ktot + vertices[node]->stub_number,
@@ -143,7 +145,7 @@ oslomnet_louvain::update_modules(const int &node, const int &new_label, const in
 }
 
 void oslomnet_louvain::single_pass_unweighted() {
-    int new_label, stubs_into_new, stubs_into_old; // new_label is the label node i likes most, stubs_into_new is the number od internal stubs in module new_label, stubs_into_old is the same for vertex_label[i]
+    int new_label, stubs_into_new, stubs_into_old; // new_label is the label node i likes most, stubs_into_new is the number of internal stubs in module new_label, stubs_into_old is the same for vertex_label[i]
     // new_label = best module, stubs_into_new = stubs into best module, stubs_into_old = stubs into current module
     for (int &node : vertex_order) {
         if (vertex_to_check[node]) {
