@@ -58,7 +58,7 @@ def create_plots(config):
 
 
 if __name__ == '__main__':
-	pool = Pool(4)
+	pool = Pool(1)
 	pool.map(create_plots, get_benchmark_configs(), 1)
 # for config in get_benchmark_configs():
 # 	pass

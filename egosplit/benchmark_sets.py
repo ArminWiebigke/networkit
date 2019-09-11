@@ -14,15 +14,15 @@ benchmark_sets = [
 	# 'edges-factor',
 	# 'sig-merge',
 	# 'sig-max-candidates',
-	'sig-ext-iter',
+	# 'sig-ext-iter',
 	# 'sig-check-updated',
 	# 'sig-cluster-iter',
 	# 'ext-compare',
 	# 'local-cluster',
 	# 'connect-persona',
 	# 'global-cluster',
-	# 'clean-up',
-	'compare-other',
+	'clean-up',
+	# 'compare-other',
 ]
 
 benchmark_configs = {
@@ -209,7 +209,7 @@ benchmark_configs = {
 		                   'All Unweighted': 'AllUnweight',
 		                   'All Density Max Weight 1': 'AllWeight'},
 		'plots': ['metrics', 'timings', 'comm_f1', 'comm_sizes'],
-		'plot_algo_set': ['Leiden-Info', 'Info-Info'],
+		'plot_algo_set': ['connect-persona'],
 	},
 	'global-cluster': {
 		'result_dir': 'global-cluster',
@@ -238,7 +238,7 @@ benchmark_configs = {
 			'timings',
 			'comm_sizes',
 			'comm_f1',
-			],
+		],
 		'plot_algo_set': ['Info-local', 'Leiden-local'],
 	},
 	'clean-up': {
@@ -262,11 +262,10 @@ benchmark_configs = {
 		'remove_algo_parts': ['Ego', ' | ', 'EdgesScore', 'Infomap + Surprise',
 		                      'Leiden + Infomap',
 		                      ],
-		'replace_legend': {'No Clean Up': 'NoClean', 'Clean-merge': 'CleanMerge',
+		'replace_legend': {'No Clean Up': 'Original', 'Clean-merge': 'Cleaned',
 		                   'Clean-remove': 'CleanRemove', 'OSLOM-full': 'OSLOM'},
 		'plots': ['metrics', 'comm_sizes', 'comm_f1', 'timings', 'num_comms'],
-		'plot_algo_set': ['Leiden-Info', 'Info-Surprise',
-		                  'Leiden-Info-noOSLOM', 'Info-Surprise-noOSLOM'],
+		'plot_algo_set': ['clean-up'],
 	},
 	'compare-other': {
 		'result_dir': 'compare-other',

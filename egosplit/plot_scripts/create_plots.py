@@ -35,6 +35,8 @@ algo_sets = {
 	'sig': ['Significance'],
 	'all': ['!Ground Truth', ''],
 	'ego': ['Ego'],
+	'connect-persona': ['Leiden + Infomap', '!All Unweighted'],
+	'clean-up': ['Leiden + Infomap', '!Clean-remove', '!OSLOM-full'],
 	'Info-Info': ['Infomap + Infomap'],
 	'Info-local': ['Infomap + '],
 	'Leiden-local': ['Leiden + '],
