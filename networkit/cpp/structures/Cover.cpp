@@ -6,6 +6,7 @@
  */
 
 #include "Cover.h"
+#include "../structures/NodeMapping.h"
 
 #include <algorithm>
 #include <iterator>
@@ -196,6 +197,29 @@ void Cover::removeSubset(NetworKit::index s) {
 	for (node n : getMembers(s)) {
 		removeFromSubset(s, n);
 	}
+}
+
+std::vector<std::set<index>> Cover::getSubsets() const {
+	auto ids = getSubsetIds();
+	auto idMapping = std::vector<index>(upperBound());
+	std::vector<std::set<index>> subsets;
+	for (index id : ids) {
+		idMapping[id] = subsets.size();
+		subsets.emplace_back();
+	}
+
+	for (index e = 0; e <= this->z; ++e) {
+		for (index t : data[e]) {
+			subsets[idMapping[t]].insert(e);
+		}
+	}
+	return subsets;
+}
+
+void Cover::addSubset(const std::set<index>& subset) {
+	index id = newSubsetId();
+	for (node e : subset)
+		addToSubset(id, e);
 }
 
 } /* namespace NetworKit */

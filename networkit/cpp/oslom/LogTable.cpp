@@ -105,7 +105,7 @@ LogFactTable::cum_hyper_right(int k_in, int gr_out, int open_stubs, int k_degree
 //		double degree_node_p = k_degree + 1 - x;
 //		double ga = ext_stubs - gr_out + x; // TODO: ext_stubs with or without k_degree?
 //		z_zero *= kout_g_p / (x * ga) * degree_node_p;
-//		if (z_zero < log_table_pr * sum)
+//		if (z_zero < precision * sum)
 //			break;
 //		if (pzero * sum > 1)
 //			return pzero;
