@@ -17,7 +17,7 @@ StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue) 
 }
 
 std::pair<double, double>
-StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) {
+StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) const {
 	// TODO: Include k in extStubs? currently is not
 //	extStubs -= k;
 	assert(kIn <= cOut);
@@ -52,7 +52,7 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) {
 	return {score, bootInterval};
 }
 
-double StochasticSignificance::orderStatistic(double sScore, count externalNodes, count pos) {
+double StochasticSignificance::orderStatistic(double sScore, count externalNodes, count pos) const {
 	return dist.rightCumulativeBinomial(sScore, externalNodes, pos);
 }
 

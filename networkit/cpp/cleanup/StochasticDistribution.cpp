@@ -33,15 +33,15 @@ StochasticDistribution::StochasticDistribution(index size) {
 	}
 }
 
-double StochasticDistribution::binomCoeff(count n, count k) {
+double StochasticDistribution::binomCoeff(count n, count k) const {
 	return std::exp(logBinomCoeff(n, k));
 }
 
-double StochasticDistribution::binomialDist(double p, count n, count k) {
+double StochasticDistribution::binomialDist(double p, count n, count k) const {
 	return std::exp(logBinomCoeff(n, k) + k * std::log(p) + (n - k) * std::log(1 - p));
 }
 
-double StochasticDistribution::rightCumulativeBinomial(double p, count n, count k) {
+double StochasticDistribution::rightCumulativeBinomial(double p, count n, count k) const {
 	assert("Error: n < 0" && n >= 0);
 	assert("Error: k < 0" && k >= 0);
 	assert("Error: k > n" && k <= n);
@@ -73,7 +73,7 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 	return startBinom * sum;
 }
 
-double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k) {
+double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k) const {
 	if (k == n)
 		return 1;
 	if (p < 1e-11)
@@ -100,12 +100,12 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 	return startBinom * sum;
 }
 
-double StochasticDistribution::hypergeometricDist(count N, count K, count n, count k) {
+double StochasticDistribution::hypergeometricDist(count N, count K, count n, count k) const {
 	double logH = logHyper(N, K, n, k);
 	return std::max(0., std::exp(logH));
 }
 
-double StochasticDistribution::logHyper(count N, count K, count n, count k) {
+double StochasticDistribution::logHyper(count N, count K, count n, count k) const {
 	double a = logBinomCoeff(K, k);
 	double b = logBinomCoeff(N - K, n - k);
 	double c = logBinomCoeff(N, n);
@@ -114,7 +114,7 @@ double StochasticDistribution::logHyper(count N, count K, count n, count k) {
 	       - c;
 }
 
-double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, count k) {
+double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, count k) const {
 	assert("Error: N < 0" && N >= 0);
 	assert("Error: K < 0" && K >= 0);
 	assert("Error: K > N" && K <= N);
@@ -150,7 +150,7 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	return startProb * sum;
 }
 
-double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, count k) {
+double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, count k) const {
 	if (N - K - n + k < 0)
 		return 0;
 	if (k < 0)

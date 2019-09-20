@@ -26,7 +26,7 @@ public:
 	 * @param k Degree of the node
 	 * @return a pair (s-score, boot interval)
 	 */
-	std::pair<double, double> sScore(count k, count kIn, count cOut, count extStubs);
+	std::pair<double, double> sScore(count k, count kIn, count cOut, count extStubs) const;
 
 	/**
 	 * Calculate the order statistic
@@ -35,7 +35,7 @@ public:
 	 * @param pos the position of the candidate
 	 * @return
 	 */
-	double orderStatistic(double sScore, count externalNodes, count pos);
+	double orderStatistic(double sScore, count externalNodes, count pos) const;
 
 private:
 	StochasticDistribution dist;

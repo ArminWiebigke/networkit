@@ -27,7 +27,7 @@ public:
 	 * slightly differ from the exact integer result.
 	 * @return binomial coefficient
 	 */
-	double binomCoeff(count n, count k);
+	double binomCoeff(count n, count k) const;
 
 	/**
 	 * Calculate the binomial distribution for k success.
@@ -36,7 +36,7 @@ public:
 	 * @param k number of successful trials
 	 * @return probability of k successes
 	 */
-	double binomialDist(double p, count n, count k);
+	double binomialDist(double p, count n, count k) const;
 
 	/**
 	 * Calculate the cumulative binomial distribution that there are k or more success.
@@ -45,7 +45,7 @@ public:
 	 * @param k number of successful trials
 	 * @return probability of k or more successes
 	 */
-	double rightCumulativeBinomial(double p, count n, count k);
+	double rightCumulativeBinomial(double p, count n, count k) const;
 
 	/**
 	 * Calculate the cumulative binomial distribution that there are k or less success.
@@ -54,7 +54,7 @@ public:
 	 * @param k number of successful trials
 	 * @return probability of k or less successes
 	 */
-	double leftCumulativeBinomial(double p, count n, count k);
+	double leftCumulativeBinomial(double p, count n, count k) const;
 
 	/**
 	 * Calculate a hypergeometric distribution
@@ -64,7 +64,7 @@ public:
 	 * @param k number of successes
 	 * @return probability of k successes
 	 */
-	double hypergeometricDist(count N, count K, count n, count k);
+	double hypergeometricDist(count N, count K, count n, count k) const;
 
 	/**
 	 * Calculate the cumulative hypergeometric distribution that there are k or more success.
@@ -74,7 +74,7 @@ public:
 	 * @param k number of successes
 	 * @return probability of k or more successes
 	 */
-	double rightCumulativeHyper(count N, count K, count n, count k);
+	double rightCumulativeHyper(count N, count K, count n, count k) const;
 
 	/**
 	 * Calculate the cumulative hypergeometric distribution that there are k or less success.
@@ -84,21 +84,21 @@ public:
 	 * @param k number of successes
 	 * @return probability of k or less successes
 	 */
-	double leftCumulativeHyper(count N, count K, count n, count k);
+	double leftCumulativeHyper(count N, count K, count n, count k) const;
 
-	double oslomDist(count k, count kIn, count cOut, count openStubs);
+	double oslomDist(count k, count kIn, count cOut, count openStubs) const;
 
 private:
 //	static std::vector<double> data;
 	std::vector<double> data;
 	static constexpr double precision = 1e-6;
 
-	double logHyper(count N, count K, count n, count k);
+	double logHyper(count N, count K, count n, count k) const;
 
 	/**
      * @return natural logarithm of the binomial coefficient "n choose k"
      */
-	inline double logBinomCoeff(count n, count k) {
+	inline double logBinomCoeff(count n, count k) const {
 		return data[n] - data[n - k] - data[k];
 	};
 };
