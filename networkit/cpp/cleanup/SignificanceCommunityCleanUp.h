@@ -66,22 +66,6 @@ private:
 	Cover resultCover;
 	// threshold to discard communities if they changed too much
 	const double gamma;
-	// threshold to decide if a node is significant
-	static constexpr double sigThreshold = 0.1;
-	// threshold to discard candidates because the will most likely not be significant
-	static constexpr double scoreThreshold = 0.1;
-	std::vector<count> kIn;
-	std::vector<int> inComm;
-	StochasticSignificance stochastic;
-
-	struct ScoreStruct {
-		double sScore;
-		double bootInterval;
-		node u;
-
-		ScoreStruct(double s, double b, node u) : sScore(s), bootInterval(b), u(u) {};
-	};
-
 	std::vector<Community> discardedComms;
 
 	Community cleanCommunity(const Community &community);
@@ -90,11 +74,46 @@ private:
 
 	void mergeDiscarded();
 
-	SignificanceCommunityCleanUp::Community checkCommSignificance(Community community, bool checkNeighbors);
-
-	Community significantCandidates(const std::vector<ScoreStruct>& scores, count externalNodes);
-
 	void init();
+
+	class SingleCommunityCleanup {
+		using Community = SignificanceCommunityCleanUp::Community;
+
+	public:
+		explicit SingleCommunityCleanup(const Graph &graph);
+
+		/**
+		 * Clean up a community. The cleaned community may be empty.
+		 * @param community
+		 * @return a (possibly empty) community
+		 */
+		Community clean(const Community &community);
+
+	private:
+		struct ScoreStruct {
+			double sScore;
+			double bootInterval;
+			node u;
+
+			ScoreStruct(double s, double b, node u) : sScore(s), bootInterval(b), u(u) {};
+		};
+
+		Community checkCommSignificance(Community community, bool checkNeighbors);
+
+		Community significantCandidates(const std::vector<ScoreStruct>& scores, count externalNodes);
+
+		const Graph &graph;
+		std::vector<count> kIn;
+		std::vector<int> inComm;
+		StochasticSignificance stochastic;
+		// threshold to decide if a node is significant
+		static constexpr double sigThreshold = 0.1;
+		// threshold to discard candidates because the will most likely not be significant
+		static constexpr double scoreThreshold = 0.1;
+	};
+
+	SingleCommunityCleanup singleCommunityCleanup;
+
 };
 } /* namespace NetworKit */
 

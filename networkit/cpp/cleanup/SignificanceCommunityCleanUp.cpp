@@ -10,8 +10,10 @@
 namespace NetworKit {
 
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph, const Cover &cover)
-		: graph(graph), cover(cover), gamma(0.5),
-		  stochastic(2 * graph.numberOfEdges() + graph.numberOfNodes()) {
+		: graph(graph),
+		  cover(cover),
+		  gamma(0.5),
+		  singleCommunityCleanup(graph) {
 
 }
 
@@ -25,8 +27,6 @@ void SignificanceCommunityCleanUp::run() {
 void SignificanceCommunityCleanUp::init() {
 	hasRun = false;
 	resultCover = Cover(graph.upperNodeIdBound());
-	kIn = std::vector<count>(graph.upperNodeIdBound());
-	inComm = std::vector<int>(graph.upperNodeIdBound());
 }
 
 Cover SignificanceCommunityCleanUp::getCover() {
@@ -56,9 +56,7 @@ void SignificanceCommunityCleanUp::checkComms() {
 
 SignificanceCommunityCleanUp::Community
 SignificanceCommunityCleanUp::cleanCommunity(const Community &community) {
-	Community cleanedComm;
-	cleanedComm = checkCommSignificance(community, true);
-	cleanedComm = checkCommSignificance(cleanedComm, false);
+	Community cleanedComm = singleCommunityCleanup.clean(community);
 
 	// Make sure the community did not change drastically
 	Community intersect;
@@ -78,8 +76,26 @@ void SignificanceCommunityCleanUp::mergeDiscarded() {
 	// TODO
 }
 
+SignificanceCommunityCleanUp::SingleCommunityCleanup::SingleCommunityCleanup(const Graph &graph)
+		: graph(graph),
+		  kIn(graph.upperNodeIdBound()),
+		  inComm(graph.upperNodeIdBound()),
+		  stochastic(2 * graph.numberOfEdges() + graph.numberOfNodes()) {
+
+}
+
+SignificanceCommunityCleanUp::Community SignificanceCommunityCleanUp::SingleCommunityCleanup::clean(
+		const Community &community) {
+	Community cleanedComm = community;
+	cleanedComm = checkCommSignificance(community, true);
+	cleanedComm = checkCommSignificance(cleanedComm, false);
+	return cleanedComm;
+}
+
 SignificanceCommunityCleanUp::Community
-SignificanceCommunityCleanUp::checkCommSignificance(Community community, bool checkNeighbors) {
+SignificanceCommunityCleanUp::SingleCommunityCleanup::checkCommSignificance(
+		Community community, bool checkNeighbors) {
+	Community curCommunity;
 	Community originalComm = community;
 	Community cleanedComm = {};
 	std::vector<node> candidates;
@@ -142,7 +158,8 @@ SignificanceCommunityCleanUp::checkCommSignificance(Community community, bool ch
 			count tmpExternalStubs = externalStubs;
 			count tmpCommOut = inComm[u] ? commOut + 2 * kIn[u] - graph.degree(u) : commOut;
 			auto score = stochastic.sScore(graph.degree(u), kIn[u], tmpCommOut, tmpExternalStubs);
-			if (score.first < scoreThreshold || inComm[u]) // only consider neighbors with a good score
+			if (score.first < scoreThreshold ||
+			    inComm[u]) // only consider neighbors with a good score
 				scores.emplace_back(score.first, score.second, u);
 		}
 		std::sort(scores.begin(), scores.end(), [](ScoreStruct a, ScoreStruct b) {
@@ -189,8 +206,8 @@ SignificanceCommunityCleanUp::checkCommSignificance(Community community, bool ch
 }
 
 SignificanceCommunityCleanUp::Community
-SignificanceCommunityCleanUp::significantCandidates(const std::vector<ScoreStruct> &scores,
-                                                    count externalNodes) {
+SignificanceCommunityCleanUp::SingleCommunityCleanup::significantCandidates(
+		const std::vector<ScoreStruct> &scores, count externalNodes) {
 	int pos = 1; // position for the order statistic
 	int sigCnt = 0; // sigCnt tells how many nodes should be included into the cluster
 
