@@ -24,10 +24,9 @@ public:
 	 * @param cOut Number of outgoing stubs from the community
 	 * @param extStubs Number of stubs in the rest of the graph (without the node and the community)
 	 * @param k Degree of the node
-	 * @param [out] bootInterval
 	 * @return a pair (s-score, boot interval)
 	 */
-	std::pair<double, double> sScore(count kIn, count cOut, count extStubs, count k);
+	std::pair<double, double> sScore(count k, count kIn, count cOut, count extStubs);
 
 	/**
 	 * Calculate the order statistic

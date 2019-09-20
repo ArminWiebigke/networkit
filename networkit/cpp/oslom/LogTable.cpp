@@ -336,7 +336,7 @@ double LogFactTable::right_cumulative_function(int k1, int k2, int open_stubs, i
 		return 1;
 
 	int mode = std::max(cast_int(k2 / double(k1 + k3) * k1),
-	                    l1); // this mode in underestimated anyway
+	                    l1); // this mode is underestimated anyway
 	if (mode > k2)
 		mode = k2;
 

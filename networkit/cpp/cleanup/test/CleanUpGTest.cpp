@@ -23,8 +23,8 @@ class CleanupGTest : public testing::Test {
 
 TEST_F(CleanupGTest, testCleanUp) {
 	for (int i = 0; i < 1; ++i) {
-//		ClusteredRandomGraphGenerator gen(200, 10, 0.7, 0.05);
-//		Graph G = gen.generate();
+		ClusteredRandomGraphGenerator gen(200, 10, 0.7, 0.05);
+		Graph G = gen.generate();
 
 //		EdgeListReader reader('\t', 0);
 //		Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
@@ -35,8 +35,8 @@ TEST_F(CleanupGTest, testCleanUp) {
 //		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
 //		G.removeSelfLoops();
 
-		METISGraphReader reader;
-		Graph G = reader.read("../input/jazz.graph");
+//		METISGraphReader reader;
+//		Graph G = reader.read("../input/jazz.graph");
 
 		node isolatedNode = G.addNode();
 
@@ -56,7 +56,7 @@ TEST_F(CleanupGTest, testCleanUp) {
 		for (count s : comms) {
 			notEmptyComms += (s > 1);
 		}
-		EXPECT_GT(notEmptyComms, 10);
+		EXPECT_GE(notEmptyComms, 10);
 		// Communities of size 1 should be discarded
 		for (count s : comms) {
 			if (s > 0)

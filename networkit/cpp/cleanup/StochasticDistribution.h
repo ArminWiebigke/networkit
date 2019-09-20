@@ -86,6 +86,8 @@ public:
 	 */
 	double leftCumulativeHyper(count N, count K, count n, count k);
 
+	double oslomDist(count k, count kIn, count cOut, count openStubs);
+
 private:
 //	static std::vector<double> data;
 	std::vector<double> data;

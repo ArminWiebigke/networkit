@@ -10,17 +10,37 @@
 namespace NetworKit {
 
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph, const Cover &cover)
-		: graph(graph), cover(cover), resultCover(graph.upperNodeIdBound()), gamma(0.5),
-		  kIn(graph.upperNodeIdBound(), 0), inComm(graph.upperNodeIdBound()),
+		: graph(graph), cover(cover), gamma(0.5),
 		  stochastic(2 * graph.numberOfEdges() + graph.numberOfNodes()) {
 
 }
 
 void SignificanceCommunityCleanUp::run() {
+	init();
 	checkComms();
 	mergeDiscarded();
-
 	hasRun = true;
+}
+
+void SignificanceCommunityCleanUp::init() {
+	hasRun = false;
+	resultCover = Cover(graph.upperNodeIdBound());
+	kIn = std::vector<count>(graph.upperNodeIdBound());
+	inComm = std::vector<int>(graph.upperNodeIdBound());
+}
+
+Cover SignificanceCommunityCleanUp::getCover() {
+	if (!hasFinished())
+		throw std::runtime_error("Run the algorithm first!");
+	return resultCover;
+}
+
+std::string SignificanceCommunityCleanUp::toString() const {
+	return "SignificanceCommunityCleanUp";
+}
+
+bool SignificanceCommunityCleanUp::isParallel() const {
+	return false;
 }
 
 void SignificanceCommunityCleanUp::checkComms() {
@@ -34,39 +54,22 @@ void SignificanceCommunityCleanUp::checkComms() {
 	}
 }
 
-Cover SignificanceCommunityCleanUp::getCover() {
-	return resultCover;
-}
-
-std::string SignificanceCommunityCleanUp::toString() const {
-	return "SignificanceCommunityCleanUp";
-}
-
-bool SignificanceCommunityCleanUp::isParallel() const {
-	return false;
-}
-
 SignificanceCommunityCleanUp::Community
 SignificanceCommunityCleanUp::cleanCommunity(const Community &community) {
-	if (community.size() < 2)
-		return {};
-
 	Community cleanedComm;
 	cleanedComm = checkCommSignificance(community, true);
-	if (cleanedComm.empty())
-		return {};
 	cleanedComm = checkCommSignificance(cleanedComm, false);
-	if (cleanedComm.empty())
-		return {};
 
 	// Make sure the community did not change drastically
-	std::set<int> intersect;
+	Community intersect;
 	std::set_intersection(community.begin(), community.end(),
 	                      cleanedComm.begin(), cleanedComm.end(),
 	                      std::inserter(intersect, intersect.begin()));
 	double overlapRatio = double(intersect.size()) / std::max(community.size(), cleanedComm.size());
+	std::cout << community.size() << " -> " << cleanedComm.size()
+	          << (overlapRatio < gamma ? " -> bad" : "") << std::endl;
 	if (overlapRatio < gamma)
-		return {};
+		cleanedComm = {};
 
 	return cleanedComm;
 }
@@ -80,56 +83,73 @@ SignificanceCommunityCleanUp::checkCommSignificance(Community community, bool ch
 	Community originalComm = community;
 	Community cleanedComm = {};
 	std::vector<node> candidates;
-	for (std::size_t i = 0; i < inComm.size(); ++i) {
-	    assert(inComm[i] == false);
-	}
-	for (node u : community)
+	for (node u : community) {
+		candidates.push_back(u);
 		inComm[u] = true;
-	count commOut = 0;
-	count commStubs = 0;
-	for (std::size_t i = 0; i < kIn.size(); ++i) {
-	    assert(kIn[i] == 0);
 	}
+	auto inOrigComm = inComm;
+	count commOut = 0; // stubs outgoing from the community
+	count commStubs = 0; // the sum of the degrees of the nodes in the community
 	for (node u : community) {
 		graph.forNeighborsOf(u, [&](node v) {
 			commStubs += 1;
 			if (!inComm[v])
 				commOut += 1;
 			if (inComm[v] || checkNeighbors) {
-				if (kIn[v] == 0)
+				if (kIn[v] == 0 && !inComm[v])
 					candidates.push_back(v);
 				kIn[v] += 1;
 			}
 		});
 	}
-	auto ogKIn = kIn;
 //	count externalNodes = graph.numberOfNodes() - community.size();
-	count externalNodes = graph.numberOfNodes(); // TODO: community part of external nodes? else
-	//   we have more candidates than external nodes, which causes the order statistics to fail
+	count externalNodes = graph.numberOfNodes();
+	// TODO: Is the community part of external nodes? else we have more candidates than external nodes, which causes the order statistics to fail
 	count externalStubs = 2 * graph.numberOfEdges() - commStubs;
 	// TODO: external stubs with or without candidate degree
 
-	while (true) {
+	auto testKIn = [&]() {
+		for (node u : candidates) {
+			assert(inComm[u] == community.count(u));
+		}
+		std::map<node, count> kInTest;
+		count commStubsTest = 0;
+		count commOutTest = 0;
+		for (node u : community) {
+			graph.forNeighborsOf(u, [&](node v) {
+				commStubsTest += 1;
+				if (!inComm[v])
+					commOutTest += 1;
+				if (inOrigComm[v] || checkNeighbors) {
+					kInTest[v] += 1;
+				}
+			});
+		}
+		for (node u : candidates) {
+			assert(kIn[u] == kInTest[u]);
+		}
+		assert(commOut == commOutTest);
+		assert(commStubs == commStubsTest);
+		return true;
+	};
+	assert(testKIn());
+
+	while (!community.empty()) {
 		// Calculate s-Scores
 		std::vector<ScoreStruct> scores;
 		for (node u : candidates) {
 			// TODO: How to handle external stubs if candidate is/is not currently in community
 			count tmpExternalStubs = externalStubs;
 			count tmpCommOut = inComm[u] ? commOut + 2 * kIn[u] - graph.degree(u) : commOut;
-			auto score = stochastic.sScore(kIn[u], tmpCommOut, tmpExternalStubs, graph.degree(u));
-			if (score.first < 0.99) // only consider candidates with a good score
+			auto score = stochastic.sScore(graph.degree(u), kIn[u], tmpCommOut, tmpExternalStubs);
+			if (score.first < scoreThreshold || inComm[u]) // only consider neighbors with a good score
 				scores.emplace_back(score.first, score.second, u);
 		}
 		std::sort(scores.begin(), scores.end(), [](ScoreStruct a, ScoreStruct b) {
 			return a.sScore < b.sScore;
 		});
-		if (scores.empty()) {
-			cleanedComm = {};
-			break;
-		}
 
-		// TODO: Find significant candidates
-		// cleanedComm =
+		// Find significant candidates
 		cleanedComm = significantCandidates(scores, externalNodes);
 
 		// If the group is not empty, the module is considered significant
@@ -137,60 +157,52 @@ SignificanceCommunityCleanUp::checkCommSignificance(Community community, bool ch
 			break;
 		}
 
+		assert(testKIn());
+
 		// Remove worst node from community
-		node worstNode = scores.back().u;
+		auto it = std::find_if(scores.rbegin(), scores.rend(),
+		                       [&](const ScoreStruct &s) { return inComm[s.u]; });
+		node worstNode = it->u;
+		assert(inComm[worstNode]);
 		community.erase(worstNode);
 		inComm[worstNode] = false;
-		externalNodes += 1;
+//		externalNodes += 1;
 		// + kIn - kOut = + kIn - (k - kIn) = + 2 * kIn - k
-		commOut +=  2 * kIn[worstNode] - graph.degree(worstNode);
+		commOut += 2 * kIn[worstNode] - graph.degree(worstNode);
+		commStubs -= graph.degree(worstNode);
 		graph.forNeighborsOf(worstNode, [&](node v) {
-			if (inComm[v] || checkNeighbors) {
+			if (inOrigComm[v] || checkNeighbors) {
 				assert(kIn[v] > 0);
 				kIn[v] -= 1;
 			}
 		});
 
-		for (auto b : kIn)
-			assert(b < 1e6);
-
-		// If all nodes have been removed, the module is insignificant
-		if (community.empty()) {
-			cleanedComm = {};
-			break;
-		}
+		assert(testKIn());
 	}
 
 	// Reset data structures
 	for (node u : candidates)
 		kIn[u] = 0;
-	for (node u : candidates)
-		assert(kIn[u] == 0);
-	for (auto b : kIn)
-		assert(b == 0);
 	for (node u : community)
 		inComm[u] = false;
-
 	return cleanedComm;
 }
 
 SignificanceCommunityCleanUp::Community
 SignificanceCommunityCleanUp::significantCandidates(const std::vector<ScoreStruct> &scores,
                                                     count externalNodes) {
-	int pos = 1;
+	int pos = 1; // position for the order statistic
 	int sigCnt = 0; // sigCnt tells how many nodes should be included into the cluster
 
 	for (auto scoreStruct : scores) {
 		double score = scoreStruct.sScore;
 		/*
-		 c_pos is the probability that Omega_{pos} <= score == Phi(c_pos)
+		 significance is the probability that Omega_{pos} <= score == Phi(significance)
 		 If this is low, the score of the node is better than expected in the null model,
 		 so we can assume that the node is part of the community
 		*/
-		//TODO: Is this really the correct value
-		double c_pos = stochastic.orderStatistic(score, externalNodes, pos);
-
-		if (c_pos < sigThreshold) {
+		double significance = stochastic.orderStatistic(score, externalNodes, pos);
+		if (significance < sigThreshold) {
 			sigCnt = pos;
 		} else {
 			if (sigCnt != 0) {
@@ -204,9 +216,8 @@ SignificanceCommunityCleanUp::significantCandidates(const std::vector<ScoreStruc
 	// Insert nodes in the cleaned group
 	Community significantNodes;
 	for (count i = 0; i < sigCnt; ++i) {
-	    significantNodes.insert(scores[i].u);
+		significantNodes.insert(scores[i].u);
 	}
-//	Community significantNodes(scores.begin(), scores.begin() + sigCnt);
 	return significantNodes;
 }
 

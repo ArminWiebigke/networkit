@@ -50,7 +50,7 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 		return 1;
 	if (p - 1 > -1e-11)
 		return 1;
-	// k is smaller than the expected value for a random node, so left cumulative is faster
+	// k is smaller than the expected value, so left cumulative is faster
 	if (k < n * p)
 		return 1 - leftCumulativeBinomial(p, n, k - 1);
 
@@ -78,7 +78,7 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 		return 1;
 	if (p < 1e-11)
 		return 1;
-	// k is larger than the expected value for a random node, so right cumulative is faster
+	// k is larger than the expected value, so right cumulative is faster
 	if (k > n * p)
 		return 1 - rightCumulativeBinomial(p, n, k + 1);
 
@@ -120,12 +120,11 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	assert("Error: K > N" && K <= N);
 	assert("Error: n < 0" && n >= 0);
 	assert("Error: k < 0" && k >= 0);
-	assert("Error: k > K" && k <= K);
 	if (k == 0)
 		return 1;
-	if (k > n)
+	if (k > n || k > K)
 		return 0;
-	// k is smaller than the expected value for a random node, so left cumulative is faster
+	// k is smaller than the expected value, so left cumulative is faster
 	if (k < double(K) / N * n)
 		return (1. - leftCumulativeHyper(N, K, n, k - 1));
 
@@ -158,7 +157,7 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 		return 0;
 	if (k == n)
 		return 1;
-	// k is larger than the expected value for a random node, so right cumulative is faster
+	// k is larger than the expected value, so right cumulative is faster
 	if (k > double(K) / N * n)
 		return (1. - rightCumulativeHyper(N, K, n, k + 1));
 
@@ -170,9 +169,9 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 	double curProb = 1.;
 	double sum = curProb;
 	for (count x = k; x > 0; --x) {
-		curProb *= x / double(K + 1 - x); // (K choose k) -> (K choose k-1)
+		curProb *= x / double(K + 1 - x); // (K choose x) -> (K choose x-1)
 		count newChoose = n - (x - 1);
-		curProb *= double(N - K + 1 - newChoose) / (newChoose); // (N-K choose n-k) -> (N-k choose n-(k-1))
+		curProb *= double(N - K + 1 - newChoose) / (newChoose); // (N-K choose n-x) -> (N-k choose n-(x-1))
 		sum += curProb;
 		if (curProb < precision * sum)
 			break;
