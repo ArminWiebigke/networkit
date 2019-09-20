@@ -46,10 +46,11 @@ TEST_F(CleanupGTest, testCleanUp) {
 		cover.addSubset({1});
 		cover.addSubset({2, isolatedNode});
 
-		SignificanceCommunityCleanUp cleanUp(G, cover);
+		SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);
 		cleanUp.run();
 		Cover cleanedCover = cleanUp.getCover();
 
+		std::cout << "Cleaned communities: " << cleanedCover.numberOfSubsets() << std::endl;
 		EXPECT_TRUE(cleanedCover.numberOfSubsets() <= cover.numberOfSubsets());
 		count notEmptyComms = 0;
 		const std::vector<count> &comms = cleanedCover.subsetSizes();

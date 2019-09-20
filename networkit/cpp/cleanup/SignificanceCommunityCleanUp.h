@@ -16,7 +16,6 @@
 namespace NetworKit {
 
 
-
 /**
  * @ingroup community
  * An algorithm that aims to improve the quality of (overlapping) communities, e.g. to clean up
@@ -24,16 +23,21 @@ namespace NetworKit {
  * Based on the statistical significance of the communities.
  */
 class SignificanceCommunityCleanUp : public Algorithm {
-	using Community = std::set<index>;
-
 public:
+	using Community = std::set<index>;
 
 	/**
 	 * Constructor of the algorithm.
 	 * @param	graph	input graph
 	 * @param	cover	input cover
 	 */
-	SignificanceCommunityCleanUp(const Graph &graph, const Cover &cover);
+	SignificanceCommunityCleanUp(const Graph &graph,
+	                             const Cover &cover,
+	                             double significanceThreshold = 0.1,
+	                             double scoreThreshold = 0.1,
+	                             double minOverlapRatio = 0.5);
+
+	~SignificanceCommunityCleanUp() override;
 
 	/**
 	 * Run the algorithm.
@@ -63,57 +67,22 @@ private:
 	const Graph &graph;
 	const Cover &cover;
 	std::vector<std::string> args;
-	Cover resultCover;
+	Cover cleanedCommunities;
 	// threshold to discard communities if they changed too much
-	const double gamma;
-	std::vector<Community> discardedComms;
+	const double minOverlapRatio;
+	std::vector<Community> discardedCommunities;
 
-	Community cleanCommunity(const Community &community);
+	void cleanAllCommunities();
 
-	void checkComms();
+	Community cleanCommunity(const Community &inputCommunity);
 
-	void mergeDiscarded();
+	void mergeDiscardedCommunities();
 
-	void init();
+	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
 
-	class SingleCommunityCleanup {
-		using Community = SignificanceCommunityCleanUp::Community;
+	class SingleCommunityCleanUp;
 
-	public:
-		explicit SingleCommunityCleanup(const Graph &graph);
-
-		/**
-		 * Clean up a community. The cleaned community may be empty.
-		 * @param community
-		 * @return a (possibly empty) community
-		 */
-		Community clean(const Community &community);
-
-	private:
-		struct ScoreStruct {
-			double sScore;
-			double bootInterval;
-			node u;
-
-			ScoreStruct(double s, double b, node u) : sScore(s), bootInterval(b), u(u) {};
-		};
-
-		Community checkCommSignificance(Community community, bool checkNeighbors);
-
-		Community significantCandidates(const std::vector<ScoreStruct>& scores, count externalNodes);
-
-		const Graph &graph;
-		std::vector<count> kIn;
-		std::vector<int> inComm;
-		StochasticSignificance stochastic;
-		// threshold to decide if a node is significant
-		static constexpr double sigThreshold = 0.1;
-		// threshold to discard candidates because the will most likely not be significant
-		static constexpr double scoreThreshold = 0.1;
-	};
-
-	SingleCommunityCleanup singleCommunityCleanup;
-
+	std::unique_ptr<SingleCommunityCleanUp> singleCommunityCleanup;
 };
 } /* namespace NetworKit */
 
