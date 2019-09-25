@@ -18,26 +18,22 @@ StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue) 
 
 std::pair<double, double>
 StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) const {
-	// TODO: Include k in extStubs? currently is not
+	// TODO: Include k in extStubs? currently it is included
 //	extStubs -= k;
 	assert(kIn <= cOut);
 	count openStubs = extStubs + cOut;
 
 	double exactProb = 0, rightCum = 0;
-	if (k * k < openStubs) {
+	bool lowSelfLoopProbability = k * k < openStubs;
+	if (lowSelfLoopProbability) {
 		// Use approximation with hypergeometric distribution
 		exactProb = dist.hypergeometricDist(openStubs, cOut, k, kIn);
 		rightCum = dist.rightCumulativeHyper(openStubs, cOut, k, kIn + 1);
 	} else {
 		// Calculate the probability using the original distribution
-		// extInternal = extStubs - (cOut - (k - kIn) + kIn)
-		// extInternal = extStubs - cOut + k - 2*kIn
-		// exactProb = A * 2^-kIn / ((k-kIn)! * kIn! * (cOut-kIn)! * extStubs!
-		// kIn += 1 => /2, *(k-kIn), /(kIn+1), *(cOut-kIn), *(extStubs-1)*(extStubs-2)
-		// TODO: Implement caluclation
-//		throw std::runtime_error("Exact calculation not implemented!");
-		exactProb = dist.hypergeometricDist(openStubs, cOut, k, kIn);
-		rightCum = dist.rightCumulativeHyper(openStubs, cOut, k, kIn + 1);
+		// TODO: Verify caluclation, refactor return
+		std::tie(exactProb, rightCum) = dist.rightCumulativeOslom(k, kIn, cOut, extStubs);
+		rightCum -= exactProb;
 	}
 //	double score = rightCum + bootInterval;
 	double score = rightCum + exactProb;

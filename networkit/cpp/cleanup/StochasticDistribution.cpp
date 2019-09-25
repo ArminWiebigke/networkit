@@ -139,9 +139,11 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	double curProb = 1.;
 	double sum = curProb;
 	for (count x = k + 1; x <= n; ++x) {
+		// TODO: Das als Funktion, auch bei leftCumulative
 		curProb *= double(K + 1 - x) / x; // (K choose x-1) -> (K choose x)
 		count oldChoose = n - (x - 1);
-		curProb *= double(oldChoose) / (N - K + 1 - oldChoose); // (N-K choose n-(x-1)) -> (N-k choose n-x)
+		curProb *= double(oldChoose) /
+		           (N - K + 1 - oldChoose); // (N-K choose n-(x-1)) -> (N-k choose n-x)
 		sum += curProb;
 		if (curProb < precision * sum)
 			break;
@@ -171,13 +173,89 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 	for (count x = k; x > 0; --x) {
 		curProb *= x / double(K + 1 - x); // (K choose x) -> (K choose x-1)
 		count newChoose = n - (x - 1);
-		curProb *= double(N - K + 1 - newChoose) / (newChoose); // (N-K choose n-x) -> (N-k choose n-(x-1))
+		curProb *= double(N - K + 1 - newChoose) /
+		           (newChoose); // (N-K choose n-x) -> (N-k choose n-(x-1))
 		sum += curProb;
 		if (curProb < precision * sum)
 			break;
 	}
 
 	return startProb * sum;
+}
+
+double StochasticDistribution::oslomDist(count k, count kIn, count cOut, count extStubs) const {
+	throw std::runtime_error("oslomDist not implemented!");
+	if (kIn > k || kIn > cOut)
+		return 0;
+}
+
+std::pair<double, double>
+StochasticDistribution::rightCumulativeOslom(count kTotal, count kIn, count cOut,
+                                             count extStubs) const {
+	if (kIn > cOut || kIn > kTotal)
+		return {0.0, 0.0};
+
+	const count M = extStubs - kTotal;
+//	const count MIn = M - (cOut + kTotal - 2 * kIn);
+	// MIn = M - cOut - kTotal + 2 * kIn;
+//	count MInEdges = MIn / 2;
+
+	// Get mode == highest probability
+	// TODO: Can we do this better?
+	count mode = (cOut / double(M + kTotal) * kTotal);
+	// this mode is underestimated anyway
+	mode = std::min(mode, cOut);
+	// TODO: Use mode for speedup?
+
+	// Ratio if kIn = x changes to kIn = x + 1
+	const count MInEdgesConstPart = (M - cOut - kTotal) / 2;
+	auto changeRatio = [&](count x) {
+		return oslomChangeRatio(kTotal, cOut, x, MInEdgesConstPart);
+	};
+
+	// Right cumulative
+	double kInProbability = 1.0; // p(kIn) (not normalized)
+	double rightCumulativeSum = kInProbability;
+	double currentProbability = kInProbability;
+	count maxKIn = std::min(kTotal, cOut);
+	for (count x = kIn; x < maxKIn; ++x) {
+		double ratio = changeRatio(x);
+		currentProbability *= ratio;
+		rightCumulativeSum += currentProbability;
+		assert(ratio != 0.0);
+		assert(currentProbability < 1e200);
+
+		double sumChange = currentProbability / rightCumulativeSum;
+		if (sumChange < precision)
+			break;
+	}
+
+	// Left cumulative
+	double probabilitySum = rightCumulativeSum;
+	currentProbability = kInProbability;
+	for (count x = kIn - 1; x >= 0; --x) {
+		currentProbability /= changeRatio(x);
+		probabilitySum += currentProbability;
+
+		double sumChange = currentProbability / probabilitySum;
+		if (sumChange < precision)
+			break;
+	}
+
+	double normalizedKInProbability = kInProbability / probabilitySum;
+	double normalizedRightCumulative = rightCumulativeSum / probabilitySum;
+	return {normalizedKInProbability, normalizedRightCumulative};
+}
+
+double StochasticDistribution::oslomChangeRatio(count kTotal, count cOut, count kIn,
+                                                const count MInEdgesConstPart) const {
+	// relative change in probability if kIn is increased by one.
+	return 0.5                    // 2^-kIn
+	       * (kTotal - kIn)       // 1/kOut! (-1 in Factorial)
+	       / (kIn + 1)            // 1/kIn!  (+1 in Factorial)
+	       * (cOut - kIn)         // 1/(cOut - kIn)!  (-1 in Factorial)
+	       / (MInEdgesConstPart + (kIn + 1))     // 1/(MIn/2)!  (+1 in Factorial)
+			;
 }
 
 

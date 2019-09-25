@@ -86,7 +86,9 @@ public:
 	 */
 	double leftCumulativeHyper(count N, count K, count n, count k) const;
 
-	double oslomDist(count k, count kIn, count cOut, count openStubs) const;
+	double oslomDist(count k, count kIn, count cOut, count extStubs) const;
+
+	std::pair<double, double> rightCumulativeOslom(count kTotal, count kIn, count cOut, count extStubs) const;
 
 private:
 //	static std::vector<double> data;
@@ -101,6 +103,8 @@ private:
 	inline double logBinomCoeff(count n, count k) const {
 		return data[n] - data[n - k] - data[k];
 	};
+
+	double oslomChangeRatio(count kTotal, count cOut, count kIn, const count MInEdgesConstPart) const;
 };
 
 } /* namespace NetworKit */
