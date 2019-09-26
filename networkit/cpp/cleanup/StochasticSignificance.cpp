@@ -32,7 +32,8 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) c
 	} else {
 		// Calculate the probability using the original distribution
 		// TODO: Verify caluclation, refactor return
-		std::tie(exactProb, rightCum) = dist.rightCumulativeOslom(k, kIn, cOut, extStubs);
+		std::tie(exactProb, rightCum) = dist.rightCumulativeStochastic(k, kIn, cOut,
+		                                                               extStubs);
 		rightCum -= exactProb;
 	}
 //	double score = rightCum + bootInterval;

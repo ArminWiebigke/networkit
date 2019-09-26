@@ -86,9 +86,17 @@ public:
 	 */
 	double leftCumulativeHyper(count N, count K, count n, count k) const;
 
-	double oslomDist(count k, count kIn, count cOut, count extStubs) const;
-
-	std::pair<double, double> rightCumulativeOslom(count kTotal, count kIn, count cOut, count extStubs) const;
+	/**
+	 * Calculate the probability that a node has kIn or more edges to the community, according to
+	 * the null model
+	 * @param kTotal degree of the node
+	 * @param kIn number of edges between node and community
+	 * @param cOut number of outgoing stubs from the community
+	 * @param extStubs number of stubs in the rest of the graph
+	 * @return a pair (p(x = kIn), p(x >= kIn))
+	 */
+	std::pair<double, double> rightCumulativeStochastic(count kTotal, count kIn, count cOut,
+	                                                    count extStubs) const;
 
 private:
 //	static std::vector<double> data;
@@ -104,7 +112,6 @@ private:
 		return data[n] - data[n - k] - data[k];
 	};
 
-	double oslomChangeRatio(count kTotal, count cOut, count kIn, const count MInEdgesConstPart) const;
 };
 
 } /* namespace NetworKit */

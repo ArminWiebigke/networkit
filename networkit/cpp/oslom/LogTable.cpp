@@ -241,109 +241,114 @@ double LogFactTable::slow_symmetric_eq(int k1, int k2, int H, int x) {
 }
 
 inline double
-LogFactTable::fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode,
-                                          int ext_stubs) {
-	// I want k1 to be the smaller between the two
-	//std::cout<<"k1 "<<k1<<" "<<k2<<" "<<H<<" "<<x<<" "<<mode<<" "<<2*H+k1+k2<<std::endl;
-	if (k1 > k2)
-		return fast_right_cum_symmetric_eq(k2, k1, H, x, mode, ext_stubs);
+LogFactTable::fast_right_cum_symmetric_eq(int kTotal, int cOut, int MInEdges, int kIn, int mode,
+                                          int extStubs) {
+	// I want kTotal to be the smaller between the two
+	//std::cout<<"kTotal "<<kTotal<<" "<<cOut<<" "<<MInEdges<<" "<<kIn<<" "<<mode<<" "<<2*MInEdges+kTotal+cOut<<std::endl;
+	if (kTotal > cOut)
+		return fast_right_cum_symmetric_eq(cOut, kTotal, MInEdges, kIn, mode, extStubs);
 
 	double ri = 1;
-	double q1 = 0;
-	double q2 = 0;
+	double sum1 = 0;
+	double sum2 = 0;
 	double ratio;
 
-	if (x == mode)
-		++q2;
+	if (kIn == mode)
+		++sum2;
 	else
-		++q1;
+		++sum1;
 
-	int l1 = std::max(0, -H);
+	int l1 = std::max(0, -MInEdges);
 
-	double ii = mode - 1;
+	double kInX = mode - 1;
 
-	while (ii >= l1) {
-		ratio = sym_ratio(k1, k2, H, ii + 1);
+	// left cumulative
+	while (kInX >= l1) {
+		ratio = sym_ratio(kTotal, cOut, MInEdges, kInX + 1);
 		ri /= ratio;
-		q1 += ri;
-		if (q1 > 1e280)
-			return cum_hyper_right(x, k2, ext_stubs, k1);
-		if (ri < log_table_pr * q1)
+		sum1 += ri;
+		if (sum1 > 1e280)
+			return cum_hyper_right(kIn, cOut, extStubs, kTotal);
+		if (ri < log_table_pr * sum1)
 			break;
-		--ii;
+		--kInX;
 	}
 
-	/*double cum1=exp(log_symmetric_eq(k1, k2, H, l1));
-	double lg0=log_symmetric_eq(k1, k2, H, l1);
-	std::cout<<"x: "<<l1<<" "<<exp(log_symmetric_eq(k1, k2, H, l1))<<" "<<exp(lg0)<<std::endl;*/
+	/*double cum1=exp(log_symmetric_eq(kTotal, cOut, MInEdges, l1));
+	double lg0=log_symmetric_eq(kTotal, cOut, MInEdges, l1);
+	std::cout<<"kIn: "<<l1<<" "<<exp(log_symmetric_eq(kTotal, cOut, MInEdges, l1))<<" "<<exp(lg0)<<std::endl;*/
 	ri = 1;
-	ii = mode + 1;
-	//for(double i=mode+1; i<x; i++)
-	while (ii < x) {
-		ratio = sym_ratio(k1, k2, H, ii);
+	kInX = mode + 1;
+	//for(double i=mode+1; i<kIn; i++)
+	while (kInX < kIn) {
+		ratio = sym_ratio(kTotal, cOut, MInEdges, kInX);
 		ri *= ratio;
-		q1 += ri;
-		if (q1 > 1e280)
-			return cum_hyper_right(x, k2, ext_stubs, k1);
+		sum1 += ri;
+		if (sum1 > 1e280)
+			return cum_hyper_right(kIn, cOut, extStubs, kTotal);
 
-		if (ri < log_table_pr * q1)
+		if (ri < log_table_pr * sum1)
 			break;
-		//std::cout<<ii<<" "<<ratio<<" "<<ri/q1<<" b"<<std::endl;;
-		++ii;
-		//std::cout<<"dx-->: "<<ii<<" "<<exp(log_symmetric_eq(k1, k2, H, ii))<<" "<<exp(lg0) * ri<<" "<<sym_ratio(k1, k2, H, ii+1)<<std::endl;
+		//std::cout<<kInX<<" "<<ratio<<" "<<ri/sum1<<" b"<<std::endl;;
+		++kInX;
+		//std::cout<<"dx-->: "<<kInX<<" "<<exp(log_symmetric_eq(kTotal, cOut, MInEdges, kInX))<<" "<<exp(lg0) * ri<<" "<<sym_ratio(kTotal, cOut, MInEdges, kInX+1)<<std::endl;
 	}
-	ii = std::max(x, mode + 1);
-	ri = exp(log_symmetric_eq(k1, k2, H, cast_int(ii - 1)) -
-	         log_symmetric_eq(k1, k2, H, mode));
 
-	//for(double i=max(x, mode+1); i<=k1; i++)
-	while (ii <= k1) {
-		ratio = sym_ratio(k1, k2, H, ii);
+	// right cumulative
+	kInX = std::max(kIn, mode + 1);
+	// TODO: Is this the probability  p(kIn) (without normalization)?
+	ri = exp(log_symmetric_eq(kTotal, cOut, MInEdges, cast_int(kInX - 1)) -
+	         log_symmetric_eq(kTotal, cOut, MInEdges, mode));
+	//for(double i=max(kIn, mode+1); i<=kTotal; i++)
+	while (kInX <= kTotal) {
+		ratio = sym_ratio(kTotal, cOut, MInEdges, kInX);
 		ri *= ratio;
-		q2 += ri;
-		if (q2 > 1e280)
-			return cum_hyper_right(x, k2, ext_stubs, k1);
-		//std::cout<<ii<<" "<<ratio<<" "<<ri/q2<<" c "<<x<<" "<<q2<<std::endl;;
-		++ii;
-		if (ri < log_table_pr * q2)
+		sum2 += ri;
+		if (sum2 > 1e280)
+			return cum_hyper_right(kIn, cOut, extStubs, kTotal);
+		//std::cout<<kInX<<" "<<ratio<<" "<<ri/sum2<<" c "<<kIn<<" "<<sum2<<std::endl;;
+		++kInX;
+		if (ri < log_table_pr * sum2)
 			break;
-		//std::cout<<"ddx-->: "<<i<<" "<<exp(log_symmetric_eq(k1, k2, H, i))<<" "<<exp(lg0) * ri<<" "<<sym_ratio(k1, k2, H, i+1)<<std::endl;
+		//std::cout<<"ddx-->: "<<i<<" "<<exp(log_symmetric_eq(kTotal, cOut, MInEdges, i))<<" "<<exp(lg0) * ri<<" "<<sym_ratio(kTotal, cOut, MInEdges, i+1)<<std::endl;
 	}
-	/* std::cout<<"fast q12: "<<q1<<" "<<q2<<std::endl;*/
+	/* std::cout<<"fast q12: "<<sum1<<" "<<sum2<<std::endl;*/
 
-	return std::max(q2 / (q1 + q2), 1e-100);
+	return std::max(sum2 / (sum1 + sum2), 1e-100);
 }
 
 // k1 = node_degree
 // k2 = g_out
 // x = k_in
-double LogFactTable::right_cumulative_function(int k1, int k2, int open_stubs, int x) {
-	if (x > k1 || x > k2)
+double LogFactTable::right_cumulative_function(int kTotal, int cOut, int extStubs, int kIn) {
+	if (kIn > kTotal || kIn > cOut)
 		return 0;
 
-	if (k1 * k1 < open_stubs)
-		return cum_hyper_right(x, k2, open_stubs, k1);
+	if (kTotal * kTotal < extStubs)
+		return cum_hyper_right(kIn, cOut, extStubs, kTotal);
 
 	//	std::cout << "Calculate propability directly" << std::endl;
-	// k1 is the degree of the node
-	// k2 is the degree of the other node (the bigger)
-	// k3 is 2m - k1 - k2
-	int k3 = open_stubs - k1;
-	int H = (k3 - k1 - k2) / 2;
-	int l1 = std::max(0, -H);
+	// kTotal is the degree of the node
+	// cOut is the degree of the other node (the bigger)
+	// k3 is 2m - kTotal - cOut
+	int k3 = extStubs - kTotal;
+	int MInEdges = (k3 - kTotal - cOut) / 2;
+	int l1 = std::max(0, -MInEdges);
 
-	if (x == l1)
+	if (kIn == l1)
 		return 1;
 
-	int mode = std::max(cast_int(k2 / double(k1 + k3) * k1),
-	                    l1); // this mode is underestimated anyway
-	if (mode > k2)
-		mode = k2;
+	// Get mode == highest probability
+	int mode = std::max(cast_int(cOut / double(kTotal + k3) * kTotal), l1);
+	// this mode is underestimated anyway
+
+	if (mode > cOut)
+		mode = cOut;
 
 //	std::cout << "mode: " << mode << std::endl;
-	if (x < mode)
-		return cum_hyper_right(x, k2, open_stubs, k1);
-	return fast_right_cum_symmetric_eq(k1, k2, H, x, mode, open_stubs);
+	if (kIn < mode)
+		return cum_hyper_right(kIn, cOut, extStubs, kTotal);
+	return fast_right_cum_symmetric_eq(kTotal, cOut, MInEdges, kIn, mode, extStubs);
 }
 
 double LogFactTable::log_factorial(int a) { return lnf[a]; }

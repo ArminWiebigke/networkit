@@ -81,16 +81,16 @@ public:
 
     double slow_symmetric_eq(int k1, int k2, int H, int x);
 
-    double fast_right_cum_symmetric_eq(int k1, int k2, int H, int x, int mode, int ext_stubs);
+    double fast_right_cum_symmetric_eq(int kTotal, int cOut, int MInEdges, int kIn, int mode, int extStubs);
 
-    double right_cumulative_function(int k1, int k2, int open_stubs, int x);
+    double right_cumulative_function(int kTotal, int cOut, int extStubs, int kIn);
 
 private:
 
     std::vector<double> lnf;
 
-    inline double sym_ratio(int &k1, int &k2, int &H, double i) {
-        return 0.5 * (k1 - i + 1) / ((i + H) * i) * (k2 - i + 1);
+    inline double sym_ratio(int &kTotal, int &cOut, int &MInEdges, double kIn) {
+        return 0.5 * (kTotal - kIn + 1) / ((kIn + MInEdges) * kIn) * (cOut - kIn + 1);
     };
 
     double cum_hyper_right(int k_in, int gr_out, int open_stubs, int k_degree);
