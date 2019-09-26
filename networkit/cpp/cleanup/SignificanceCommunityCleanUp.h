@@ -70,7 +70,14 @@ private:
 	Cover cleanedCommunities;
 	// threshold to discard communities if they changed too much
 	const double minOverlapRatio;
-	std::vector<Community> discardedCommunities;
+	std::set<Community> discardedCommunities;
+	Graph discardedCommunitiesGraph;
+	Partition mergedCommunities;
+	std::vector<std::set<node>> coarseToFineMapping;
+	StochasticSignificance stochastic;
+	std::vector<count> cOut;
+	std::vector<count> cTotal;
+	count totalStubs;
 
 	void cleanAllCommunities();
 
@@ -80,9 +87,17 @@ private:
 
 	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
 
+	void createDiscardedCommunitiesGraph();
+
 	class SingleCommunityCleanUp;
 
 	std::unique_ptr<SingleCommunityCleanUp> singleCommunityCleanup;
+
+	void localOptimization();
+
+	void checkMergedCommunities();
+
+	bool tryLocalMove(node u);
 };
 } /* namespace NetworKit */
 
