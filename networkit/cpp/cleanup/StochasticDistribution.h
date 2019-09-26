@@ -20,7 +20,9 @@ namespace NetworKit {
  */
 class StochasticDistribution {
 public:
-	explicit StochasticDistribution(index size);
+	explicit StochasticDistribution(index maxValue);
+
+	void setMaxValue(count maxValue);
 
 	/**
 	 * Calculate the binomial coefficient "n choose k". Returns a floating point number that may

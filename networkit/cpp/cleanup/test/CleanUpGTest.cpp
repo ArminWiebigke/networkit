@@ -23,8 +23,8 @@ class CleanupGTest : public testing::Test {
 };
 
 TEST_F(CleanupGTest, testCleanUp) {
-	for (int i = 0; i < 5; ++i) {
-		ClusteredRandomGraphGenerator gen(200, 10, 0.7, 0.05);
+	for (int i = 0; i < 3; ++i) {
+		ClusteredRandomGraphGenerator gen(100, 10, 0.7, 0.05);
 		Graph G = gen.generate();
 
 //		EdgeListReader reader('\t', 0);
@@ -58,7 +58,7 @@ TEST_F(CleanupGTest, testCleanUp) {
 		for (count s : comms) {
 			notEmptyComms += (s > 1);
 		}
-		EXPECT_GE(notEmptyComms, 10);
+		EXPECT_GE(notEmptyComms, 9);
 		// Communities of size 1 should be discarded
 		for (count s : comms) {
 			if (s > 0)
@@ -153,7 +153,7 @@ TEST_F(CleanupGTest, testLeftCumHyper) {
 	EXPECT_NEAR(stoch.leftCumulativeHyper(10, 5, 5, 5), 1, 1e-6);
 }
 
-TEST_F(CleanupGTest, testOslomDist) {
+TEST_F(CleanupGTest, testStochasticDist) {
 	StochasticDistribution stoch(10);
 	count kTotal = 10;
 	count kIn = 3;
@@ -169,7 +169,7 @@ TEST_F(CleanupGTest, testOslomDist) {
 	auto p = [&](count kIn) {
 		count kOut = kTotal - kIn;
 		count MInEdges = (M - cOut - kOut + kIn) / 2;
-		double top = std::pow(2, -double(kIn));
+		double top = std::pow(2, - (double) kIn);
 		double divisor = fct(kOut) * fct(kIn) * fct(cOut - kIn) * fct(MInEdges);
 		return top / divisor;
 	};
@@ -185,9 +185,8 @@ TEST_F(CleanupGTest, testOslomDist) {
 	double cumulativeProbCorrect = cumulativeProbSum / probabilitySum;
 
 	double exactProb, cumulativeProb;
-	std::tie(exactProb, cumulativeProb) = stoch.rightCumulativeStochastic(kTotal, kIn,
-	                                                                      cOut,
-	                                                                      extStubs);
+	std::tie(exactProb, cumulativeProb) = stoch.rightCumulativeStochastic(
+			kTotal, kIn, cOut, extStubs);
 
 	EXPECT_NEAR(exactProb, exactProbCorrect, 1e-6);
 	EXPECT_NEAR(exactProb / exactProbCorrect, 1.0, 1e-6);

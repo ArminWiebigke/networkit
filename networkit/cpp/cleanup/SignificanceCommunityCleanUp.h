@@ -12,9 +12,10 @@
 #include "../graph/Graph.h"
 #include "../structures/Cover.h"
 #include "StochasticSignificance.h"
+#include "SingleCommunityCleanUp.h"
+#include "MergeCommunities.h"
 
 namespace NetworKit {
-
 
 /**
  * @ingroup community
@@ -36,8 +37,6 @@ public:
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
 	                             double minOverlapRatio = 0.5);
-
-	~SignificanceCommunityCleanUp() override;
 
 	/**
 	 * Run the algorithm.
@@ -66,18 +65,10 @@ private:
 
 	const Graph &graph;
 	const Cover &cover;
-	std::vector<std::string> args;
 	Cover cleanedCommunities;
-	// threshold to discard communities if they changed too much
-	const double minOverlapRatio;
 	std::set<Community> discardedCommunities;
-	Graph discardedCommunitiesGraph;
-	Partition mergedCommunities;
-	std::vector<std::set<node>> coarseToFineMapping;
-	StochasticSignificance stochastic;
-	std::vector<count> cOut;
-	std::vector<count> cTotal;
-	count totalStubs;
+	SingleCommunityCleanUp singleCommunityCleanup;
+	std::unique_ptr<MergeCommunities> mergeCommunities;
 
 	void cleanAllCommunities();
 
@@ -85,19 +76,6 @@ private:
 
 	void mergeDiscardedCommunities();
 
-	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
-
-	void createDiscardedCommunitiesGraph();
-
-	class SingleCommunityCleanUp;
-
-	std::unique_ptr<SingleCommunityCleanUp> singleCommunityCleanup;
-
-	void localOptimization();
-
-	void checkMergedCommunities();
-
-	bool tryLocalMove(node u);
 };
 } /* namespace NetworKit */
 

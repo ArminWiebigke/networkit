@@ -38,7 +38,7 @@ public:
 	double orderStatistic(double sScore, count externalNodes, count pos) const;
 
 private:
-	StochasticDistribution dist;
+	mutable StochasticDistribution dist;
 };
 
 } /* namespace NetworKit */

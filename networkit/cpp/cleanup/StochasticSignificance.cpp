@@ -22,6 +22,7 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) c
 //	extStubs -= k;
 	assert(kIn <= cOut);
 	count openStubs = extStubs + cOut;
+	dist.setMaxValue(openStubs);
 
 	double exactProb = 0, rightCum = 0;
 	bool lowSelfLoopProbability = k * k < openStubs;
@@ -52,6 +53,5 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) c
 double StochasticSignificance::orderStatistic(double sScore, count externalNodes, count pos) const {
 	return dist.rightCumulativeBinomial(sScore, externalNodes, pos);
 }
-
 
 } /* namespace NetworKit */

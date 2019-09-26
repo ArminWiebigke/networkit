@@ -13,21 +13,19 @@ namespace NetworKit {
 
 //std::vector<double> StochasticDistribution::data = {};
 
-StochasticDistribution::StochasticDistribution(index size) {
-//	if (size < data.size())
-//		return;
-//	data.reserve(size + 1);
-//	if (data.empty())
-//		data.push_back(0.0);
-//	size_t old_size = data.size();
-//	double f = data.back();
-//	for (index i = old_size; i <= size; ++i) {
-//		f += std::log(i);
-//		data.push_back(f);
-//	}
-	data.push_back(0.0);
-	double f = 0.0;
-	for (index i = 1; i <= size; ++i) {
+StochasticDistribution::StochasticDistribution(index maxValue) {
+	setMaxValue(maxValue);
+}
+
+void StochasticDistribution::setMaxValue(count maxValue) {
+	if (maxValue < data.size())
+		return;
+	data.reserve(maxValue + 1);
+	if (data.empty())
+		data.push_back(0.0);
+	size_t old_size = data.size();
+	double f = data.back();
+	for (index i = old_size; i <= maxValue; ++i) {
 		f += std::log(i);
 		data.push_back(f);
 	}
@@ -44,13 +42,13 @@ double StochasticDistribution::binomialDist(double p, count n, count k) const {
 // Calculates the change ratio if we increment bottom to bottom+1
 // => returns "top choose bottom+1" / "top choose bottom"
 inline double binomialCoeffChangeForIncrement(count top, count bottom) {
-	return double(top - bottom) / (bottom + 1);
+	return (double) (top - bottom) / (bottom + 1);
 }
 
 // Calculates the change ratio if we decrement bottom to bottom-1
 // => returns "top choose bottom-1" / "top choose bottom"
 inline double binomialCoeffChangeForDecrement(count top, count bottom) {
-	return double(bottom) / (top + 1 - bottom);
+	return (double) bottom / (top + 1 - bottom);
 }
 
 // Calculates the change ratio of a binomial distribution if k is incremented (k -> k+1) or
@@ -105,6 +103,7 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 		if (curBinom < precision * sum)
 			break;
 	}
+	assert(startBinom * sum <= 1.001);
 	return startBinom * sum;
 }
 
@@ -131,6 +130,7 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 		if (curBinom < precision * sum)
 			break;
 	}
+	assert(startBinom * sum <= 1.001);
 	return startBinom * sum;
 }
 
@@ -172,12 +172,13 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	assert("Error: K > N" && K <= N);
 	assert("Error: n < 0" && n >= 0);
 	assert("Error: k < 0" && k >= 0);
+	assert(data.size() > N);
 	if (k == 0)
 		return 1;
 	if (k > n || k > K)
 		return 0;
 	// If k is smaller than the expected value, calculating the left cumulative is faster
-	double expectedValue = double(K) / N * n;
+	double expectedValue = (double) K / N * n;
 	if (k < expectedValue)
 		return (1. - leftCumulativeHyper(N, K, n, k - 1));
 
@@ -199,6 +200,7 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 			break;
 	}
 
+	assert(startProb * sum <= 1.001);
 	return startProb * sum;
 }
 
@@ -210,7 +212,7 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 	if (k == n)
 		return 1;
 	// If k is larger than the expected value, calculating the right cumulative is faster
-	double expectedValue = double(K) / N * n;
+	double expectedValue = (double) K / N * n;
 	if (k > expectedValue)
 		return (1. - rightCumulativeHyper(N, K, n, k + 1));
 
@@ -229,6 +231,7 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 			break;
 	}
 
+	assert(startProb * sum <= 1.001);
 	return startProb * sum;
 }
 

@@ -1,5 +1,7 @@
 networkit_add_module(cleanup
+        MergeCommunities.cpp
         SignificanceCommunityCleanUp.cpp
+        SingleCommunityCleanUp.cpp
         StochasticDistribution.cpp
         StochasticSignificance.cpp
     )
