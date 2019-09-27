@@ -11,41 +11,45 @@
 #include "../graph/Graph.h"
 #include "SingleCommunityCleanUp.h"
 #include "../structures/Partition.h"
+#include "../base/Algorithm.h"
 
 namespace NetworKit {
 
-class MergeCommunities {
+/**
+ * Merge not significant communities to find significant communities, using the statistical
+ * significance.
+ */
+class MergeCommunities : public Algorithm {
 public:
 	using Community = std::set<node>;
 
 	MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-	                 SingleCommunityCleanUp &singleCommunityCleanUp)
-			: graph(graph),
-			  discardedCommunities(std::move(discardedCommunities)),
-			  stochastic(graph.numberOfNodes() + 2 * graph.numberOfEdges()),
-			  singleCommunityCleanUp(singleCommunityCleanUp) {
-	}
+	                 SingleCommunityCleanUp &singleCommunityCleanUp);
 
-	void run();
+	void run() override;
 
 	std::vector<Community> & getCleanedCommunities();
 
+	std::string toString() const override;
+
+	bool isParallel() const override;
+
 private:
 	const Graph &graph;
-	std::vector<Community> cleanedCommunities;
 	std::set<Community> discardedCommunities;
+	StochasticSignificance stochastic;
+	SingleCommunityCleanUp &singleCommunityCleanUp;
+	std::vector<Community> cleanedCommunities;
 	Graph discardedCommunitiesGraph;
 	Partition mergedCommunities;
 	std::vector<std::set<node>> coarseToFineMapping;
-	StochasticSignificance stochastic;
-	std::vector<count> cOut;
-	std::vector<count> cTotal;
+	std::vector<count> outgoingGroupStubs;
+	std::vector<count> totalGroupStubs;
 	count totalStubs;
-	SingleCommunityCleanUp &singleCommunityCleanUp;
 
 	void createDiscardedCommunitiesGraph();
 
-	void localOptimization();
+	void mergeCommunities();
 
 	void checkMergedCommunities();
 

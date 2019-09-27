@@ -16,6 +16,10 @@
 #include "../SignificanceCommunityCleanUp.h"
 #include "../StochasticDistribution.h"
 #include "../../io/METISGraphReader.h"
+#include "../../generators/ErdosRenyiGenerator.h"
+#include "../SingleCommunityCleanUp.h"
+#include "../MergeCommunities.h"
+#include "../../io/METISGraphWriter.h"
 
 namespace NetworKit {
 
@@ -23,9 +27,8 @@ class CleanupGTest : public testing::Test {
 };
 
 TEST_F(CleanupGTest, testCleanUp) {
-	for (int i = 0; i < 3; ++i) {
-		ClusteredRandomGraphGenerator gen(100, 10, 0.7, 0.05);
-		Graph G = gen.generate();
+	METISGraphReader graphReader;
+	Graph G = graphReader.read("../input/10_clusters.graph");
 
 //		EdgeListReader reader('\t', 0);
 //		Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
@@ -35,42 +38,109 @@ TEST_F(CleanupGTest, testCleanUp) {
 //		Graph G = reader.read("/home/armin/graphs/lfr_om3.txt");
 //		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
 //		G.removeSelfLoops();
+	node isolatedNode = G.addNode();
+	EgoSplitting algo(G);
+	algo.run();
+	Cover cover = algo.getCover();
+	// Add bad communities
+	cover.addSubset({1});
+	cover.addSubset({2, isolatedNode});
 
-//		METISGraphReader reader;
-//		Graph G = reader.read("../input/jazz.graph");
+	SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);
+	cleanUp.run();
+	Cover cleanedCover = cleanUp.getCover();
 
-		node isolatedNode = G.addNode();
-
-		EgoSplitting algo(G);
-		algo.run();
-		Cover cover = algo.getCover();
-		cover.addSubset({1});
-		cover.addSubset({2, isolatedNode});
-
-		SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);
-		cleanUp.run();
-		Cover cleanedCover = cleanUp.getCover();
-
-		std::cout << "Cleaned communities: " << cleanedCover.numberOfSubsets() << std::endl;
-		EXPECT_TRUE(cleanedCover.numberOfSubsets() <= cover.numberOfSubsets());
-		count notEmptyComms = 0;
-		const std::vector<count> &comms = cleanedCover.subsetSizes();
-		for (count s : comms) {
-			notEmptyComms += (s > 1);
-		}
-		EXPECT_GE(notEmptyComms, 9);
-		// Communities of size 1 should be discarded
-		for (count s : comms) {
-			if (s > 0)
-				EXPECT_GT(s, 1);
-		}
-		std::set<index> badComm = {2, isolatedNode};
-		for (const auto &comm : cleanedCover.getSubsets()) {
-			EXPECT_NE(comm, badComm);
-		}
+	EXPECT_TRUE(cleanedCover.numberOfSubsets() <= cover.numberOfSubsets());
+	const std::vector<count> &comms = cleanedCover.subsetSizes();
+	// Communities of size 1 should be discarded
+	for (count s : comms) {
+		EXPECT_GT(s, 1);
+	}
+	count notEmptyComms = 0;
+	for (count s : comms) {
+		notEmptyComms += (s > 1);
+	}
+	EXPECT_GE(notEmptyComms, 9);
+	std::set<index> badComm = {2, isolatedNode};
+	for (const auto &comm : cleanedCover.getSubsets()) {
+		EXPECT_NE(comm, badComm);
 	}
 }
 
+TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
+	METISGraphReader graphReader;
+	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
+	// Create clique
+	count cliqueSize = 8;
+	for (node u = 0; u < cliqueSize; ++u) {
+		for (node v = u + 1; v < cliqueSize; ++v) {
+			if (!G.hasEdge(u, v))
+				G.addEdge(u, v, defaultEdgeWeight);
+		}
+	}
+	std::set<node> expectedCommunity;
+	for (node u = 0; u < cliqueSize; ++u)
+		expectedCommunity.insert(u);
+	// Create a community for the clique, but exclude a node and include weakly connected ones
+	std::set<node> testCommunity;
+	count excludeCliqueMembers = 1;
+	count addWeaklyConnected = 3;
+	for (node u = excludeCliqueMembers; u < cliqueSize + addWeaklyConnected; ++u)
+		testCommunity.insert(u);
+	SingleCommunityCleanUp singleCommunityCleanUp(G);
+
+	std::set<node> cleanedCommunity = singleCommunityCleanUp.clean(testCommunity);
+
+	count includedCliqueNodes = 0;
+	for (node u = 0; u < cliqueSize; ++u)
+		includedCliqueNodes += cleanedCommunity.count(u);
+	EXPECT_EQ(includedCliqueNodes, cliqueSize);
+	// Often there are one or two nodes which are strongly connected to the clique by chance
+	EXPECT_LE(cleanedCommunity.size(), cliqueSize + 2);
+}
+
+TEST_F(CleanupGTest, testMergeDiscarded) {
+	METISGraphReader graphReader;
+	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
+	// Create clique
+	count cliqueSize = 8;
+	for (node u = 0; u < cliqueSize; ++u) {
+		for (node v = u + 1; v < cliqueSize; ++v) {
+			if (!G.hasEdge(u, v))
+				G.addEdge(u, v, defaultEdgeWeight);
+		}
+	}
+	std::set<node> expectedCommunity;
+	for (node u = 0; u < cliqueSize; ++u)
+		expectedCommunity.insert(u);
+	std::set<std::set<node>> discardedCommunitites;
+	// Break clique into 4 discarded communities
+	discardedCommunitites.insert({0, 1});
+	discardedCommunitites.insert({2, 3});
+	discardedCommunitites.insert({4, 5});
+	discardedCommunitites.insert({6, 7});
+	// Add some bad communities
+	discardedCommunitites.insert({10, 11, 12, 13});
+	discardedCommunitites.insert({15, 16});
+	discardedCommunitites.insert({18});
+	discardedCommunitites.insert({19});
+	SingleCommunityCleanUp singleCommunityCleanUp(G);
+	MergeCommunities mergeCommunities(G, discardedCommunitites, singleCommunityCleanUp);
+
+	mergeCommunities.run();
+	auto cleanedCommunities = mergeCommunities.getCleanedCommunities();
+
+	EXPECT_EQ(cleanedCommunities.size(), 1);
+	if (cleanedCommunities.empty())
+		return;
+	auto cleanedCommunity = cleanedCommunities.front();
+	count includedCliqueNodes = 0;
+	for (node u = 0; u < cliqueSize; ++u)
+		includedCliqueNodes += cleanedCommunity.count(u);
+	EXPECT_EQ(includedCliqueNodes, cliqueSize);
+	// Often there are one or two nodes which are strongly connected to the clique by chance
+	EXPECT_LE(cleanedCommunity.size(), cliqueSize + 2);
+}
 
 TEST_F(CleanupGTest, testBinomialCoeff) {
 	StochasticDistribution stoch(10);
@@ -169,9 +239,9 @@ TEST_F(CleanupGTest, testStochasticDist) {
 	auto p = [&](count kIn) {
 		count kOut = kTotal - kIn;
 		count MInEdges = (M - cOut - kOut + kIn) / 2;
-		double top = std::pow(2, - (double) kIn);
+		double dividend = std::pow(2, -(double) kIn);
 		double divisor = fct(kOut) * fct(kIn) * fct(cOut - kIn) * fct(MInEdges);
-		return top / divisor;
+		return dividend / divisor;
 	};
 	double probabilitySum = 0.0;
 	double cumulativeProbSum = 0.0;
@@ -191,8 +261,7 @@ TEST_F(CleanupGTest, testStochasticDist) {
 	EXPECT_NEAR(exactProb, exactProbCorrect, 1e-6);
 	EXPECT_NEAR(exactProb / exactProbCorrect, 1.0, 1e-6);
 	EXPECT_NEAR(cumulativeProb, cumulativeProbCorrect, 1e-6);
-	EXPECT_NEAR(cumulativeProb / cumulativeProbCorrect, 1.0,1e-6);
-
+	EXPECT_NEAR(cumulativeProb / cumulativeProbCorrect, 1.0, 1e-6);
 }
 
 } /* namespace NetworKit */

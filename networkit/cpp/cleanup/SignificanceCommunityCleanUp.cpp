@@ -6,6 +6,7 @@
  */
 
 #include "SignificanceCommunityCleanUp.h"
+#include "MergeCommunities.h"
 
 namespace NetworKit {
 
@@ -60,10 +61,9 @@ SignificanceCommunityCleanUp::cleanCommunity(const Community &inputCommunity) {
 }
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
-	mergeCommunities = std::unique_ptr<MergeCommunities>(
-			new MergeCommunities(graph, discardedCommunities, singleCommunityCleanup));
-	mergeCommunities->run();
-	for (const auto &community : mergeCommunities->getCleanedCommunities()) {
+	MergeCommunities mergeCommunities(graph, discardedCommunities, singleCommunityCleanup);
+	mergeCommunities.run();
+	for (const auto &community : mergeCommunities.getCleanedCommunities()) {
 		cleanedCommunities.addSubset(community);
 	}
 }

@@ -15,8 +15,7 @@
 namespace NetworKit {
 
 /**
- * Stores the cumulative logarithmus to efficiently calculate binomial and hypergeometic
- * distributions.
+ * Stores the cumulative logarithmus to efficiently calculate stochastic distributions.
  */
 class StochasticDistribution {
 public:

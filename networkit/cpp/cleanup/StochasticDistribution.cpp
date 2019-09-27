@@ -39,16 +39,16 @@ double StochasticDistribution::binomialDist(double p, count n, count k) const {
 	return std::exp(logBinomCoeff(n, k) + k * std::log(p) + (n - k) * std::log(1 - p));
 }
 
-// Calculates the change ratio if we increment bottom to bottom+1
-// => returns "top choose bottom+1" / "top choose bottom"
-inline double binomialCoeffChangeForIncrement(count top, count bottom) {
-	return (double) (top - bottom) / (bottom + 1);
+// Calculates the change ratio if we increment k to k+1
+// => returns ("n choose k+1") / ("n choose k")
+inline double binomialCoeffChangeForIncrement(count n, count k) {
+	return (double) (n - k) / (k + 1);
 }
 
-// Calculates the change ratio if we decrement bottom to bottom-1
-// => returns "top choose bottom-1" / "top choose bottom"
-inline double binomialCoeffChangeForDecrement(count top, count bottom) {
-	return (double) bottom / (top + 1 - bottom);
+// Calculates the change ratio if we decrement k to k-1
+// => returns ("n choose k-1") / ("n choose k")
+inline double binomialCoeffChangeForDecrement(count n, count k) {
+	return (double) k / (n + 1 - k);
 }
 
 // Calculates the change ratio of a binomial distribution if k is incremented (k -> k+1) or
@@ -93,7 +93,10 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 	if (startBinom <= 1e-40)
 		return 0;
 
-	// Same approach as in rightCumulativeHyper
+	// Sum the probabilities until the sum only changes minimally.
+	// To increase the performance, we calculate the change in the probability of the
+	// distribution for increasing x instead of calculating each probability directly.
+	// At the end, the sum is normalized with the starting probability.
 	double curBinom = 1.;
 	double sum = curBinom;
 	BinomialChangeRatio changeRatio(p, n);
@@ -120,7 +123,7 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 	if (startBinom <= 1e-40)
 		return 0;
 
-	// Same approach as in rightCumulativeHyper
+	// Same approach as in rightCumulativeBinomial
 	double curBinom = 1.;
 	double sum = curBinom;
 	BinomialChangeRatio changeRatio(p, n);
@@ -186,10 +189,7 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	if (startProb <= 1e-40)
 		return 0;
 
-	// Sum the probabilities until the sum only changes minimally.
-	// To increase the performance, we calculate the change in the probability of the hypergeometric
-	// distribution for increasing x instead of calculating each probability directly.
-	// At the end, the sum is normalized with the starting probability.
+	// Same approach as in rightCumulativeBinomial
 	double curProb = 1.;
 	double sum = curProb;
 	HypergeomChangeRatio changeRatio(N, K, n);
@@ -220,7 +220,7 @@ double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, co
 	if (startProb <= 1e-40)
 		return 0;
 
-	// Same approach as in rightCumulativeHyper
+	// Same approach as in rightCumulativeBinomial
 	double curProb = 1.;
 	double sum = curProb;
 	HypergeomChangeRatio changeRatio(N, K, n);
@@ -241,7 +241,7 @@ class SignificanceChangeRatio {
 public:
 	SignificanceChangeRatio(count kTotal, count cOut, count extStubs) : kTotal(kTotal), cOut(cOut) {
 		count M = extStubs - kTotal;
-		MInEdgesConstPart = (M - cOut - kTotal) / 2; // MIn = M - cOut - kTotal + 2*kIn
+		MInEdgesConstPart = (M - cOut - kTotal) / 2; // MIn = M - cOut - kTotal + 2*kIn, MInEdges = M / 2
 	}
 
 	double incrementingK(count kIn) {
@@ -268,6 +268,7 @@ private:
 	count MInEdgesConstPart;
 };
 
+// TODO: Better name?
 std::pair<double, double>
 StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count cOut,
                                                   count extStubs) const {
@@ -275,10 +276,12 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 		return {0.0, 0.0};
 
 //	// Get mode == highest probability
-//	// TODO: Can we do this better?
+//	// TODO: Is there a better guess for the mode?
 //	count mode = (cOut / double(M + kTotal) * kTotal);
 //	mode = std::min(mode, cOut); // this mode is underestimated anyway
 //	// TODO: Use mode for speedup?
+
+	// Sum all (non-negligible) probabilities to get the normalization factor.
 
 	// Right cumulative
 	double kInProbability = 1.0; // p(kIn) (not normalized)
@@ -304,7 +307,15 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 	for (count x = kIn; x > 0; --x) {
 		currentProbability *= changeRatio.decrementingK(x);
 		probabilitySum += currentProbability;
-		assert(x < 1e6);
+		if (probabilitySum > 1e200) {
+			// currentProbability can become very large if the right cumulative probability is
+			// very low. In this case, we normalize all probabilities.
+			currentProbability /= 1e200;
+			probabilitySum /= 1e200;
+			kInProbability /= 1e200;
+			rightCumulativeSum /= 1e200;
+		}
+		assert(x < 1e100);
 
 		double sumChange = currentProbability / probabilitySum;
 		if (sumChange < precision)
@@ -313,6 +324,8 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 
 	double normalizedKInProbability = kInProbability / probabilitySum;
 	double normalizedRightCumulative = rightCumulativeSum / probabilitySum;
+	assert(normalizedKInProbability < 1.001);
+	assert(normalizedRightCumulative < 1.001);
 	return {normalizedKInProbability, normalizedRightCumulative};
 }
 

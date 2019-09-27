@@ -13,6 +13,9 @@
 
 namespace NetworKit {
 
+/**
+ * This class calculates the statistical significance of a node to a community.
+ */
 class StochasticSignificance {
 public:
 

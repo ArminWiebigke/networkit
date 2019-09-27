@@ -14,15 +14,25 @@
 
 namespace NetworKit {
 
+/**
+ * Provides a way to clean up communities to improve their quality.
+ */
 class SingleCommunityCleanUp {
 public:
 	using Community = std::set<node>;
-	explicit SingleCommunityCleanUp(const Graph &graph, double scoreThreshold,
-	                                double significanceThreshold, double minOverlapRatio);
 
+	explicit SingleCommunityCleanUp(const Graph &graph,
+	                                double scoreThreshold = 0.1,
+	                                double significanceThreshold = 0.1,
+	                                double minOverlapRatio = 0.5);
+
+	/**
+	 * Clean a community using statistical significance. If the community is not considered
+	 * significant, an empty community is returned.
+	 * @param inputCommunity community to clean
+	 * @return cleaned community
+	 */
 	Community clean(const Community &inputCommunity);
-
-	~SingleCommunityCleanUp() = default;
 
 private:
 	struct ScoreStruct {
@@ -43,7 +53,7 @@ private:
 	const double minOverlapRatio;
 
 	Community community;
-	std::vector<count> kIn;         // kIn[u] == number of neighbors of node u that are in the community
+	std::vector<count> edgesToCommunity;         // kIn[u] == number of neighbors of node u that are in the community
 	std::vector<int> isInCommunity; // isInCommunity[u] == is node u in the community
 	std::vector<int> isCandidate;   // isCandidate[u] == is node u a candidate
 	count outgoingCommunityStubs;   // number of edges that have one endpoint inside the community and one outside
@@ -57,7 +67,7 @@ private:
 
 	Community calculateSignificantNodes(const Community &inputCommunity, bool includeNeighbors);
 
-	Community calculateSignificantCandidates(std::vector<ScoreStruct> scores) const;
+	Community findSignificantCandidates(std::vector<ScoreStruct> scores) const;
 
 	std::vector<SingleCommunityCleanUp::ScoreStruct>
 

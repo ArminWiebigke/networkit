@@ -32,7 +32,6 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) c
 		rightCum = dist.rightCumulativeHyper(openStubs, cOut, k, kIn + 1);
 	} else {
 		// Calculate the probability using the original distribution
-		// TODO: Verify caluclation, refactor return
 		std::tie(exactProb, rightCum) = dist.rightCumulativeStochastic(k, kIn, cOut,
 		                                                               extStubs);
 		rightCum -= exactProb;

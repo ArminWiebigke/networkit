@@ -13,7 +13,6 @@
 #include "../structures/Cover.h"
 #include "StochasticSignificance.h"
 #include "SingleCommunityCleanUp.h"
-#include "MergeCommunities.h"
 
 namespace NetworKit {
 
@@ -68,7 +67,6 @@ private:
 	Cover cleanedCommunities;
 	std::set<Community> discardedCommunities;
 	SingleCommunityCleanUp singleCommunityCleanup;
-	std::unique_ptr<MergeCommunities> mergeCommunities;
 
 	void cleanAllCommunities();
 
