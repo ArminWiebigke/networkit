@@ -32,7 +32,7 @@ namespace NetworKit {
 EgoSplitting::EgoSplitting(const Graph &G)
 		: G(G) {
 	PartitionFunction clusterAlgo = [](const Graph &G) {
-		PLM algo(G, false, 1.0, "none");
+		PLM algo(G, true, 1.0, "none");
 		algo.run();
 		return algo.getPartition();
 	};

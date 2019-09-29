@@ -189,24 +189,26 @@ double Stochastics::compute_simple_fitness(int k_in, int gr_out, int open_stubs,
  *
  * @param k_in Edges from node to group.
  * @param gr_out Outgoing stubs of the group.
- * @param tm External stubs. Stubs from (G - {group and node})
- * @param k_degree Degree of the node
+ * @param ext_stubs External stubs. Stubs from (G - {group and node})
+// * @param k_degree Degree of the node
  * @param minus_log_total ???
  * @param number_of_neighs ???
  * @param Nstar Number of external nodes (#G - #group - 1)
  * @param boot_interval (out): Half the domain of the fitness (?)
  * @return
  */
-double Stochastics::compute_global_fitness(int k_in, int gr_out, int tm, int k_degree,
+double Stochastics::compute_global_fitness(int k_in, int gr_out, int ext_stubs, int k_degree,
                                            double minus_log_total, int number_of_neighs, int Nstar,
                                            double &boot_interval) {
 	/* k_in is referred to the node and not to the module */
 	/* boot_interval is half the domain of the fitness. We assume that also in the weighted case the fitness can be linearized */
 	/* which is true if the boot_interval is small enough	*/
-	boot_interval = (0.5 + 1e-6 * (ran4() - 0.5)) *
-			hypergeom_dist(k_in, gr_out, tm, k_degree);
+	double boot_factor = 0.5 + 1e-6 * (ran4() - 0.5);
+//	double boot_factor = 1;
+	boot_interval = boot_factor *
+	                hypergeom_dist(k_in, gr_out, ext_stubs, k_degree);
 	double topologic =
-			log_table->right_cumulative_function(k_degree, gr_out, tm, k_in + 1) +
+			log_table->right_cumulative_function(k_degree, gr_out, ext_stubs, k_in + 1) +
 			boot_interval;
 
 	//cout<<"----------> "<<log_table->right_cumulative_function(k_degree, gr_out, tm, k_in+1)<<"  boot_interval "<<boot_interval<<" k_in: "<<k_in<<" / "<<k_degree<<std::endl;

@@ -1,7 +1,7 @@
 /*
- * OslomGTest.cpp
+ * CleanUpGTest.cpp
  *
- * Created: 2019-06-06
+ * Created: 2019-09-18
  * Author: Armin Wiebigke
  */
 
@@ -20,6 +20,7 @@
 #include "../SingleCommunityCleanUp.h"
 #include "../MergeCommunities.h"
 #include "../../io/METISGraphWriter.h"
+#include "../../oslom/OslomCleanUp.h"
 
 namespace NetworKit {
 
@@ -71,7 +72,7 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 	METISGraphReader graphReader;
 	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
 	// Create clique
-	count cliqueSize = 8;
+	count cliqueSize = 6;
 	for (node u = 0; u < cliqueSize; ++u) {
 		for (node v = u + 1; v < cliqueSize; ++v) {
 			if (!G.hasEdge(u, v))
@@ -96,7 +97,50 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 		includedCliqueNodes += cleanedCommunity.count(u);
 	EXPECT_EQ(includedCliqueNodes, cliqueSize);
 	// Often there are one or two nodes which are strongly connected to the clique by chance
-	EXPECT_LE(cleanedCommunity.size(), cliqueSize + 2);
+	EXPECT_EQ(cleanedCommunity.size(), cliqueSize);
+	EXPECT_EQ(cleanedCommunity, expectedCommunity);
+}
+
+TEST_F(CleanupGTest, testSingleCommunityCleanUpOslom) {
+	METISGraphReader graphReader;
+	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
+	// Create clique
+	count cliqueSize = 6;
+	for (node u = 0; u < cliqueSize; ++u) {
+		for (node v = u + 1; v < cliqueSize; ++v) {
+			if (!G.hasEdge(u, v))
+				G.addEdge(u, v, defaultEdgeWeight);
+		}
+	}
+	std::set<node> expectedCommunity;
+	for (node u = 0; u < cliqueSize; ++u)
+		expectedCommunity.insert(u);
+	// Create a community for the clique, but exclude a node and include weakly connected ones
+	std::set<node> testCommunity;
+	count excludeCliqueMembers = 1;
+	count addWeaklyConnected = 3;
+	for (node u = excludeCliqueMembers; u < cliqueSize + addWeaklyConnected; ++u)
+		testCommunity.insert(u);
+	Cover cover(G.upperNodeIdBound());
+	cover.addSubset(testCommunity);
+
+	std::vector<std::string> arguments{"-simple_cleanup",
+	                                   "-merge_discarded", "-discard_max_extend_groups",
+	                                   "-max_extend", "2",
+	                                   "-cup_runs", "1",};
+	OslomCleanUp cleanUp(G, cover, arguments);
+
+	cleanUp.run();
+	auto cleanedCover = cleanUp.getCover();
+
+	EXPECT_EQ(cleanedCover.numberOfSubsets(), 1);
+	std::set<node> cleanedCommunity = cleanedCover.getMembers(0);
+	count includedCliqueNodes = 0;
+	for (node u = 0; u < cliqueSize; ++u)
+		includedCliqueNodes += cleanedCommunity.count(u);
+	EXPECT_EQ(includedCliqueNodes, cliqueSize);
+	EXPECT_EQ(cleanedCommunity.size(), cliqueSize);
+	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 
 TEST_F(CleanupGTest, testMergeDiscarded) {

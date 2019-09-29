@@ -38,9 +38,10 @@ private:
 	struct ScoreStruct {
 		double sScore;
 		double bootInterval;
-		node candidate;
+		node nodeId;
 
-		ScoreStruct(double s, double b, node u) : sScore(s), bootInterval(b), candidate(u) {};
+		explicit ScoreStruct(double score, double boot, node nodeId)
+				: sScore(score), bootInterval(boot), nodeId(nodeId) {};
 	};
 
 	const Graph &graph;
@@ -52,34 +53,38 @@ private:
 	// threshold to discard communities if they changed too much
 	const double minOverlapRatio;
 
+	Community originalCommunity;
 	Community community;
-	std::vector<count> edgesToCommunity;         // kIn[u] == number of neighbors of node u that are in the community
-	std::vector<int> isInCommunity; // isInCommunity[u] == is node u in the community
-	std::vector<int> isCandidate;   // isCandidate[u] == is node u a candidate
+	std::vector<node> candidates;
+	std::vector<count> edgesToCommunity;
+	std::vector<int> isInCommunity;
+	std::vector<int> isInOriginalCommunity;
+	std::vector<int> isCandidate;
 	count outgoingCommunityStubs;   // number of edges that have one endpoint inside the community and one outside
 	count totalCommunityStubs;      // the sum of the degrees of the nodes in the community
 	count externalNodes;
 	count externalStubs;
 
-	std::vector<node> getCandidatesAndSetUpCalculation(bool includeNeighbors);
+	void getCandidatesAndSetUpCalculation(bool onlyUseOriginalCommunity);
 
-	void reset(const std::vector<node> &candidates);
+	void reset();
 
-	Community calculateSignificantNodes(const Community &inputCommunity, bool includeNeighbors);
+	Community
+	calculateSignificantNodes(const Community &inputCommunity, bool onlyUseOriginalCommunity);
 
-	Community findSignificantCandidates(std::vector<ScoreStruct> scores) const;
+	std::vector<node> findSignificantCandidates(std::vector<ScoreStruct> scores) const;
 
 	std::vector<SingleCommunityCleanUp::ScoreStruct>
 
-	calculateCandidateScores(const std::vector<node> &candidates) const;
+	calculateCandidateScores() const;
 
-	void removeWorstNode(std::vector<ScoreStruct> scores);
+	void removeWorstNode(std::vector<ScoreStruct> internalScores);
 
 	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
+
+	std::vector<ScoreStruct> calculateInternalScores();
 };
 
-
 } /* namespace NetworKit */
-
 
 #endif //NETWORKIT_SINGLECOMMUNITYCLEANUP_H

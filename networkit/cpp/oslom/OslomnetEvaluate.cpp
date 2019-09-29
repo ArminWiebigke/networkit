@@ -343,16 +343,8 @@ double oslom_net_evaluate::clean_up_procedure(
 	double bscore = 1;
 
 	while (true) {
-		int kout_g = ktot_cgroup - kin_cgroup;
-		int tm = total_stubs - ktot_cgroup;
-		int Nstar = dim - cgroup.size();
-		int nneighs = neighs.size();
-		double max_r_one = maxb_nodes / double(dim - cgroup.size());
-		double max_r_two = max_r_bord;
-
-		double max_r = std::min(max_r_one, max_r_two);
 		CupDataStruct fitness_label_to_sort;
-		get_external_scores(neighs, fitness_label_to_sort, kout_g, tm, Nstar, nneighs, max_r,
+		get_external_scores(neighs, fitness_label_to_sort,
 		                    only_c, previous_tab_c);
 		if (paras->simple_cleanup)
 			bscore = CUP_from_list_simple(fitness_label_to_sort, cleaned_group);
@@ -386,10 +378,15 @@ double oslom_net_evaluate::clean_up_procedure(
  * @param previous_tab_c
  */
 void oslom_net_evaluate::get_external_scores(WeightedTabdeg &neighbors,
-                                             CupDataStruct &fitness_label_to_sort,
-                                             int kout_g, int tm, int Nstar, int nneighs,
-                                             const double &max_r, bool only_c,
+                                             CupDataStruct &fitness_label_to_sort, bool only_c,
                                              WeightedTabdeg &previous_tab_c) {
+	double max_r_one = maxb_nodes / double(dim - cgroup.size());
+	double max_r_two = max_r_bord;
+	double max_r = std::min(max_r_one, max_r_two);
+	int Nstar = dim - cgroup.size();
+	int nneighs = neighs.size();
+	int kout_g = ktot_cgroup - kin_cgroup;
+	int externalStubs = total_stubs - ktot_cgroup;
 	auto bit = neighbors.fitness_to_label.begin();
 	int counter = 0;
 
@@ -397,24 +394,20 @@ void oslom_net_evaluate::get_external_scores(WeightedTabdeg &neighbors,
 		auto itm = neighbors.labels_to_facts.find(bit->second);
 		double interval;
 		facts &node_facts = itm->second;
-		double F = Stochastics::compute_global_fitness(node_facts.internal_degree, kout_g, tm,
+		double F = Stochastics::compute_global_fitness(node_facts.internal_degree,
+		                                               kout_g,
+		                                               externalStubs,
 		                                               node_facts.degree,
-		                                               node_facts.internal_edgeweight, nneighs,
+		                                               node_facts.internal_edgeweight,
+		                                               nneighs,
 		                                               Nstar,
 		                                               interval);
-//		std::cout << "k_in=" << node_facts.internal_degree << "/" << node_facts.degree
-//		          << ", g_out=" << kout_g << ", ext_stubs=" << tm << ", inteval=" << interval
-//		          << " \t => " << F << std::endl;
 		if (F > max_r) {
 			// r-Score is too bad, so we ignore this node.
-			/*if(only_c == false || previous_tab_c.is_internal(itm->first))
-				cout<<"no node: "<<vertices[itm->first]->id_num<<"  "<<itm->second.internal_degree<<" / "<< itm->second.degree<<" fitness: "<<F<<endl;*/
 			counter++;
 			if (counter > num_up_to)
 				break;
 		} else {
-			/*if(only_c == false || previous_tab_c.is_internal(itm->first))
-				cout<<"node: "<<"  "<<itm->second.internal_degree<<" / "<< itm->second.degree<<" fitness: "<<F<<" "<<interval<<endl;*/
 			if (previous_tab_c.is_internal(itm->first) || !only_c)
 				fitness_label_to_sort.insert(make_pair(F, std::make_pair(itm->first, interval)));
 		}
@@ -549,6 +542,7 @@ double oslom_net_evaluate::CUP_from_list_simple(CupDataStruct &a, std::deque<int
 //    std::cout << Nstar << "(" << critical_xi << ") ----------------" << std::endl;
 	while (itl != a.end()) {
 		double score = itl->first;
+		int node = itl->second.first;
 		/*
 		 c_pos is the probability that Omega_{pos} <= score == Phi(c_pos)
 		 If this is low, the score of the node is better than expected in the null model,
@@ -558,7 +552,6 @@ double oslom_net_evaluate::CUP_from_list_simple(CupDataStruct &a, std::deque<int
 		c_min = std::min(c_pos, c_min);
 //        if (c_pos < 0.1)
 //            std::cout << score << " - " << c_pos << std::endl;
-
 		if (c_pos < critical_xi) {
 			/*
 			this is the basic condition of the order statistics test

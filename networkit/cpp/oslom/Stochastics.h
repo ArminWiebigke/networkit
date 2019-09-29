@@ -90,7 +90,7 @@ public:
 	}
 
 	// TODO: Does this function compute the r-Score?
-	static double compute_global_fitness(int k_in, int gr_out, int tm, int k_degree,
+	static double compute_global_fitness(int k_in, int gr_out, int ext_stubs, int k_degree,
 	                                     double minus_log_total, int number_of_neighs, int Nstar,
 	                                     double &boot_interval);
 

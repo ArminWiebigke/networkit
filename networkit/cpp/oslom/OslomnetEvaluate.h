@@ -67,9 +67,8 @@ private:
     double CUP_from_list_simple(CupDataStruct &a, std::deque<int> &gr_cleaned);
 
     void
-    get_external_scores(WeightedTabdeg &neighbors, CupDataStruct &fitness_label_to_sort,
-                        int kout_g, int tm, int Nstar, int nneighs,
-                        const double &max_r, bool only_c,
+    get_external_scores(WeightedTabdeg &neighbors,
+                        CupDataStruct &fitness_label_to_sort, bool only_c,
                         WeightedTabdeg &previous_tab_c);
 
     double CUP_runs(WeightedTabdeg &previous_tab_c, WeightedTabdeg &previous_tab_n,
