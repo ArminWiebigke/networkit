@@ -13,7 +13,6 @@ def poss_combs(x):
 
 # Merge highly connected partitions
 def partition_merge(G, input_partition):
-	# return input_partition
 	result = copy(input_partition)
 	continue_merge = True
 	# print(G.numberOfNodes())
@@ -150,77 +149,6 @@ def remove_comms_entropy(G, cover):
 				cover.addToSubset(c_id, u)
 
 	return cover
-
-
-# TODO: Merge und Trim verbinden?
-# Merge communities together if they are strongly connected.
-# def merge_comms_entropy_from_cover(G, cover):
-# 	cover = copy(cover)
-# 	communities = get_community_vector(G, cover)
-# 	comm_sizes = [len(c) for c in communities]
-# 	size_map = cover.subsetSizeMap()
-# 	for i, c in enumerate(communities):
-# 		if len(c) == 0:
-# 			continue
-# 		assert(size_map[i] == comm_sizes[i])
-# 		assert(size_map[i] == len(c))
-# 	print(comm_sizes)
-# 	entropy = calc_entropy(G, cover)
-# 	for c_id, community in enumerate(communities):
-# 		max_comm_size = 50
-# 		if len(community) >= max_comm_size or len(community) == 0:
-#           # Only for the specific LFR graph
-# 			continue
-# 		community_changed = True
-# 		while community_changed:
-# 			community_changed = False
-# 			cuts = community_cut(G, cover, comm_sizes, community, c_id)
-# 			iterations = 3
-# 			for cut_score, other_id in cuts:
-# 				assert(cut_score <= 2.0)
-# 				if cut_score < 0.07:  # Always useful?
-# 					break
-# 				if comm_sizes[other_id] > max_comm_size:
-# 					continue
-# 				if comm_sizes[other_id] < comm_sizes[c_id]:
-# 					print("Skip {} -> {} ({})".format(
-# 						comm_sizes[c_id], comm_sizes[other_id], cut_score))
-# 					continue
-# 				if iterations <= 0:
-# 					break
-# 				iterations -= 1
-# 				print(cut_score)
-# 				new_cover = copy(cover)
-# 				other_comm = communities[other_id]
-# 				for v in other_comm - community:
-# 					new_cover.addToSubset(c_id, v)
-# 				for v in other_comm:
-# 					new_cover.removeFromSubset(other_id, v)
-#
-# 				new_entropy = calc_entropy(G, new_cover)
-# 				overlap = len(communities[c_id].intersection(communities[other_id]))
-# 				overlap /= min(comm_sizes[c_id], comm_sizes[other_id])
-# 				if overlap >= 0.5:
-# 					out_file = open("./results/comm_overlap.out", 'a')
-# 					out_str = "IDs: {} {}, Sizes: {} {}, OL: {:.2f}, Score: {:.2f}, " \
-# 					          "Entr:{:.2f}\n"
-# 					out_file.write(out_str.format(
-# 						c_id, other_id, comm_sizes[c_id], comm_sizes[other_id],
-# 						overlap, cut_score, new_entropy - entropy
-# 					))
-# 					out_file.close()
-# 				if new_entropy < entropy:
-# 					print("\tMerge community with score {} #####".format(cut_score))
-# 					entropy = new_entropy
-# 					cover = new_cover
-# 					comm_sizes[c_id] = len(community.union(other_comm))
-# 					for u in other_comm:
-# 						community.add(u)
-# 					other_comm.clear()
-# 					comm_sizes[other_id] = 0
-# 					community_changed = True
-# 					break
-# 	return cover
 
 
 # Merge communities together if they are strongly connected.

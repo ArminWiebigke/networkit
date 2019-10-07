@@ -1,6 +1,6 @@
 from math import log2
 
-from egosplit.benchmarks.cover_benchmark import *
+from egosplit.benchmarks.data_structures.cover_benchmark import *
 from egosplit.benchmarks.evaluation.output import create_line
 
 

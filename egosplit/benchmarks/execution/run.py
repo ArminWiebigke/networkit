@@ -2,53 +2,68 @@ import datetime
 import os
 from collections import OrderedDict, defaultdict
 from copy import copy
+from enum import Enum
 
 import egosplit.benchmarks.evaluation.benchmark_metric as bm
+import egosplit.benchmarks.evaluation.config
 from networkit.stopwatch import clockit
-from networkit import setLogLevel
 from egosplit.benchmarks.evaluation.metrics import write_results_to_file, add_compact_results, \
 	print_compact_results
-from egosplit.benchmarks.algo_creation import get_ego_algos, get_other_algos
+from egosplit.benchmarks.execution.algo_creation import get_ego_algos, get_other_algos, \
+	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig
 from egosplit.benchmarks.evaluation.timings import write_timings
-from egosplit.benchmarks.graph_creation import get_graphs
+from egosplit.benchmarks.execution.graph_creation import get_graphs, GraphSetsConfig
 from egosplit.benchmarks.evaluation.ego_net_partition import analyse_ego_net_partitions
 from egosplit.benchmarks.evaluation.stream_to_gephi import stream_partition
 from egosplit.benchmarks.evaluation.cover_analysis import analyse_cover
-from egosplit.benchmarks.cleanup import cleanup_test
-from egosplit.benchmarks.cover_benchmark import CoverBenchmark
-from egosplit.benchmarks.complete_cleanup import CleanUp
+from egosplit.benchmarks.execution.cleanup_functions import cleanup_test
+from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.execution.cleanup import CleanUp, CleanUpConfig
+from egosplit.benchmarks.data_structures.benchmark_set import BenchmarkSet
 
 
-def start_benchmarks(benchmark_config, iteration):
+class Evaluation(Enum):
+	METRICS = 1
+	TIMINGS = 2
+	COVER = 3
+	EGO_NETS = 4
+	STREAM_TO_GEPHI = 5
+	CLEANUP = 6
+
+
+def run_benchmark(benchmark_config: BenchmarkSet, iteration):
+	""" Run benchmarks given by a config """
 	# setLogLevel('INFO')
 	append_results = False
 	evaluations = [
-		'metrics',
-		'timings',
-		'cover',
-		'ego_nets',
-		# 'stream_to_gephi',
-		# 'cleanup',
+		Evaluation.METRICS,
+		Evaluation.TIMINGS,
+		Evaluation.COVER,
 	]
-	if benchmark_config['stream_to_gephi']:
-		evaluations.append('stream_to_gephi')
-	stream_to_gephi = 'stream_to_gephi' in evaluations
-	store_ego_nets = 'ego_nets' in evaluations and benchmark_config['store_ego_nets']
+	stream_to_gephi = benchmark_config.stream_to_gephi
+	if stream_to_gephi:
+		evaluations.append(Evaluation.STREAM_TO_GEPHI)
+
+	store_ego_nets = benchmark_config.store_ego_nets
 	if stream_to_gephi:
 		store_ego_nets = True
+	if store_ego_nets:
+		evaluations.append(Evaluation.EGO_NETS)
 
 	result_subfolder = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 	result_dir = '{}/{}-{}/{}/'.format(get_result_dir(), result_subfolder,
-	                                   benchmark_config['result_dir'], iteration)
+	                                   benchmark_config.result_dir, iteration)
 	os.makedirs(result_dir)
 	result_summary = OrderedDict()
 
 	print('Creating Graphs...')
-	graphs = get_graphs(benchmark_config['graph_sets'], 1)
+	graphs = get_graphs(benchmark_config[GraphSetsConfig])
 
-	ego_algos = get_ego_algos(benchmark_config['ego_part_algos'], benchmark_config['ego_params'],
-	                          benchmark_config['clean_up_set'], store_ego_nets)
-	other_algos = get_other_algos(benchmark_config['other_algos'])
+	ego_algos = get_ego_algos(benchmark_config[EgoSplitClusteringAlgorithmsConfig],
+	                          benchmark_config[EgoSplitParameterConfig],
+	                          benchmark_config[CleanUpConfig],
+	                          store_ego_nets)
+	other_algos = get_other_algos(benchmark_config.other_algos)
 	algos = ego_algos + other_algos
 
 	if stream_to_gephi and len(graphs) * len(algos) > 8:
@@ -56,7 +71,7 @@ def start_benchmarks(benchmark_config, iteration):
 
 	print('Starting benchmarks...')
 	benchmarks = create_benchmarks(graphs, algos)
-	write_scores_per_egonet = benchmark_config['score_per_egonet']
+	write_scores_per_egonet = benchmark_config.score_per_egonet
 	if stream_to_gephi:
 		run_benchmarks(benchmarks)
 		evaluate_result(graphs, benchmarks, evaluations, append_results,
@@ -80,8 +95,8 @@ def print_result_summary(summary, result_dir):
 	if not summary:
 		return
 	compact_metrics = [
-		bm.Time,
-		bm.NMI,
+		egosplit.benchmarks.evaluation.config.Time,
+		egosplit.benchmarks.evaluation.config.NMI,
 		# bm.F1,
 		# bm.F1_rev,
 	]
@@ -92,13 +107,13 @@ def print_result_summary(summary, result_dir):
 @clockit
 def evaluate_result(graphs, benchmarks, evaluations, append, summary, result_dir,
                     write_scores_per_egonet):
-	if 'metrics' in evaluations:
+	if Evaluation.METRICS in evaluations:
 		# Write results
 		metrics = [
-			bm.Time,
-			bm.NMI,
-			bm.F1,
-			bm.F1_rev,
+			egosplit.benchmarks.evaluation.config.Time,
+			egosplit.benchmarks.evaluation.config.NMI,
+			egosplit.benchmarks.evaluation.config.F1,
+			egosplit.benchmarks.evaluation.config.F1_rev,
 		]
 		metric_names = [m.get_name() for m in metrics]
 		metric_results = defaultdict(lambda: dict())
@@ -108,15 +123,15 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary, result_dir
 		write_results_to_file(metric_results, result_dir, metric_names, append)
 		# Store results compact in table
 		add_compact_results(summary, metric_results, metric_names)
-	if 'timings' in evaluations:
+	if Evaluation.TIMINGS in evaluations:
 		write_timings(benchmarks, result_dir, append)
-	if 'cover' in evaluations:
+	if Evaluation.COVER in evaluations:
 		analyse_cover(benchmarks, result_dir, append)
-	if 'ego_nets' in evaluations:
+	if Evaluation.EGO_NETS in evaluations:
 		analyse_ego_net_partitions(benchmarks, result_dir, append, write_scores_per_egonet)
-	if 'stream_to_gephi' in evaluations:
+	if Evaluation.STREAM_TO_GEPHI in evaluations:
 		stream_partition(graphs, benchmarks)
-	if 'cleanup' in evaluations:
+	if Evaluation.CLEANUP in evaluations:
 		cleanup_test(benchmarks, result_dir)
 
 

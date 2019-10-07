@@ -2,11 +2,10 @@ import os
 from collections import defaultdict
 from copy import copy
 
-from egosplit.benchmarks.cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
 from networkit import none
 from networkit.components import ConnectedComponents
 from egosplit.benchmarks.evaluation.output import *
-from networkit.stopwatch import clockit
 
 
 # Evaluate the partition of the ego-nets

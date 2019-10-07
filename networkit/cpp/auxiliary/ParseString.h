@@ -1,6 +1,9 @@
-//
-// Created by armin on 7/20/19.
-//
+/*
+ * ParseString.h
+ *
+ * Created: 2019-07-20
+ * Author: Armin Wiebigke
+ */
 
 #ifndef NETWORKIT_PARSESTRING_HPP
 #define NETWORKIT_PARSESTRING_HPP

@@ -1,11 +1,9 @@
-from copy import copy
-
-from egosplit.benchmarks.cleanup import merge_overlap_comms, merge_comms_entropy, trim_comms, \
+from egosplit.benchmarks.execution.cleanup_functions import merge_overlap_comms, trim_comms, \
 	add_communities, \
 	remove_small_comms, remove_overlap_comms
 from egosplit.external import cleanUpOslom
-from networkit.community import OslomCleanUp
-from egosplit.benchmarks.context_timer import ContextTimer
+from networkit.community import OslomCleanUp, SignificanceCommunityCleanUp
+from egosplit.benchmarks.data_structures.context_timer import ContextTimer
 
 
 class CleanUp:
@@ -25,6 +23,43 @@ class CleanUp:
 		return self.timer.elapsed
 
 
+class CleanUpConfig:
+	@staticmethod
+	def get_clean_up_set(clean_up_set):
+		if clean_up_set == 'No Cleanup':
+			clean_ups = ['']
+		elif clean_up_set == 'all':
+			clean_ups = [
+				'No Clean Up',
+				# 'merge-overl',
+				# 'Remove Overlapping',
+				'Clean-merge',
+				# 'Clean-merge & Remove Overlapping',
+				# 'clean-full',
+				'Clean-remove',
+				'OSLOM-full',
+			]
+		elif clean_up_set == 'best-ego':
+			clean_ups = [
+				'No Clean Up',
+				'Clean-merge',
+			]
+		elif clean_up_set == 'best':
+			clean_ups = [
+				'Clean-merge',
+			]
+		elif clean_up_set == 'test':
+			clean_ups = [
+				'No Clean Up',
+				'Clean-merge',
+				'Clean-new',
+			]
+		else:
+			raise RuntimeError("No clean-up set provided!")
+		clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
+		return clean_ups
+
+
 def clean_up_cover(graph, cover, ground_truth, clean_up):
 	if len(clean_up) > 4 and clean_up[0] == "(" and clean_up[4] == ")":
 		clean_up = clean_up[5:]
@@ -32,8 +67,12 @@ def clean_up_cover(graph, cover, ground_truth, clean_up):
 		return cover
 	if clean_up == 'clean-full':
 		cover = clean_up_oslom(graph, cover, bad_groups_strat='remove',
-		                          check_unions=True, check_minimality=True,
-		                          max_extend=100)
+		                       check_unions=True, check_minimality=True,
+		                       max_extend=100)
+	elif clean_up == 'Clean-new':
+		clean_up = SignificanceCommunityCleanUp(graph, cover, 0.1, 0.1, 0.5)
+		clean_up.run()
+		cover = clean_up.getCover()
 	elif clean_up == 'Clean-remove':
 		cover = clean_up_oslom(graph, cover)
 	elif clean_up == 'clean-shrink':
@@ -52,7 +91,7 @@ def clean_up_cover(graph, cover, ground_truth, clean_up):
 		cover = clean_up_oslom(graph, cover, bad_groups_strat='merge', runs=5)
 	elif clean_up == 'clean-merge-shrink':
 		cover = clean_up_oslom(graph, cover, bad_groups_strat='merge',
-		                          discard_max_extend_groups=False)
+		                       discard_max_extend_groups=False)
 	elif clean_up == 'clean-keep':
 		cover, bad_groups = clean_up_oslom(graph, cover)
 		cover = add_communities(cover, bad_groups)

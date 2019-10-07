@@ -4,13 +4,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from enum import Enum
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FormatStrFormatter, \
-	StrMethodFormatter, Formatter, FuncFormatter
+from matplotlib.ticker import MultipleLocator, StrMethodFormatter, Formatter
 from pandas import DataFrame, Series
 
-from networkit.stopwatch import clockit
-from egosplit.plot_scripts.config import set_layout, set_legend, get_legend_args, set_sns_style
-from egosplit.plot_scripts.read_data import create_column_if_missing
+from egosplit.benchmarks.plot_scripts.plot_config import set_layout, set_legend, get_legend_args
+from egosplit.benchmarks.plot_scripts.read_data import create_column_if_missing
 
 
 class PlotType(Enum):
@@ -73,12 +71,11 @@ def make_plot(data,
 
 	# Create plots
 	# set_sns_style(font_size)  # TODO: This is not working, does not change font size
-	@clockit
 	def create_plot(graph_data, single_x_value=False):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
 		this_plot_args = get_plot_args(algo_list, hue, plot_args, this_plot_type, x, y)
-		a4_dims = (7, 5)
+		# a4_dims = (8, 6)
 		# fig, ax = plt.subplots(figsize=a4_dims)
 		fig, ax = plt.subplots()
 		this_plot_args = {
@@ -100,7 +97,7 @@ def make_plot(data,
 			fig.suptitle(title)
 		plot_file = output_dir + plot_subdir + file_name + '.pdf'
 		fig.savefig(plot_file)
-		crop_pdf(plot_file)
+		# crop_pdf(plot_file)
 		plt.close(fig)
 
 		def replace_label_func(l):
@@ -202,7 +199,6 @@ def replace_legend_entry(label, remove_algo_part, replace_legend):
 	return label
 
 
-@clockit
 def latex_table(data, hue, x, y, replace_label_func):
 	hue_values = sorted(get_unique_values(data, hue))
 	x_values = sorted(get_unique_values(data, x))

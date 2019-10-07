@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from egosplit.benchmarks.algorithms import EgoSplitAlgorithm
-from egosplit.benchmarks.graph import LFRGraph
+from egosplit.benchmarks.data_structures.algorithms import EgoSplitAlgorithm
+from egosplit.benchmarks.data_structures.graph import LFRGraph
 
 
 class CoverBenchmark:
@@ -16,7 +16,7 @@ class CoverBenchmark:
 		self.cover = None
 
 	def run(self):
-		print("\nGraph: " + self.graph.name + ", Algo: " + self.get_algo_name())
+		print("\nStarting: Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
 
 		gt_comms_cnt = self.graph.ground_truth.numberOfSubsets()
 		gt_comms_size_sum = sum(self.graph.ground_truth.subsetSizes())
@@ -30,8 +30,8 @@ class CoverBenchmark:
 
 		self.algo.run(self.graph)
 		algo_cover = self.algo.get_cover()
+		print("Finished: Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
 		print("Ran algorithm in {:.3f}s".format(self.algo.get_time()))
-		print("Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
 
 		self.clean_up.run(self.graph.graph, algo_cover,
 		                  self.graph.ground_truth)

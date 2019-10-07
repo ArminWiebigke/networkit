@@ -130,9 +130,9 @@ double ExtendEdges::normalizeScore(node v, double score) const {
 		return Aux::Random::real();
 	if (scoreStrategy == "Edges" || scoreStrategy == "none")
 		return score * 1.0;
-	if (scoreStrategy == "Edges / Degree")
+	if (scoreStrategy == "Edges div Degree")
 		return score * 1.0 / G.degree(v);
-	if (scoreStrategy == "Edges^2 / Degree")
+	if (scoreStrategy == "Edges pow 2 div Degree")
 		return score * score * 1.0 / G.degree(v);
 	throw std::runtime_error(scoreStrategy + " is not a valid score strategy!");
 }

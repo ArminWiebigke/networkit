@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from egosplit.benchmarks.evaluation.cover_analysis import *
 from egosplit.benchmarks.evaluation.output import create_line
-from egosplit.benchmarks.cover_benchmark import CoverBenchmark
+from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
 
 
 # Write the metric results to the output file, one line per benchmark run

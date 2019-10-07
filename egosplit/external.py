@@ -9,7 +9,6 @@ import igraph
 import leidenalg
 import infomap
 
-from networkit import graph
 from networkit import graphio
 from networkit import community
 from networkit import structures
@@ -154,7 +153,7 @@ def clusterGCE(G, alpha=1.5, min_clique=4):
 def convertCoverToPartition(G, cover):
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(G.upperNodeIdBound())
-	singleton_idx = cover.upperBound()
+	singletonIdx = cover.upperBound()
 
 	for u in G.nodes():
 		comms = cover.subsetsOf(u)
@@ -167,8 +166,8 @@ def convertCoverToPartition(G, cover):
 			best_comm, _ = max([(val, c) for (c, val) in comm_cnts.items()])
 			partition.addToSubset(best_comm, u)
 		else:
-			partition.addToSubset(singleton_idx, u)
-			singleton_idx += 1
+			partition.addToSubset(singletonIdx, u)
+			singletonIdx += 1
 
 	return partition
 
@@ -349,7 +348,7 @@ def getFacebookGraph(name, clean=False):
 		id_offset = cover.upperBound()
 
 	if clean:
-		from egosplit.benchmarks.cleanup import remove_small_comms
+		from egosplit.benchmarks.execution.cleanup_functions import remove_small_comms
 		cover = remove_small_comms(f_graph, cover)
 	return f_graph, cover
 
