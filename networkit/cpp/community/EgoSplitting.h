@@ -25,6 +25,14 @@ namespace NetworKit {
 
 /**
  * Ego Splitting is a framework to detect overlapping communities.
+ * The ego-net of each node is partitioned by a clustering algorithm. The ego-net of a node u
+ * (u is the ego-node) is the subgraph induced by the neighbors of u. For each detected subset of
+ * the ego-net, a copy of the ego-node is created, a so-called persona.
+ * After analyzing the ego-nets of all nodes, a persona graph is created that consists of the
+ * personas of all nodes. Each edge in the input graph corresponds to exactly one edge in the
+ * persona graph. A second clustering algorithm is used on the persona graph to detect
+ * non-overlapping communities. Each node is then assigned all communities of its personas,
+ * resulting in (possibly) overlapping communites.
  * https://dl.acm.org/citation.cfm?id=3098054
  */
 class EgoSplitting : public Algorithm, public Timings {
@@ -32,62 +40,47 @@ class EgoSplitting : public Algorithm, public Timings {
 
 public:
 	/**
-	 * Construct an instance of this algorithm for the input graph.
+	 * Construct an instance of this algorithm, using the default clustering algorithms.
 	 *
 	 * @param[in]	G   input graph
-	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
 	explicit EgoSplitting(const Graph &G);
 
 	/**
-	 * Construct an instance of this algorithm for the input graph.
+	 * Construct an instance of this algorithm, using the given clustering algorithm for both the
+	 * local and the global clustering.
 	 *
 	 * @param[in]	G   input graph
-	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+	 * @param[in]   clusteringAlgo    algorithm to cluster the ego-net and the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-	             PartitionFunction clusterAlgo);
+	             PartitionFunction clusteringAlgo);
 
 	/**
-	 * Construct an instance of this algorithm for the input graph.
+	 * Construct an instance of this algorithm, using the given clustering algorithms for the
+	 * local and the global clustering.
 	 *
 	 * @param[in]	G   input graph
-	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
-	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
+	 * @param[in]   localClusteringAlgo    algorithm to cluster the ego-net
+	 * @param[in]   globalClusteringAlgo   algorithm to cluster the persona graph
 	 */
 	EgoSplitting(const Graph &G,
-	             PartitionFunction localClusterAlgo,
-	             PartitionFunction globalClusterAlgo);
+	             PartitionFunction localClusteringAlgo,
+	             PartitionFunction globalClusteringAlgo);
 
-	/**
-	 * Detect communities.
-	 */
 	void run() override;
 
 	/**
-	 * Returns the result of the run method or throws an error, if the algorithm hasn't run yet.
-	 * @return partition of the node set
+	 * Returns the detected communities.
+	 * @return cover containing all detected communities
 	 */
 	Cover getCover();
 
-	/**
-	 * Get a string representation of the algorithm.
-	 *
-	 * @return string representation of algorithm and parameters.
-	 */
 	std::string toString() const override;
 
 	/**
-	 * Get additional information about the execution.
-	 * @return A map that maps a name to a value.
-	 */
-	std::unordered_map<std::string, double> getExecutionInfo();
-
-	/**
-	 * Get the partitions of the ego-nets. A partition maps a node to its partition ID.
-	 * @return A vector of the partitions.
+	 * Get the partitions of the ego-nets. A ego-net partition maps a node to its partition ID.
+	 * @return A vector of the ego-net partitions.
 	 */
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
 
@@ -100,14 +93,18 @@ public:
 private:
 
 	const Graph &G;
-	PartitionFunction localClusterAlgo, globalClusterAlgo;
+	PartitionFunction localClusteringAlgo, globalClusteringAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
+	// for each node: (global node ID, set ID in ego-net).
+	// Includes nodes of the extended ego-net. These partitions are not by the algorithm itself,
+	// as we only need the nodes of the original ego-net. The partitions are only useful for
+	// the analysis of the algorithm (use getEgoNetPartitions() to get them).
+	std::vector<std::unordered_map<node, index>> egoNetExtendedPartitions;
 	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
 	Graph personaGraph; // graph with the split personas
 	Partition personaPartition;
 	Cover cover; // the result of the algorithm
-	mutable std::unordered_map<std::string, double> executionInfo;
 	std::unordered_map<node, std::vector<WeightedEdge>> egoNets;
 	std::unordered_map<std::string, std::string> parameters;
 	AdjacencyArray directedG;
@@ -146,12 +143,14 @@ private:
 
 };
 
+/**
+ * Contains data that is used for the execution of the algorithm.
+ * For performance reasons, most of the data is persistent across the entire algorithm.
+ */
 struct EgoNetData {
 	const Graph &G;
 	const AdjacencyArray &directedG;
 	const Cover &groundTruth;
-	node egoNode;
-	Graph &egoGraph;
 	NodeMapping &egoMapping;
 	const std::unordered_map<std::string, std::string> &parameters;
 	MemoizationTable<double> &sigTable;

@@ -30,6 +30,7 @@ dist/
 cmake-build*
 venv/
 egosplit/plots
+egosplit/saved_plots
 time_seed.dat
 tp
 .nsf*

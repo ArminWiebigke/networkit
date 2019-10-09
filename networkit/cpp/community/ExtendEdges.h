@@ -8,15 +8,16 @@
 #ifndef EXTENDEDGES_H
 #define EXTENDEDGES_H
 
-#include "ExtendScore.h"
+#include "ExtendEgoNetStrategy.h"
 #include "EgoSplitting.h"
 #include "../auxiliary/Timings.h"
 
 namespace NetworKit {
 
-class ExtendEdges : public ExtendScore {
+class ExtendEdges : public ExtendEgoNetStrategy {
 public:
-	explicit ExtendEdges(const EgoNetData &egoNetData, count maxCandidates);
+	explicit ExtendEdges(const EgoNetData &egoNetData, count maxCandidates,
+	                     const Graph &egoGraph, node egoNode);
 
 	void run() override;
 

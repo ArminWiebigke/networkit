@@ -19,6 +19,13 @@ namespace NetworKit {
  */
 class ParallelPartitionCoarsening: public GraphCoarsening {
 public:
+	/**
+	 * All nodes in G have to be assigned a valid subset (!= none) by zeta
+	 * @param G
+	 * @param zeta
+	 * @param useGraphBuilder
+	 * @param parallel
+	 */
 	ParallelPartitionCoarsening(const Graph& G, const Partition& zeta, bool useGraphBuilder = true, bool parallel = true);
 
 	void run() override;

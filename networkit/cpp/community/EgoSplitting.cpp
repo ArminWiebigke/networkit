@@ -36,8 +36,8 @@ EgoSplitting::EgoSplitting(const Graph &G)
 		algo.run();
 		return algo.getPartition();
 	};
-	localClusterAlgo = clusterAlgo;
-	globalClusterAlgo = clusterAlgo;
+	localClusteringAlgo = clusterAlgo;
+	globalClusteringAlgo = clusterAlgo;
 	init();
 }
 
@@ -50,8 +50,8 @@ EgoSplitting::EgoSplitting(const Graph &G,
                            PartitionFunction localClusterAlgo,
                            PartitionFunction globalClusterAlgo)
 		: G(G),
-		  localClusterAlgo(std::move(localClusterAlgo)),
-		  globalClusterAlgo(std::move(globalClusterAlgo)) {
+		  localClusteringAlgo(std::move(localClusterAlgo)),
+		  globalClusteringAlgo(std::move(globalClusterAlgo)) {
 	init();
 }
 
@@ -59,77 +59,57 @@ void EgoSplitting::init() {
 	hasRun = false;
 	personaEdges.resize(G.upperNodeIdBound());
 	egoNetPartitions.resize(G.upperNodeIdBound());
+	egoNetExtendedPartitions.resize(G.upperNodeIdBound());
 	egoNetPartitionCounts.resize(G.upperNodeIdBound(), 0);
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 	directedG = AdjacencyArray(G);
 
 	parameters["storeEgoNet"] = "No";
-	parameters["addEgoNode"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
 	parameters["maxEgoNetsStored"] = "2000";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
-	parameters["connectPersonasStrat"] = "spanning";
-	parameters["personaEdgeWeightFactor"] = "1";
 	parameters["normalizePersonaCut"] = "No";
-	parameters["normalizePersonaWeights"] = "unweighted";
+	parameters["connectPersonasStrat"] = "spanning";
 	parameters["maxPersonaEdges"] = "1";
+	parameters["normalizePersonaWeights"] = "unweighted";
 	parameters["iterationWeight"] = "No";
 
-	// Parameters for weighted edges
-	parameters["weightFactor"] = "1";
-	parameters["weightOffset"] = "0";
-
 	// Parameters for ego-net extension
-	parameters["extendOverDirected"] = "No";
-	parameters["Maximum Extend Factor"] = "1";
-	parameters["addNodesExponent"] = "0.8";
-	parameters["edgesBetweenNeigNeig"] = "Yes";
-	parameters["minNodeDegree"] = "0";
-	parameters["triangleThreshold"] = "0";
-	parameters["onlyDirectedCandidates"] = "Yes";
-	parameters["extendDirectedBack"] = "Yes";
+	parameters["Maximum Extend Factor"] = "5";
+	parameters["addNodesExponent"] = "0.5";
+	parameters["minNodeDegree"] = "2";
 	parameters["Extend and Partition Iterations"] = "1";
+	parameters["Extend EgoNet Strategy"] = "Edges";
+
+	// Parameters for Edges
+	parameters["Edges Score Strategy"] = "Edges pow 2 div Degree";
 
 	// Parameters for significance extension
-	parameters["Extend and Partition Iterations"] = "2";
-	parameters["Sig Extend Base Clustering"] = "None";
+//	parameters["Extend and Partition Iterations"] = "2";
+	parameters["Significance Base Extend"] = "None";
 	parameters["maxSignificance"] = "0.1";
 	parameters["orderedStatPos"] = "0.1";
-	parameters["sortGroups"] = "No";
-	parameters["useSignInterpol"] = "Yes";
-	parameters["maxGroupsConsider"] = "5";
+	parameters["sortGroups"] = "Significance";
+	parameters["maxGroupsConsider"] = "99";
 	parameters["signMerge"] = "Yes";
-	parameters["useSigMemo"] = "Yes";
+	parameters["useSigMemo"] = "No";
 	parameters["minEdgesToGroupSig"] = "1";
 	parameters["sigSecondRoundStrat"] = "updateCandidates";
-	parameters["secondarySigExtRounds"] = "3";
+	parameters["secondarySigExtRounds"] = "99";
 	parameters["onlyCheckSignOfMaxCandidates"] = "Yes";
 	parameters["Check Candidates Factor"] = "10";
 	parameters["onlyUpdatedCandidates"] = "Yes";
-
-	// Parameters for Edgess
-	parameters["Extend EgoNet Strategy"] = "Edges";
-	parameters["Edges Score Strategy"] = "Edges^2 / Degree";
-	parameters["Edges Iterative"] = "No";
-
-	// Test parameters
-//	parameters["storeEgoNet"] = "Yes";
-//	parameters["connectPersonas"] = "No";
-//	parameters["processEgoNet"] = "extend";
-//	parameters["Extend EgoNet Strategy"] = "Significance";
-//	parameters["Edges Score Strategy"] = "score";
-
 }
 
 void EgoSplitting::run() {
-	timings.clear();
+	if (hasRun)
+		throw std::runtime_error("Algorithm has already been run!");
+	assert(timings.empty());
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 	timer.start();
-	if (Aux::stringToDouble("0.3") == 0)
-		throw std::runtime_error("Can't convert numbers because of wrong locale!");
 	if (G.numberOfSelfLoops() > 0)
 		throw std::runtime_error("No self-loops allowed!");
 //	addTime(timer, "0  Setup");
@@ -161,10 +141,6 @@ void EgoSplitting::run() {
 	hasRun = true;
 }
 
-std::string EgoSplitting::toString() const {
-	return "EgoSplitting";
-}
-
 void EgoSplitting::createEgoNets() {
 	NodeMapping egoMapping(G); // Assign local IDs to the neighbors
 
@@ -174,68 +150,87 @@ void EgoSplitting::createEgoNets() {
 	std::vector<std::vector<count>> edgesToGroups(G.upperNodeIdBound());
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
+	EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters,
+	                      sigTable, nodeScores, significantGroup, edgesToGroups};
 
-	G.forNodes([&](node u) {
-		INFO("Create EgoNet for Node ", u, "/", G.upperNodeIdBound());
+	G.forNodes([&](node egoNode) {
+		INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 		handler.assureRunning();
 		timer.start();
-		count degree = G.degree(u);
-		Graph egoGraph(degree, true);
-		EgoNetData egoNetData{G, directedG, groundTruth, u, egoGraph, egoMapping, parameters,
-						sigTable, nodeScores, significantGroup, edgesToGroups};
 
+		Graph egoGraph(G.degree(egoNode), true);
+		// Find neighbors == nodes of the ego-net
+		G.forEdgesOf(egoNode, [&](node, node v) {
+			egoMapping.addNode(v);
+		});
+		// Find all triangles and add the edges to the egoGraph
+		G.forEdgesOf(egoNode, [&](node, node v, edgeweight weight1) {
+			directedG.forEdgesOf(v, [&](node, node w, edgeweight weight2) {
+				if (egoMapping.isMapped(w)) {
+					// we have found a triangle u-v-w
+					egoGraph.addEdge(egoMapping.local(v), egoMapping.local(w), weight2);
+				}
+			});
+		});
+		addTime(timer, "10    Build EgoNet");
 
-		INFO("Extend and partition EgoNet");
-		EgoNetPartition extAndPartition{egoNetData, localClusterAlgo};
+		EgoNetPartition extAndPartition(egoNetData, egoNode, egoGraph, localClusteringAlgo);
 		extAndPartition.run();
 		Partition egoPartition = extAndPartition.getPartition();
+		Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
 		addTimings(extAndPartition.getTimings(), "11");
 		addTime(timer, "11    Extend and Partition EgoNet");
 
+		if (parameters.at("storeEgoNet") == "Yes") // only for analysis
+			storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
+		addTime(timer, "15    Store EgoNet");
 
-		INFO("Connect Personas of one node");
-		if (parameters.at("connectPersonas") == "Yes")
-			personaEdges[u] = connectEgoPartitionPersonas(egoGraph, egoPartition);
-		addTime(timer, "13    Connect Personas");
-
-
-		INFO("Store EgoNet");
-		if (parameters.at("storeEgoNet") == "Yes")
-			storeEgoNet(egoGraph, egoMapping, u);
-		addTime(timer, "15    Copy EgoNet");
-
-
-		INFO("Build EgoNet Partition Map");
-		// Insert nodes into ego-net data structure
-		for (node i : egoGraph.nodes())
-			egoNetPartitions[u].emplace(egoMapping.global(i), egoPartition.subsetOf(i));
-		assert(egoNetPartitions[u].size() == egoGraph.numberOfNodes());
-		egoNetPartitionCounts[u] = egoPartition.numberOfSubsets();
+		// Store ego-net partition with extended nodes
+		for (node i : extendedEgoGraph.nodes()) {
+			egoNetExtendedPartitions[egoNode].emplace(egoMapping.global(i),
+			                                          egoPartition.subsetOf(i));
+		}
+//		assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
+		// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
+		Partition directNeighborPartition(egoGraph.upperNodeIdBound());
+		directNeighborPartition.setUpperBound(egoPartition.upperBound());
+		egoGraph.forNodes([&](node v) {
+			directNeighborPartition.addToSubset(egoPartition.subsetOf(v), v);
+		});
+		directNeighborPartition.compact(true);
+		egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
+//		assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
+		for (node i : G.neighbors(egoNode)) {
+			egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
+					egoMapping.local(i)));
+		}
 		addTime(timer, "17    Store EgoNet Partition");
 
+		if (parameters.at("connectPersonas") == "Yes")
+			personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
+		addTime(timer, "13    Connect Personas");
 
-		INFO("Reset egoMapping");
 		egoMapping.reset();
 		addTime(timer, "1x    Clean up");
 	});
 }
 
-
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
+	// TODO: Do we have to store this here?
 	// Only store a given maximum of ego-nets (expected)
 	count maxEgoNets = std::stoi(parameters.at("maxEgoNetsStored"));
-	double storePercnt = maxEgoNets * 1.0 / G.numberOfNodes();
-	if (Aux::Random::real() > storePercnt)
+	double storeChance = maxEgoNets * 1.0 / G.numberOfNodes();
+	if (Aux::Random::real() > storeChance)
 		return;
 
-	// Get EgoNet with gloabl node ids
+	// Get EgoNet with global node ids
 	std::vector<WeightedEdge> edges;
 	edges.reserve(egoGraph.numberOfEdges());
-	egoGraph.forNodes([&](node u){
+	egoGraph.forNodes([&](node u) {
 		node globalId = egoMapping.global(u);
 		edges.emplace_back(globalId, globalId, 1);
 	});
-	egoGraph.forEdges([&](node u, node v, edgeweight weight){
+	egoGraph.forEdges([&](node u, node v, edgeweight weight) {
 		edges.emplace_back(egoMapping.global(u), egoMapping.global(v), weight);
 	});
 	egoNets[egoNode] = edges;
@@ -370,20 +365,19 @@ void EgoSplitting::splitIntoPersonas() {
 	}
 	personaOffsets[G.upperNodeIdBound()] = sum;
 	personaGraph = Graph(sum, true);
-
 }
 
 void EgoSplitting::connectPersonas() {
 	auto getPersona = [&](node u, index i) {
+		assert(i < egoNetPartitionCounts[u]);
 		return personaOffsets[u] + i;
 	};
 
 	// Connect personas of each node
-	double weightFactor = Aux::stringToDouble(parameters.at("personaEdgeWeightFactor"));
 	G.forNodes([&](node u) {
 		for (auto edge : personaEdges[u]) {
 			personaGraph.addEdge(getPersona(u, edge.firstNode), getPersona(u, edge.secondNode),
-			                     edge.weight * weightFactor);
+			                     edge.weight);
 		}
 	});
 
@@ -395,8 +389,6 @@ void EgoSplitting::connectPersonas() {
 		personaGraph.addEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second),
 		                     weight);
 	});
-
-//	egoNetPartitions.clear();
 
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
@@ -423,8 +415,7 @@ void EgoSplitting::connectPersonas() {
 }
 
 void EgoSplitting::createPersonaClustering() {
-	personaPartition = globalClusterAlgo(personaGraph);
-	assert(personaPartition.upperBound() <= personaGraph.upperNodeIdBound());
+	personaPartition = globalClusteringAlgo(personaGraph);
 }
 
 void EgoSplitting::createCover() {
@@ -459,8 +450,8 @@ Cover EgoSplitting::getCover() {
 	return cover;
 }
 
-std::unordered_map<std::string, double> EgoSplitting::getExecutionInfo() {
-	return executionInfo;
+std::string EgoSplitting::toString() const {
+	return "EgoSplitting";
 }
 
 std::unordered_map<node, std::vector<WeightedEdge>> EgoSplitting::getEgoNets() {
@@ -468,7 +459,7 @@ std::unordered_map<node, std::vector<WeightedEdge>> EgoSplitting::getEgoNets() {
 }
 
 std::vector<std::unordered_map<node, index>> EgoSplitting::getEgoNetPartitions() {
-	return egoNetPartitions;
+	return egoNetExtendedPartitions;
 }
 
 void
@@ -480,7 +471,6 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
-
 }
 
 } /* namespace NetworKit */

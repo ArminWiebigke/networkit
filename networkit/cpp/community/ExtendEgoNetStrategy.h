@@ -1,12 +1,12 @@
 /*
- * ExtendScore.h
+ * ExtendEgoNetStrategy.h
  *
  * Created: 2019-06-19
  * Author: Armin Wiebigke
  */
 
-#ifndef EXTENDSCORE_H
-#define EXTENDSCORE_H
+#ifndef EXTENDE_EGO_NET_STRATEGY_H
+#define EXTENDE_EGO_NET_STRATEGY_H
 
 #include <unordered_map>
 
@@ -16,12 +16,12 @@
 
 namespace NetworKit {
 
-class ExtendScore : public Algorithm, public Timings {
+class ExtendEgoNetStrategy : public Algorithm, public Timings {
 public:
-	using NodeScore = std::pair<node, double>;
-	ExtendScore(const EgoNetData &egoNetData, count maxExtendedNodes);
+	ExtendEgoNetStrategy(const EgoNetData &egoNetData, count maxExtendedNodes,
+	                     const Graph &egoGraph, node egoNode);
 
-	virtual std::vector<NodeScore> getScores();
+	virtual std::vector<node> getNodes();
 
 protected:
 	const Graph &G;
@@ -30,10 +30,10 @@ protected:
 	const NodeMapping &egoMapping;
 	node egoNode;
 	const std::unordered_map<std::string, std::string> &parameters;
-	std::vector<NodeScore> result;
+	std::vector<node> result;
 	count maxExtendedNodes;
 };
 
 } /* namespace NetworKit */
 
-#endif //EXTENDSCORE_H
+#endif //EXTENDE_EGO_NET_STRATEGY_H

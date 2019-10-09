@@ -17,7 +17,7 @@
 #include "../structures/Partition.h"
 #include "../base/Algorithm.h"
 #include "EgoSplitting.h"
-#include "ExtendScore.h"
+#include "ExtendEgoNetStrategy.h"
 #include "../structures/MemoizationTable.h"
 
 namespace NetworKit {
@@ -34,11 +34,12 @@ struct GroupStubs {
 	std::vector<count> externalNodes;
 };
 
-class ExtendSignificance : public ExtendScore {
+class ExtendSignificance : public ExtendEgoNetStrategy {
 
 public:
-	ExtendSignificance(const EgoNetData &egoNetData, const Partition &basePartition,
-	                   count maxCandidates);
+	ExtendSignificance(const EgoNetData &egoNetData,
+	                   const Partition &basePartition, count maxCandidates,
+	                   const Graph &egoGraph, node egoNode);
 
 	void run() override;
 

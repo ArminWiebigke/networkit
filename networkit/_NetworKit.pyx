@@ -4956,7 +4956,6 @@ cdef extern from "cpp/community/EgoSplitting.h":
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
 		unordered_map[string, double] getTimings() except +
-		unordered_map[string, double] getExecutionInfo() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
 		unordered_map[node, vector[_WeightedEdge]] getEgoNets() except +
 		void setParameters(map[string, string]) except +
@@ -5017,12 +5016,6 @@ cdef class EgoSplitting(Algorithm):
 	"""
 	def getTimings(self):
 		return (<_EgoSplitting*>(self._this)).getTimings()
-
-	"""
-	Get the partition counts.
-	"""
-	def getExecutionInfo(self):
-		return (<_EgoSplitting*>(self._this)).getExecutionInfo()
 
 	"""
 	Get the partitions of the EgoNets.

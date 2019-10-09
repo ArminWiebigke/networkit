@@ -20,9 +20,10 @@
 
 namespace NetworKit {
 
-ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData, const Partition &basePartition,
-                                       count maxCandidates)
-		: ExtendScore(egoNetData, maxCandidates),
+ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
+                                       const Partition &basePartition, count maxCandidates,
+                                       const Graph &egoGraph, node egoNode)
+		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
 		  basePartition(basePartition),
 		  sigTable(egoNetData.sigTable),
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
@@ -87,29 +88,6 @@ void ExtendSignificance::run() {
 			candidatesSorted.resize(evalCandidates);
 	}
 
-
-//	for (node v : directNeighbors)
-//			directedG.forEdgesOf(v, countEdge);
-//	for (node w : candidates) {
-//		directedG.forEdgesOf(w, [&](node, node v, edgeweight weight) {
-//			if (isDirectNeighbor(v))
-//				edgesToGroups[w][egoToCoarse[egoMapping.local(v)]] += weight;
-//		});
-//	}
-//	auto candidatesDir = candidates;
-//	candidates.clear();
-//	auto edgeScoresDir = edgesToGroups;
-//	edgesToGroups = std::vector<std::map<node, double>>(G.upperNodeIdBound());
-//	for (node v : directNeighbors) {
-//		G.forEdgesOf(v, countEdge);
-//	}
-//	assert(candidatesDir.size() <= candidates.size());
-//	for (node w : candidates){
-//		for (auto pair : edgesToGroups[w])
-//			assert(edgeScoresDir[w][pair.first] <= edgesToGroups[w][pair.first]);
-//	}
-
-	// Check
 	auto check = [&]() {
 		for (node v : candidates) {
 			std::unordered_map<node, count> groupEdges;
@@ -136,8 +114,7 @@ void ExtendSignificance::run() {
 
 #ifndef NDEBUG
 	std::set<node> resultSet;
-	for (auto pair : result) {
-		node v = pair.first;
+	for (node v : result) {
 		assert(resultSet.count(v) == 0);
 		resultSet.insert(v);
 	}
@@ -290,31 +267,13 @@ ExtendSignificance::getCandidates() {
 		candidates.resize(newEnd - candidates.begin());
 	};
 
-	if (parameters.at("extendOverDirected") == "Yes") {
-		for (node v : directNeighbors) {
-			node vLoc = egoToCoarse[egoMapping.local(v)];
-			directedG.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-				countEdge(vLoc, w, weight);
-			});
-		}
-		removeNeighborCandidates();
-		if (parameters.at("extendDirectedBack") == "Yes") {
-			for (node w : candidates) {
-				directedG.forEdgesOf(w, [&](node, node v, edgeweight weight) {
-					if (isDirectNeighbor(v))
-						edgesToGroups[w][egoToCoarse[egoMapping.local(v)]] += (count) weight;
-				});
-			}
-		}
-	} else {
-		for (node v : directNeighbors) {
-			node vLoc = egoToCoarse[egoMapping.local(v)];
-			G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-				countEdge(vLoc, w, weight);
-			});
-		}
-		removeNeighborCandidates();
+	for (node v : directNeighbors) {
+		node vLoc = egoToCoarse[egoMapping.local(v)];
+		G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
+			countEdge(vLoc, w, weight);
+		});
 	}
+	removeNeighborCandidates();
 	removeEgoNodeCandidate(candidates);
 	return candidates;
 }
@@ -343,7 +302,9 @@ ExtendSignificance::checkCandidates(const std::string &t_prefix) {
 	}
 }
 
-bool ExtendSignificance::enoughCandidates() const { return result.size() >= maxExtendedNodes; }
+bool ExtendSignificance::enoughCandidates() const {
+	return result.size() >= maxExtendedNodes;
+}
 
 void
 ExtendSignificance::checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v) {
@@ -418,7 +379,7 @@ bool ExtendSignificance::checkSingleGroups(node v,
 bool ExtendSignificance::addIfSignificant(node v, double significance, node group) {
 	if (significance <= maxSignificance) {
 		double score = 1 - significance - scorePenalty;
-		result.emplace_back(v, score);
+		result.push_back(v);
 		significantGroup[v] = group;
 		addedCandidates.insert(v);
 		return true;
@@ -528,8 +489,8 @@ bool ExtendSignificance::isParallel() const {
 }
 
 void ExtendSignificance::resetData() {
-	for (const NodeScore &pair : result) {
-		significantGroup[pair.first] = none;
+	for (node u : result) {
+		significantGroup[u] = none;
 	}
 	for (node v : allCandidates) {
 		edgesToGroups[v].clear();

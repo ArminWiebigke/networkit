@@ -9,8 +9,10 @@
 
 namespace NetworKit {
 
-ExtendEdges::ExtendEdges(const EgoNetData &egoNetData, count maxCandidates)
-		: ExtendScore(egoNetData, maxCandidates), nodeScores(egoNetData.nodeScores) {
+ExtendEdges::ExtendEdges(const EgoNetData &egoNetData, count maxCandidates,
+                         const Graph &egoGraph, node egoNode)
+		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
+		  nodeScores(egoNetData.nodeScores) {
 
 }
 
@@ -28,98 +30,52 @@ void ExtendEdges::run() {
 			candidates.push_back(w);
 		nodeScores[w] += weight;
 	};
-
-	if (parameters.at("extendOverDirected") == "Yes") {
-		for (node v : directNeighbors)
-			directedG.forEdgesOf(v, countEdges);
-		if (parameters.at("extendDirectedBack") == "Yes") {
-			for (node v : candidates) {
-				directedG.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-					if (isDirectNeighbor(w))
-						nodeScores[v] += weight;
-				});
-			}
-		}
-	} else {
-		for (node v : directNeighbors) {
-			G.forEdgesOf(v, countEdges);
-		}
+	for (node v : directNeighbors) {
+		G.forEdgesOf(v, countEdges);
 	}
 	addTime(timer, "3    Count edges");
 
 	std::vector<node> all_candidates(candidates);
+	auto shouldBeRemoved = [&](node v){
+		return isDirectNeighbor(v) || v == egoNode;
+	};
 	auto newEnd = std::remove_if(candidates.begin(), candidates.end(), [&](node v) {
-		return (isDirectNeighbor(v) || v == egoNode);
+		return shouldBeRemoved(v);
 	});
 	candidates.resize(newEnd - candidates.begin());
 	addTime(timer, "5    Remove neighbors as candidates");
 
-	if (parameters.at("Edges Iterative") == "Yes") {
-		count iterations = 10;
-		count maxNodesAdded = maxExtendedNodes / iterations + 1;
-		std::vector<std::pair<double, node>> candidateScores;
-		for (node v : candidates) {
-			double numEdges = nodeScores[v];
-			if (numEdges >= 3) {
-				double score = normalizeScore(v, numEdges);
-				candidateScores.emplace_back(score, v);
-			}
-		}
 
-		for (count i = 0; i < iterations; ++i) {
-			std::sort(candidateScores.begin(), candidateScores.end());
-			std::vector<node> addedCandidates;
-			for (count j = 0; j < maxNodesAdded; ++j) {
-				if (candidateScores.empty())
-					break;
-				auto pair = candidateScores.back();
-				node v = pair.second;
-				result.emplace_back(v, pair.first);
-				nodeScores[v] = 0;
-				addedCandidates.push_back(v);
-				candidateScores.pop_back();
-			}
-			if (candidateScores.empty())
-				break;
-
-			// Update number of edges
-			for (node v : addedCandidates) {
-				G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-					if (nodeScores[w] > 0)
-						nodeScores[w] += weight;
-				});
-			}
-
-			// Update remaining candidates
-			for (auto &pair : candidateScores) {
-				node v = pair.second;
-				double numEdges = nodeScores[v];
-				pair.first = normalizeScore(v, numEdges);
-			}
+	// Calculate score for each candidate
+	using NodeAndScore = std::pair<node, double>;
+	std::vector<NodeAndScore> candidatesAndScores;
+	candidatesAndScores.reserve(candidates.size());
+	for (node v : candidates) {
+		double numEdges = nodeScores[v];
+		if (numEdges >= 3) {
+			double score = normalizeScore(v, numEdges);
+			candidatesAndScores.emplace_back(v, score);
 		}
-	} else {
-		// Calculate score for each candidate
-		result.reserve(candidates.size());
-		for (node v : candidates) {
-			double numEdges = nodeScores[v];
-			if (numEdges >= 3) {
-				double score = normalizeScore(v, numEdges);
-				result.emplace_back(v, score);
-			}
-		}
-		addTime(timer, "7    Calculate score");
 	}
+	addTime(timer, "7    Calculate score");
 
-	std::sort(result.begin(), result.end(), [](NodeScore a, NodeScore b) {
-		return a.second > b.second;
-	});
-	if (result.size() > maxExtendedNodes)
-		result.resize(maxExtendedNodes);
+
+	std::sort(candidatesAndScores.begin(), candidatesAndScores.end(),
+	          [](NodeAndScore a, NodeAndScore b) {
+		          return a.second > b.second;
+	          });
+	if (candidatesAndScores.size() > maxExtendedNodes)
+		candidatesAndScores.resize(maxExtendedNodes);
+	for (NodeAndScore nodeAndScore : candidatesAndScores) {
+		result.push_back(nodeAndScore.first);
+	}
 	addTime(timer, "9    Take best candidates");
 
 	for (node v: all_candidates)
 		nodeScores[v] = 0.0;
 	addTime(timer, "a    Reset node scores");
+
+	hasRun = true;
 }
 
 double ExtendEdges::normalizeScore(node v, double score) const {

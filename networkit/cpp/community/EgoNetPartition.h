@@ -22,46 +22,52 @@
 
 namespace NetworKit {
 
+/**
+ * Create a partition of the ego-net of a given node.
+ * Optionally, the ego-net is extended before the partitioning.
+ */
 class EgoNetPartition : public CommunityDetectionAlgorithm, public Timings {
 	using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:
-	EgoNetPartition(const EgoNetData &egoNetData,
+	EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
 	                const PartitionFunction &partitionFunction);
-
-	bool isParallel() const override;
 
 	void run() override;
 
-	/**
-	 * Get a string representation of the algorithm.
-	 *
-	 * @return string representation of algorithm and parameters.
-	 */
+	bool isParallel() const override;
+
 	std::string toString() const override;
+
+	/**
+	 * Get the extended ego-net.
+	 * @return extended ego-net graph
+	 */
+	Graph getExtendedEgoGraph() const;
 
 private:
 	const AdjacencyArray &directedG;
-	Graph &egoGraph;
+	Graph egoGraph;
 	NodeMapping &egoMapping;
 	node egoNode;
 	const PartitionFunction &partitionFunction;
 	const std::unordered_map<std::string, std::string> &parameters;
 	const Cover &groundTruth;
 	const EgoNetData &egoNetData;
-	int it_char;
 
 	void partitionEgoNet();
 
 	void extendEgoNet(const std::string &extendStrategy);
 
-	void removeLowDegreeNodes(count minDegree, count directNeighborsCnt) const;
+	void removeLowDegreeNodes(count minDegree, count directNeighborsBound);
 
 	Partition createGroundTruthPartition() const;
 
+	count extendIterationsCount() const;
+
+	void extendAndPartition();
 };
 
 } /* namespace NetworKit */
-
 
 #endif /* EGONETPARTITION_H */
