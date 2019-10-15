@@ -15,12 +15,20 @@
 namespace NetworKit {
 
 /**
- * Stores the cumulative logarithmus to efficiently calculate stochastic distributions.
+ * Efficient calculation of stochastic distributions.
  */
 class StochasticDistribution {
 public:
+	/**
+	 *
+	 * @param maxValue maximal value that can be used
+	 */
 	explicit StochasticDistribution(index maxValue);
 
+	/**
+	 * Set the maximal possible value that can be used as an input for the distributions.
+	 * @param maxValue new maximal value
+	 */
 	void setMaxValue(count maxValue);
 
 	/**
@@ -100,19 +108,15 @@ public:
 	                                                    count extStubs) const;
 
 private:
-//	static std::vector<double> data;
-	std::vector<double> data;
+	std::vector<double> logSum; // logSum[x] = Sum(log(i)), i = 1 to x
 	static constexpr double precision = 1e-6;
-
-	double logHyper(count N, count K, count n, count k) const;
 
 	/**
      * @return natural logarithm of the binomial coefficient "n choose k"
      */
 	inline double logBinomCoeff(count n, count k) const {
-		return data[n] - data[n - k] - data[k];
+		return logSum[n] - logSum[n - k] - logSum[k];
 	};
-
 };
 
 } /* namespace NetworKit */

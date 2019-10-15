@@ -1,6 +1,6 @@
 networkit_add_module(structures
-    AdjacencyArray.cpp
     Cover.cpp
+    LowToHighDirectedGraph.cpp
     NodeMapping.cpp
     Partition.cpp
     UnionFind.cpp

@@ -13,19 +13,20 @@
 #include "../graph/Graph.h"
 #include "../structures/NodeMapping.h"
 #include "../auxiliary/Timings.h"
-#include "../structures/AdjacencyArray.h"
+#include "../structures/LowToHighDirectedGraph.h"
 #include "../structures/Partition.h"
 #include "../base/Algorithm.h"
 #include "EgoSplitting.h"
 #include "ExtendEgoNetStrategy.h"
 #include "../structures/MemoizationTable.h"
+#include "../cleanup/StochasticSignificance.h"
 
 namespace NetworKit {
 
-struct GroupStubs {
-	GroupStubs() = default;
-	explicit GroupStubs(int size) : groupTotal(size), groupOutgoing(size), externalStubs(size),
-	                                externalNodes(size) {
+struct GroupProperties {
+	GroupProperties() = default;
+	explicit GroupProperties(int size) : groupTotal(size), groupOutgoing(size), externalStubs(size),
+	                                     externalNodes(size) {
 	}
 
 	std::vector<count> groupTotal;
@@ -50,19 +51,17 @@ public:
 private:
 	const Partition &basePartition;
 	MemoizationTable<double> &sigTable;
+	const StochasticSignificance &stochasticSignificance;
 	Graph coarseGraph;
-	std::vector<std::vector<count>> &edgesToGroups; // For each candidate: number of edges to the groups
+	SparseVector<std::vector<count>> &edgesToGroups; // For each candidate: number of edges to the groups
 	std::map<node, std::vector<node> > coarseToEgo;
 	std::vector<node> egoToCoarse;
 	std::vector<count> coarseSizes;
-	int orderStatPos = 0;
 	count numGroups = 0;
-	std::vector<std::pair<count, node>> candidatesSorted;
-	double scorePenalty = 0.0;
-	GroupStubs groupStubs;
-	std::vector<node> &significantGroup;
+	std::vector<node> candidatesSorted;
+	GroupProperties groupProperties;
+	SparseVector<node> &significantGroup;
 	std::unordered_set<node> addedCandidates;
-	std::vector<node> allCandidates;
 	// Algorithm parameters
 	const bool useSigMemo;
 	const bool mergeGroups;
@@ -70,22 +69,23 @@ private:
 	const double maxSignificance;
 	const count maxGroupCnt;
 	const count minEdgesToGroup;
+	const bool onlyCheckMaxCandidates;
 
 	void
-	checkCandidates(const std::string &t_prefix);
+	findSignificantCandidates(const std::string &t_prefix);
 
 	std::vector<node> getCandidates();
 
 	node addExtEdges(std::vector<node> &candidates);
 
-	std::vector<std::pair<count, node>> sortCandidatesByEdges(const std::vector<node> &candidates) const;
+	std::vector<node> sortCandidatesByEdges(const std::vector<node> &candidates) const;
 
 	void secondRound();
 
 	void createCoarseGraph();
 
 	double
-	calcScore(int nodeDegree, int kIn, int grOut, int groupExtStubs, int extNodes) const;
+	calcScore(count nodeDegree, count kIn, count grOut, count groupExtStubs, count extNodes) const;
 
 	bool
 	checkMergedGroups(const std::string &t_prefix, Aux::Timer &timer, node v,
@@ -101,7 +101,7 @@ private:
 
 	void removeEgoNodeCandidate(std::vector<node> &candidates);
 
-	GroupStubs calcGroupStubsCounts() const;
+	GroupProperties calcGroupStubsCounts() const;
 
 	std::vector<std::pair<double, node>> sortGroupsByEdges(node v) const;
 
@@ -110,11 +110,11 @@ private:
 
 	void updateCandidates();
 
-	bool enoughCandidates() const;
-
-	void removeAddedAsCandidates();
+	bool enoughSignificantCandidates() const;
 
 	void resetData();
+
+	void setMemoizationFunction() const;
 };
 
 } /* namespace NetworKit */

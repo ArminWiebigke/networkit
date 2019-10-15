@@ -33,11 +33,15 @@ SingleCommunityCleanUp::clean(const Community &inputCommunity) {
 	return cleanedCommunity;
 }
 
+/**
+ * Returns a community of significant nodes
+ * @param onlyUseOriginalCommunity If false, consider neighbors of the input community and the nodes
+ * of the input community. If true, consider only the nodes of the input community.
+ */
 Community
 SingleCommunityCleanUp::calculateSignificantNodes(
 		const Community &inputCommunity, bool onlyUseOriginalCommunity) {
-	originalCommunity = inputCommunity;
-	community = originalCommunity;
+	community = inputCommunity;
 	getCandidatesAndSetUpCalculation(onlyUseOriginalCommunity);
 	std::vector<node> significantNeighbors;
 	while (!community.empty()) {
@@ -59,15 +63,13 @@ SingleCommunityCleanUp::calculateSignificantNodes(
 
 void
 SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCommunity) {
-	candidates.clear();
 	for (node u : community) {
-		isInCommunity[u] = true;
-		isInOriginalCommunity[u] = true;
-		assert(originalCommunity.count(u) == 1);
+		isInCommunity.insert(u, true);
+		isInOriginalCommunity.insert(u, true);
 	}
 	auto tryAddCandidate = [&](node u) {
 		if (!isInCommunity[u] && !isCandidate[u]) {
-			isCandidate[u] = true;
+			isCandidate.insert(u, true);
 			candidates.push_back(u);
 			assert(edgesToCommunity[u] == 0);
 		}
@@ -82,6 +84,8 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 			bool validCandidate = isInOriginalCommunity[neighbor] || !onlyUseOriginalCommunity;
 			if (validCandidate) {
 				tryAddCandidate(neighbor);
+				if (edgesToCommunity[neighbor] == 0)
+					edgesToCommunity.insert(neighbor, 0);
 				edgesToCommunity[neighbor] += 1;
 			}
 		});
@@ -89,29 +93,6 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 
 	externalNodes = graph.numberOfNodes() - community.size();
 	externalStubs = 2 * graph.numberOfEdges() - totalCommunityStubs;
-}
-
-void
-SingleCommunityCleanUp::reset() {
-	for (node u : candidates) {
-		edgesToCommunity[u] = 0;
-		isCandidate[u] = 0;
-	}
-	for (node u : community) {
-		edgesToCommunity[u] = 0;
-		isInCommunity[u] = false;
-	}
-	for (node u : originalCommunity) {
-		isInOriginalCommunity[u] = false;
-		assert(edgesToCommunity[u] == 0);
-	}
-	for (index i = 0; i < graph.upperNodeIdBound(); ++i) {
-		assert(edgesToCommunity[i] == 0);
-		assert(isCandidate[i] == 0);
-		assert(isInCommunity[i] == 0);
-		assert(isInOriginalCommunity[i] == 0);
-		assert(edgesToCommunity[i] == 0);
-	}
 }
 
 // remove the node with the worst (= highest) score from the community
@@ -122,14 +103,14 @@ void SingleCommunityCleanUp::removeWorstNode(
 	// TODO: Calculate the score of the nodes inside the community separately
 	auto worstNodeIt = std::max_element(internalScores.begin(), internalScores.end(),
 	                                    [](const ScoreStruct &a, const ScoreStruct &b) {
-		                                    return a.sScore < b.sScore;
+		                                    return a.rScore < b.rScore;
 	                                    });
 	node worstNode = worstNodeIt->nodeId;
 	assert(isInCommunity[worstNode]);
 	community.erase(worstNode);
 	isInCommunity[worstNode] = false;
 	candidates.push_back(worstNode);
-	isCandidate[worstNode] = true;
+	isCandidate.insert(worstNode, true);
 	externalNodes += 1;
 	assert(externalNodes == graph.numberOfNodes() - community.size());
 	count degree = graph.degree(worstNode);
@@ -144,6 +125,41 @@ void SingleCommunityCleanUp::removeWorstNode(
 	});
 }
 
+std::vector<SingleCommunityCleanUp::ScoreStruct>
+SingleCommunityCleanUp::calculateInternalScores() const {
+	std::vector<ScoreStruct> internalScores;
+	for (node u : community) {
+		count degree = graph.degree(u);
+		// Calculate s-Score as if the node was not part of the community
+		count adjustedOutgoingStubs = outgoingCommunityStubs + 2 * edgesToCommunity[u] - degree;
+		count adjustedExternalStubs = externalStubs + degree;
+		double score = stochastic.rScore(
+				degree, edgesToCommunity[u], adjustedOutgoingStubs, adjustedExternalStubs);
+		internalScores.emplace_back(score, u);
+	}
+	return internalScores;
+}
+
+
+std::vector<SingleCommunityCleanUp::ScoreStruct>
+SingleCommunityCleanUp::calculateCandidateScores() const {
+	std::vector<ScoreStruct> candidateScores;
+	for (node u : candidates) {
+		assert(!isInCommunity[u]);
+		double score = stochastic.rScore(graph.degree(u), edgesToCommunity[u],
+		                                 outgoingCommunityStubs, externalStubs);
+		if (score < scoreThreshold)
+			candidateScores.emplace_back(score, u);
+	}
+	std::sort(candidateScores.begin(), candidateScores.end(),
+	          [](const ScoreStruct &a, const ScoreStruct &b) {
+		          return a.rScore < b.rScore;
+	          });
+	return candidateScores;
+}
+
+namespace {
+// TODO: What is the reason behind this?
 double fitted_exponent(int N) {
 	double l = log(double(N));
 
@@ -161,17 +177,17 @@ double fitted_exponent(int N) {
 
 	return 1;
 }
+}
 
 std::vector<node>
 SingleCommunityCleanUp::findSignificantCandidates(std::vector<ScoreStruct> scores) const {
 	int position = 1;
 	int significantNodesCount = 0;
+	double threshold = significanceThreshold / fitted_exponent(externalNodes);
 	for (auto scoreStruct : scores) {
-		double score = scoreStruct.sScore;
+		double score = scoreStruct.rScore;
 		// significance is the probability Omega_{position}(score, externalNodes)
 		double significance = stochastic.orderStatistic(score, externalNodes, position);
-//		double threshold = significanceThreshold;
-		double threshold = significanceThreshold / fitted_exponent(externalNodes);
 		if (significance < threshold) {
 			// The score is much better than expected in the null model, so the node is significant
 			significantNodesCount = position;
@@ -191,47 +207,31 @@ SingleCommunityCleanUp::findSignificantCandidates(std::vector<ScoreStruct> score
 	return significantNodes;
 }
 
-
-std::vector<SingleCommunityCleanUp::ScoreStruct>
-SingleCommunityCleanUp::calculateCandidateScores() const {
-	std::vector<ScoreStruct> scores;
-	for (node u : candidates) {
-		assert(!isInCommunity[u]);
-		auto score = stochastic.sScore(graph.degree(u), edgesToCommunity[u], outgoingCommunityStubs,
-		                               externalStubs);
-		if (score.first < scoreThreshold)
-			scores.emplace_back(score.first, score.second, u);
+void
+SingleCommunityCleanUp::reset() {
+	isCandidate.reset();
+	edgesToCommunity.reset();
+	isInCommunity.reset();
+	isInOriginalCommunity.reset();
+	for (index i = 0; i < graph.upperNodeIdBound(); ++i) {
+		assert(edgesToCommunity[i] == 0);
+		assert(isCandidate[i] == 0);
+		assert(isInCommunity[i] == 0);
+		assert(isInOriginalCommunity[i] == 0);
+		assert(edgesToCommunity[i] == 0);
 	}
-	std::sort(scores.begin(), scores.end(), [](const ScoreStruct &a, const ScoreStruct &b) {
-		return a.sScore < b.sScore;
-	});
-	return scores;
-}
-
-std::vector<SingleCommunityCleanUp::ScoreStruct>
-SingleCommunityCleanUp::calculateInternalScores() {
-	std::vector<ScoreStruct> internalScores;
-	for (node u : community) {
-		double score, bootInterval;
-		count degree = graph.degree(u);
-		// Calculate s-Score as if the node was not part of the community
-		count adjustedOutgoingStubs = outgoingCommunityStubs + 2 * edgesToCommunity[u] - degree;
-		count adjustedExternalStubs = externalStubs + degree;
-		std::tie(score, bootInterval) = stochastic.sScore(
-				degree, edgesToCommunity[u], adjustedOutgoingStubs, adjustedExternalStubs);
-		internalScores.emplace_back(score, bootInterval, u);
-	}
-	return internalScores;
+	community.clear();
+	candidates.clear();
 }
 
 bool SingleCommunityCleanUp::smallOverlap(const Community &inputCommunity,
                                           const Community &cleanedCommunity) const {
-	Community intersection;
+	std::vector<node> overlap;
 	std::set_intersection(inputCommunity.begin(), inputCommunity.end(),
 	                      cleanedCommunity.begin(), cleanedCommunity.end(),
-	                      std::inserter(intersection, intersection.begin()));
+	                      std::back_inserter(overlap));
 	count largerSize = std::max(inputCommunity.size(), cleanedCommunity.size());
-	double overlapRatio = (double) intersection.size() / largerSize;
+	double overlapRatio = (double) overlap.size() / largerSize;
 //	std::cout << inputCommunity.size() << " -> " << cleanedCommunity.size()
 //	          << (overlapRatio < minOverlapRatio ? " -> bad" : "") << std::endl;
 	return overlapRatio < minOverlapRatio;

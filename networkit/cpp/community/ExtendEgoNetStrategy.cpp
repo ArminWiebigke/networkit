@@ -25,7 +25,7 @@ std::vector<node> ExtendEgoNetStrategy::getNodes() {
 	if (!hasRun)
 		throw std::runtime_error("Run the algorithm first!");
 	hasRun = false;
-	return std::move(result);
+	return std::move(significantCandidates);
 }
 
 } /* namespace NetworKit */

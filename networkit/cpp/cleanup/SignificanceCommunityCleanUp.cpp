@@ -61,7 +61,7 @@ SignificanceCommunityCleanUp::cleanCommunity(const Community &inputCommunity) {
 }
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
-	MergeCommunities mergeCommunities(graph, discardedCommunities, singleCommunityCleanup);
+	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), singleCommunityCleanup);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {
 		cleanedCommunities.addSubset(community);

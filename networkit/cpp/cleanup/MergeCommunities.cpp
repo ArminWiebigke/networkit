@@ -20,7 +20,8 @@ MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> disca
 }
 
 void MergeCommunities::run() {
-	for (count i = 0; i < 2; ++i) {
+	int iterations = 2;
+	for (count i = 0; i < iterations; ++i) {
 		createDiscardedCommunitiesGraph();
 		mergeCommunities();
 		checkMergedCommunities();
@@ -116,15 +117,13 @@ bool MergeCommunities::tryLocalMove(node u) {
 			externalStubs += degree;
 			bool communityIsEmpty = commOut != 0;
 			if (!communityIsEmpty) {
-				auto scoreTuple = stochastic.sScore(degree, numEdgesIntoCommunity,
-				                                    commOut, externalStubs);
-				score = scoreTuple.first;
+				score = stochastic.rScore(degree, numEdgesIntoCommunity,
+				                          commOut, externalStubs);
 			}
 		} else {
-			auto scoreTuple = stochastic.sScore(degree, numEdgesIntoCommunity,
-			                                    outgoingGroupStubs[neighborCommunity],
-			                                    externalStubs);
-			score = scoreTuple.first;
+			score = stochastic.rScore(degree, numEdgesIntoCommunity,
+			                          outgoingGroupStubs[neighborCommunity],
+			                          externalStubs);
 		}
 		if (score < bestScore) {
 			stubsIntoNew = numEdgesIntoCommunity;

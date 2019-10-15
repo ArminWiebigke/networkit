@@ -16,11 +16,11 @@ StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue) 
 
 }
 
-std::pair<double, double>
-StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) const {
+double
+StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) const {
 	assert(kIn <= cOut);
-//	count openStubs = extStubs + cOut; // TODO: Include cOut or not?
-	count openStubs = extStubs;
+	count openStubs = extStubs + cOut; // TODO: Include cOut or not?
+//	count openStubs = extStubs;
 	dist.setMaxValue(openStubs);
 
 	double exactProb = 0, rightCum = 0;
@@ -40,17 +40,16 @@ StochasticSignificance::sScore(count k, count kIn, count cOut, count extStubs) c
 //	double bootInterval = (0.5 + bootRandomness) * exactProb; // TODOe: Use this instead of hypergeom.
 	double score = rightCum + bootInterval;
 //	double score = rightCum + exactProb; // TODO: Use bootInterval or not?
-	assert(score <= 1.001);
+//	assert(score <= 1.001);
 
 	score = std::min(score, 1.);
-	bootInterval = std::min(bootInterval, 1. - score);
-	bootInterval = std::min(bootInterval, score);
 	score = std::max(score, 1e-100);
-	return {score, bootInterval};
+	return score;
 }
 
-double StochasticSignificance::orderStatistic(double sScore, count externalNodes, count pos) const {
-	return dist.rightCumulativeBinomial(sScore, externalNodes, pos);
+double StochasticSignificance::orderStatistic(double rScore, count externalNodes, count pos) const {
+	assert(pos > 0);
+	return dist.rightCumulativeBinomial(rScore, externalNodes, pos);
 }
 
 } /* namespace NetworKit */

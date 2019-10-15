@@ -1,17 +1,17 @@
 /*
- * AdjacencyArray.cpp
+ * LowToHighDirectedGraph.cpp
  *
  * Created: 2018-12-12
  * Author: Armin Wiebigke
  */
 
-#include "AdjacencyArray.h"
+#include "LowToHighDirectedGraph.h"
 
 namespace NetworKit {
 
-AdjacencyArray::AdjacencyArray(const NetworKit::Graph &G) {
+LowToHighDirectedGraph::LowToHighDirectedGraph(const NetworKit::Graph &G) {
     edgesBegin.resize(G.upperNodeIdBound() + 1);
-    edges.resize(G.numberOfEdges());
+    edgeTargets.resize(G.numberOfEdges());
     edgeWeights.resize(G.numberOfEdges());
 
     // direct edge from low to high-degree nodes
@@ -20,13 +20,13 @@ AdjacencyArray::AdjacencyArray(const NetworKit::Graph &G) {
     };
 
     index pos = 0;
-    for (index u = 0; u < G.upperNodeIdBound(); ++u) {
+    for (node u = 0; u < G.upperNodeIdBound(); ++u) {
         edgesBegin[u] = pos;
         if (G.hasNode(u)) {
             G.forEdgesOf(u, [&](node, node v, edgeweight ew) {
                 if (isOutEdge(u, v)) {
                     edgeWeights[pos] = ew;
-                    edges[pos++] = v;
+	                edgeTargets[pos++] = v;
                 }
             });
         }

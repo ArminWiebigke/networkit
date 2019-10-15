@@ -11,6 +11,7 @@
 #include "ExtendEgoNetStrategy.h"
 #include "EgoSplitting.h"
 #include "../auxiliary/Timings.h"
+#include "../structures/SparseVector.h"
 
 namespace NetworKit {
 
@@ -26,7 +27,7 @@ public:
 	std::string toString() const override;
 
 private:
-	std::vector<double> &nodeScores;
+	SparseVector<double> &nodeScores;
 	double normalizeScore(node v, double score) const;
 };
 

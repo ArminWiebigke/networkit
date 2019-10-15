@@ -11,23 +11,21 @@
 
 namespace NetworKit {
 
-//std::vector<double> StochasticDistribution::data = {};
-
 StochasticDistribution::StochasticDistribution(index maxValue) {
 	setMaxValue(maxValue);
 }
 
 void StochasticDistribution::setMaxValue(count maxValue) {
-	if (maxValue < data.size())
+	if (maxValue < logSum.size())
 		return;
-	data.reserve(maxValue + 1);
-	if (data.empty())
-		data.push_back(0.0);
-	size_t old_size = data.size();
-	double f = data.back();
+	logSum.reserve(maxValue + 1);
+	if (logSum.empty())
+		logSum.push_back(0.0);
+	size_t old_size = logSum.size();
+	double currentValue = logSum.back();
 	for (index i = old_size; i <= maxValue; ++i) {
-		f += std::log(i);
-		data.push_back(f);
+		currentValue += std::log(i);
+		logSum.push_back(currentValue);
 	}
 }
 
@@ -39,13 +37,13 @@ double StochasticDistribution::binomialDist(double p, count n, count k) const {
 	return std::exp(logBinomCoeff(n, k) + k * std::log(p) + (n - k) * std::log(1 - p));
 }
 
-// Calculates the change ratio if we increment k to k+1
+// Calculates the change ratio of the binomial coefficient "n choose k" if we increment k to k+1
 // => returns ("n choose k+1") / ("n choose k")
 inline double binomialCoeffChangeForIncrement(count n, count k) {
 	return (double) (n - k) / (k + 1);
 }
 
-// Calculates the change ratio if we decrement k to k-1
+// Calculates the change ratio of the binomial coefficient "n choose k" if we decrement k to k-1
 // => returns ("n choose k-1") / ("n choose k")
 inline double binomialCoeffChangeForDecrement(count n, count k) {
 	return (double) k / (n + 1 - k);
@@ -56,24 +54,24 @@ inline double binomialCoeffChangeForDecrement(count n, count k) {
 class BinomialChangeRatio {
 public:
 	BinomialChangeRatio(double p, double n) : n(n) {
-		successProbabilityChangeIncrementing = p / (1 - p);
-		successProbabilityChangeDecrementing = (1 - p) / p;
+		successChangeIncrementing = p / (1 - p);
+		successChangeDecrementing = (1 - p) / p;
 	}
 
 	double incrementingK(count k) {
-		return successProbabilityChangeIncrementing
+		return successChangeIncrementing
 		       * binomialCoeffChangeForIncrement(n, k);
 	}
 
 	double decrementingK(count k) {
-		return successProbabilityChangeDecrementing
+		return successChangeDecrementing
 		       * binomialCoeffChangeForDecrement(n, k);
 	}
 
 private:
 	count n;
-	double successProbabilityChangeIncrementing;
-	double successProbabilityChangeDecrementing;
+	double successChangeIncrementing;
+	double successChangeDecrementing;
 };
 
 double StochasticDistribution::rightCumulativeBinomial(double p, count n, count k) const {
@@ -85,7 +83,7 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 		return 1;
 	if (p - 1 > -1e-11)
 		return 1;
-	// k is smaller than the expected value, so left cumulative is faster
+	// If k is smaller than the expected value, then calculating the left cumulative is faster
 	if (k < n * p)
 		return 1 - leftCumulativeBinomial(p, n, k - 1);
 
@@ -95,15 +93,15 @@ double StochasticDistribution::rightCumulativeBinomial(double p, count n, count 
 
 	// Sum the probabilities until the sum only changes minimally.
 	// To increase the performance, we calculate the change in the probability of the
-	// distribution for increasing x instead of calculating each probability directly.
+	// distribution for increasing k instead of calculating each probability directly.
 	// At the end, the sum is normalized with the starting probability.
-	double curBinom = 1.;
-	double sum = curBinom;
+	double currentBinom = 1.;
+	double sum = currentBinom;
 	BinomialChangeRatio changeRatio(p, n);
 	for (count x = k; x < n; ++x) {
-		curBinom *= changeRatio.incrementingK(x);
-		sum += curBinom;
-		if (curBinom < precision * sum)
+		currentBinom *= changeRatio.incrementingK(x);
+		sum += currentBinom;
+		if (currentBinom < precision * sum)
 			break;
 	}
 	assert(startBinom * sum <= 1.001);
@@ -115,7 +113,7 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 		return 1;
 	if (p < 1e-11)
 		return 1;
-	// k is larger than the expected value, so right cumulative is faster
+	// If k is larger than the expected value, then calculating the right cumulative is faster
 	if (k > n * p)
 		return 1 - rightCumulativeBinomial(p, n, k + 1);
 
@@ -138,13 +136,10 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 }
 
 double StochasticDistribution::hypergeometricDist(count N, count K, count n, count k) const {
-	return std::max(0., std::exp(logHyper(N, K, n, k)));
-}
-
-double StochasticDistribution::logHyper(count N, count K, count n, count k) const {
-	return logBinomCoeff(K, k)
-	       + logBinomCoeff(N - K, n - k)
-	       - logBinomCoeff(N, n);
+	double logHyper = logBinomCoeff(K, k)
+	                  + logBinomCoeff(N - K, n - k)
+	                  - logBinomCoeff(N, n);
+	return std::exp(logHyper);
 }
 
 // Calculates the change ratio of a hypergeometric distribution if k is incremented (k -> k+1) or
@@ -170,17 +165,17 @@ private:
 };
 
 double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, count k) const {
-	assert("Error: N < 0" && N >= 0);
-	assert("Error: K < 0" && K >= 0);
-	assert("Error: K > N" && K <= N);
-	assert("Error: n < 0" && n >= 0);
-	assert("Error: k < 0" && k >= 0);
-	assert(data.size() > N);
+	assert(N >= 0 && "Error: N < 0");
+	assert(K >= 0 && "Error: K < 0");
+	assert(K <= N && "Error: K > N");
+	assert(n >= 0 && "Error: n < 0");
+	assert(k >= 0 && "Error: k < 0");
+	assert(logSum.size() > N);
 	if (k == 0)
 		return 1;
 	if (k > n || k > K)
 		return 0;
-	// If k is smaller than the expected value, calculating the left cumulative is faster
+	// If k is smaller than the expected value, then calculating the left cumulative is faster
 	double expectedValue = (double) K / N * n;
 	if (k < expectedValue)
 		return (1. - leftCumulativeHyper(N, K, n, k - 1));
@@ -205,13 +200,12 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 }
 
 double StochasticDistribution::leftCumulativeHyper(count N, count K, count n, count k) const {
-	if (N - K - n + k < 0)
-		return 0;
-	if (k < 0)
+	assert(N < logSum.size());
+	if (N - K - n + k < 0 || k < 0)
 		return 0;
 	if (k == n)
 		return 1;
-	// If k is larger than the expected value, calculating the right cumulative is faster
+	// If k is larger than the expected value, then calculating the right cumulative is faster
 	double expectedValue = (double) K / N * n;
 	if (k > expectedValue)
 		return (1. - rightCumulativeHyper(N, K, n, k + 1));
@@ -241,7 +235,8 @@ class SignificanceChangeRatio {
 public:
 	SignificanceChangeRatio(count kTotal, count cOut, count extStubs) : kTotal(kTotal), cOut(cOut) {
 		count M = extStubs - kTotal;
-		MInEdgesConstPart = (M - cOut - kTotal) / 2; // MIn = M - cOut - kTotal + 2*kIn, MInEdges = M / 2
+		MInEdgesConstPart =
+				(M - cOut - kTotal) / 2; // MIn = M - cOut - kTotal + 2*kIn, MInEdges = M / 2
 	}
 
 	double incrementingK(count kIn) {
@@ -272,6 +267,8 @@ private:
 std::pair<double, double>
 StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count cOut,
                                                   count extStubs) const {
+	assert(kTotal >= kIn);
+	assert(kTotal < logSum.size() && cOut < logSum.size() && extStubs < logSum.size());
 	if (kIn > cOut || kIn > kTotal)
 		return {0.0, 0.0};
 
@@ -305,6 +302,7 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 	double probabilitySum = rightCumulativeSum;
 	currentProbability = kInProbability;
 	for (count x = kIn; x > 0; --x) {
+		assert(x < 1e100);
 		currentProbability *= changeRatio.decrementingK(x);
 		probabilitySum += currentProbability;
 		if (probabilitySum > 1e200) {
@@ -315,7 +313,6 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 			kInProbability /= 1e200;
 			rightCumulativeSum /= 1e200;
 		}
-		assert(x < 1e100);
 
 		double sumChange = currentProbability / probabilitySum;
 		if (sumChange < precision)

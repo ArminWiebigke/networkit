@@ -15,25 +15,18 @@ void LogFactTable::set(int size) {
 	if (size < lnf.size())
 		return;
 
-	std::cout << "allocating " << size << " factorials..." << std::endl;
+//	std::cout << "allocating " << size << " factorials..." << std::endl;
 	lnf.reserve(size + 1);
+	if(lnf.empty())
+		lnf.push_back(0.0);
 
-	double f = 0.0;
+	double currentValue = lnf.back();
 	size_t old_size = lnf.size();
 
-	if (old_size > 0) {
-		f = lnf.back();
-	} else {
-		lnf.push_back(0.0);
-		old_size = 1;
-	}
-
 	for (int i = old_size; i <= size; i++) {
-		f += std::log(i);
-		lnf.push_back(f);
+		currentValue += std::log(i);
+		lnf.push_back(currentValue);
 	}
-	std::cout << "done" << std::endl;
-	//prints(lnf);
 }
 
 double

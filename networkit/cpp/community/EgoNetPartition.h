@@ -16,7 +16,7 @@
 #include "../auxiliary/Timer.h"
 #include "../structures/NodeMapping.h"
 #include "../structures/Cover.h"
-#include "../structures/AdjacencyArray.h"
+#include "../structures/LowToHighDirectedGraph.h"
 #include "../auxiliary/Timings.h"
 #include "EgoSplitting.h"
 
@@ -46,7 +46,7 @@ public:
 	Graph getExtendedEgoGraph() const;
 
 private:
-	const AdjacencyArray &directedG;
+	const LowToHighDirectedGraph &directedG;
 	Graph egoGraph;
 	NodeMapping &egoMapping;
 	node egoNode;

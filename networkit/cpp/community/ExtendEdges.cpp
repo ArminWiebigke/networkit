@@ -26,8 +26,10 @@ void ExtendEdges::run() {
 		return egoMapping.isMapped(x);
 	};
 	auto countEdges = [&](node v, node w, edgeweight weight) {
-		if (nodeScores[w] == 0.0)
+		if (nodeScores[w] == 0.0) {
 			candidates.push_back(w);
+			nodeScores.insert(w, 0.0);
+		}
 		nodeScores[w] += weight;
 	};
 	for (node v : directNeighbors) {
@@ -67,12 +69,12 @@ void ExtendEdges::run() {
 	if (candidatesAndScores.size() > maxExtendedNodes)
 		candidatesAndScores.resize(maxExtendedNodes);
 	for (NodeAndScore nodeAndScore : candidatesAndScores) {
-		result.push_back(nodeAndScore.first);
+		significantCandidates.push_back(nodeAndScore.first);
 	}
 	addTime(timer, "9    Take best candidates");
 
-	for (node v: all_candidates)
-		nodeScores[v] = 0.0;
+	nodeScores.reset();
+
 	addTime(timer, "a    Reset node scores");
 
 	hasRun = true;

@@ -40,7 +40,10 @@ TEST_F(CleanupGTest, testCleanUp) {
 //		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
 //		G.removeSelfLoops();
 	node isolatedNode = G.addNode();
+	std::map<std::string, std::string> parameters;
+	parameters["Extend EgoNet Strategy"] = "None";
 	EgoSplitting algo(G);
+	algo.setParameters(parameters);
 	algo.run();
 	Cover cover = algo.getCover();
 	// Add bad communities
@@ -268,7 +271,7 @@ TEST_F(CleanupGTest, testLeftCumHyper) {
 }
 
 TEST_F(CleanupGTest, testStochasticDist) {
-	StochasticDistribution stoch(10);
+	StochasticDistribution stoch(100);
 	count kTotal = 10;
 	count kIn = 3;
 	count cOut = 20;

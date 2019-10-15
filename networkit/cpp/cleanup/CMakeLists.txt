@@ -1,9 +1,9 @@
 networkit_add_module(cleanup
-        MergeCommunities.cpp
-        SignificanceCommunityCleanUp.cpp
-        SingleCommunityCleanUp.cpp
-        StochasticDistribution.cpp
-        StochasticSignificance.cpp
+    MergeCommunities.cpp
+    SignificanceCommunityCleanUp.cpp
+    SingleCommunityCleanUp.cpp
+    StochasticDistribution.cpp
+    StochasticSignificance.cpp
     )
 
 networkit_module_link_modules(community

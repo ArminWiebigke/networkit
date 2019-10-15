@@ -15,15 +15,19 @@
 #include "../Globals.h"
 #include "../base/Algorithm.h"
 #include "../structures/Cover.h"
-#include "../structures/AdjacencyArray.h"
+#include "../structures/LowToHighDirectedGraph.h"
 #include "../structures/NodeMapping.h"
 #include "../auxiliary/Timer.h"
 #include "../auxiliary/Timings.h"
 #include "../structures/MemoizationTable.h"
+#include "../cleanup/StochasticDistribution.h"
+#include "../cleanup/StochasticSignificance.h"
+#include "../structures/SparseVector.h"
 
 namespace NetworKit {
 
 /**
+ * @ingroup community
  * Ego Splitting is a framework to detect overlapping communities.
  * The ego-net of each node is partitioned by a clustering algorithm. The ego-net of a node u
  * (u is the ego-node) is the subgraph induced by the neighbors of u. For each detected subset of
@@ -79,19 +83,35 @@ public:
 	std::string toString() const override;
 
 	/**
+	 * Set parameters of the algorithm.
+	 * @param new_parameters map that maps parameter name to parameter value
+	 */
+	void setParameters(std::map<std::string, std::string> const &new_parameters);
+
+	/**
+	 * @a Debugging
 	 * Get the partitions of the ego-nets. A ego-net partition maps a node to its partition ID.
 	 * @return A vector of the ego-net partitions.
 	 */
 	std::vector<std::unordered_map<node, index>> getEgoNetPartitions();
 
+	/**
+	 * @a Debugging
+	 * Get the ego-nets. An ego-net is stored as a list of directed edges.
+	 * For each node @a u, the list also contains an edge (u,u), which preserves isolated nodes.
+	 * @return map that maps each node to its ego-net
+	 */
 	std::unordered_map<node, std::vector<WeightedEdge>> getEgoNets();
 
-	void setParameters(std::map<std::string, std::string> const &new_parameters);
 
+	/**
+	 * @a Debugging
+	 * Set the ground truth communities.
+	 * @param gt cover containing the ground truth communities
+	 */
 	void setGroundTruth(const Cover &gt);
 
 private:
-
 	const Graph &G;
 	PartitionFunction localClusteringAlgo, globalClusteringAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
@@ -102,24 +122,14 @@ private:
 	std::vector<std::unordered_map<node, index>> egoNetExtendedPartitions;
 	std::vector<count> egoNetPartitionCounts; // number of partitions in the ego-net
 	std::vector<node> personaOffsets; // personas of node u are the nodes from [u] to [u+1]-1
-	Graph personaGraph; // graph with the split personas
+	Graph personaGraph;
 	Partition personaPartition;
-	Cover cover; // the result of the algorithm
+	Cover resultCover; // the result of the algorithm
 	std::unordered_map<node, std::vector<WeightedEdge>> egoNets;
 	std::unordered_map<std::string, std::string> parameters;
-	AdjacencyArray directedG;
+	LowToHighDirectedGraph directedG;
 	Cover groundTruth;
-
-	struct Edge {
-		node firstNode;
-		node secondNode;
-		edgeweight weight;
-
-		Edge(node firstNode, node secondNode, edgeweight weight)
-				: firstNode(firstNode), secondNode(secondNode), weight(weight) {}
-	};
-
-	std::vector<std::vector<EgoSplitting::Edge>> personaEdges; // for each node: edges between its personas
+	std::vector<std::vector<WeightedEdge>> personaEdges; // for each node: edges between its personas
 
 	void init();
 
@@ -136,7 +146,7 @@ private:
 	/**
 	 * Connect the personas of a node. Returns a list of edges between the persona indexes.
 	 */
-	std::vector<Edge> connectEgoPartitionPersonas(
+	std::vector<WeightedEdge> connectEgoPartitionPersonas(
 			const Graph &egoGraph, const Partition &egoPartition) const;
 
 	void storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode);
@@ -149,14 +159,15 @@ private:
  */
 struct EgoNetData {
 	const Graph &G;
-	const AdjacencyArray &directedG;
+	const LowToHighDirectedGraph &directedG;
 	const Cover &groundTruth;
 	NodeMapping &egoMapping;
 	const std::unordered_map<std::string, std::string> &parameters;
 	MemoizationTable<double> &sigTable;
-	std::vector<double> &nodeScores;
-	std::vector<node> &significantGroup;
-	std::vector<std::vector<count>> &edgesToGroups;
+	SparseVector<double> &nodeScores;
+	SparseVector<node> &significantGroup;
+	SparseVector<std::vector<count>> &edgesToGroups;
+	StochasticSignificance stochasticSignificance;
 };
 
 } /* namespace NetworKit */

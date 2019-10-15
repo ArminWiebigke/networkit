@@ -11,6 +11,7 @@
 
 #include "../graph/Graph.h"
 #include "StochasticSignificance.h"
+#include "../structures/SparseVector.h"
 
 namespace NetworKit {
 
@@ -36,12 +37,11 @@ public:
 
 private:
 	struct ScoreStruct {
-		double sScore;
-		double bootInterval;
+		double rScore;
 		node nodeId;
 
-		explicit ScoreStruct(double score, double boot, node nodeId)
-				: sScore(score), bootInterval(boot), nodeId(nodeId) {};
+		explicit ScoreStruct(double score, node nodeId)
+				: rScore(score), nodeId(nodeId) {};
 	};
 
 	const Graph &graph;
@@ -53,13 +53,12 @@ private:
 	// threshold to discard communities if they changed too much
 	const double minOverlapRatio;
 
-	Community originalCommunity;
 	Community community;
 	std::vector<node> candidates;
-	std::vector<count> edgesToCommunity;
-	std::vector<int> isInCommunity;
-	std::vector<int> isInOriginalCommunity;
-	std::vector<int> isCandidate;
+	SparseVector<count> edgesToCommunity;
+	SparseVector<int> isInCommunity;
+	SparseVector<int> isInOriginalCommunity;
+	SparseVector<int> isCandidate;
 	count outgoingCommunityStubs;   // number of edges that have one endpoint inside the community and one outside
 	count totalCommunityStubs;      // the sum of the degrees of the nodes in the community
 	count externalNodes;
@@ -67,22 +66,21 @@ private:
 
 	void getCandidatesAndSetUpCalculation(bool onlyUseOriginalCommunity);
 
-	void reset();
-
 	Community
 	calculateSignificantNodes(const Community &inputCommunity, bool onlyUseOriginalCommunity);
 
+	std::vector<ScoreStruct> calculateCandidateScores() const;
+
+	std::vector<ScoreStruct> calculateInternalScores() const;
+
 	std::vector<node> findSignificantCandidates(std::vector<ScoreStruct> scores) const;
-
-	std::vector<SingleCommunityCleanUp::ScoreStruct>
-
-	calculateCandidateScores() const;
 
 	void removeWorstNode(std::vector<ScoreStruct> internalScores);
 
+	void reset();
+
 	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
 
-	std::vector<ScoreStruct> calculateInternalScores();
 };
 
 } /* namespace NetworKit */

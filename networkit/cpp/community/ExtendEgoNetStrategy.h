@@ -25,12 +25,12 @@ public:
 
 protected:
 	const Graph &G;
-	const AdjacencyArray &directedG;
+	const LowToHighDirectedGraph &directedG;
 	const Graph &egoGraph;
 	const NodeMapping &egoMapping;
 	node egoNode;
 	const std::unordered_map<std::string, std::string> &parameters;
-	std::vector<node> result;
+	std::vector<node> significantCandidates;
 	count maxExtendedNodes;
 };
 
