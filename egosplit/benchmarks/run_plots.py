@@ -13,8 +13,8 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig, make_pl
 from egosplit.benchmarks.data_structures.benchmark_set import BenchmarkSet
 
 num_args = len(sys.argv)
-result_dir = sys.argv[1] if num_args > 1 else "results/"
-plot_dir = sys.argv[2] if num_args > 2 else "plots/"
+result_dir = sys.argv[1] if num_args > 1 else "../results/"
+plot_dir = sys.argv[2] if num_args > 2 else "../plots/"
 
 if not result_dir[-1] == "/":
 	result_dir += "/"
@@ -30,7 +30,6 @@ def create_plots(data, output_dir, config: BenchmarkSet):
 
 def run_plots(config: BenchmarkSet):
 	set_sns_style()
-	print("Reading results...")
 	filter_subdir = "*{}".format(config.result_dir)
 	data = DataReader(os.path.join(result_dir, filter_subdir))
 

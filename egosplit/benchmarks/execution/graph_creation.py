@@ -14,7 +14,7 @@ class GraphSetsConfig:
 		for graph_set in graph_sets:
 			graphs = []
 			if graph_set == "om":
-				graphs = create_om_graphs(1, 2)
+				graphs = create_om_graphs(1, 4)
 			elif graph_set == "mu":
 				graphs = create_mu_graphs(20, 25, 5)
 			elif graph_set == "overlap":

@@ -14,29 +14,19 @@
 #include "../../io/EdgeListReader.h"
 #include "../EgoSplitting.h"
 #include "../PLM.h"
+#include "../../io/METISGraphReader.h"
 
 namespace NetworKit {
 
 class EgoSplittingGTest : public testing::Test {
 };
 
-void testEgoSplitting(std::map<std::string, std::string> parameters) {
-	Aux::Random::setSeed(234769, false);
-
-//	EdgeListReader reader('\t', 0);
-//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
-//								 G);
-//	EdgeListReader reader(' ', 0);
-//	Graph G = reader.read("../input/lfr_om3.graph");
-	// TODO: small graph with overlapping communities
-	ClusteredRandomGraphGenerator gen(100, 10, 0.5, 0.03);
-	Graph G = gen.generate();
-//	G.removeSelfLoops();
-//	G.indexEdges();
+void testEgoSplitting(const std::map<std::string, std::string>& parameters) {
+	METISGraphReader reader{};
+	Graph G = reader.read("../input/lfr_small.graph");
 
 	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
-		PLM plm(G, false, 1.0, "none");
+		PLM plm(G, true, 1.0, "none");
 		plm.run();
 		return plm.getPartition();
 	};
@@ -65,7 +55,7 @@ TEST_F(EgoSplittingGTest, testEgoSplittingSignificance) {
 	testEgoSplitting(parameters);
 }
 
-TEST_F(EgoSplittingGTest, testEgoSplittingSignificanceMemoization) {
+TEST_F(EgoSplittingGTest, DISABLED_testEgoSplittingSignificanceMemoization) {
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "Significance";
 	parameters["Extend and Partition Iterations"] = "2";

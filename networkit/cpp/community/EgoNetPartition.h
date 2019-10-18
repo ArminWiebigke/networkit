@@ -31,7 +31,7 @@ class EgoNetPartition : public CommunityDetectionAlgorithm, public Timings {
 
 public:
 	EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-	                const PartitionFunction &partitionFunction);
+	                PartitionFunction partitionFunction);
 
 	void run() override;
 
@@ -50,7 +50,7 @@ private:
 	Graph egoGraph;
 	NodeMapping &egoMapping;
 	node egoNode;
-	const PartitionFunction &partitionFunction;
+	const PartitionFunction partitionFunction;
 	const std::unordered_map<std::string, std::string> &parameters;
 	const Cover &groundTruth;
 	const EgoNetData &egoNetData;

@@ -21,6 +21,8 @@ public:
 	MemoizationTable(std::function<T(index)> valueFunc, T emptyVal, size_t initSize = 0);
 	explicit MemoizationTable(T emptyVal, size_t initSize = 0);
 
+	~MemoizationTable();
+
 	T getValue(index i);
 
 	/**
@@ -35,6 +37,7 @@ private:
 	bool valueFuncSet;
 	std::vector<T> data;
 	T emptyVal;
+	count valuesCalculated = 0;
 };
 
 
@@ -56,7 +59,7 @@ template<typename T>
 bool MemoizationTable<T>::trySetValueFunc(std::function<T(index)> function) {
 	if (valueFuncSet)
 		return false;
-	MemoizationTable::valueFunc = function;
+	MemoizationTable::valueFunc = std::move(function);
 	valueFuncSet = true;
 	return true;
 }
@@ -65,10 +68,18 @@ template<typename T>
 T MemoizationTable<T>::getValue(index i) {
 	if (data.size() <= i)
 		data.resize(i + 1, emptyVal);
-	if (data[i] == emptyVal)
+	if (data[i] == emptyVal) {
 		data[i] = valueFunc(i);
+		++valuesCalculated;
+	}
 	return data[i];
 }
+
+template<typename T>
+MemoizationTable<T>::~MemoizationTable() {
+	std::cout << "Values calulated: " << valuesCalculated << std::endl;
+}
+
 
 } // namespace NetworKit
 

@@ -13,9 +13,11 @@ def run_benchmark_iteration(b, iteration):
 if __name__ == '__main__':
 	t = Timer()
 	for b in get_benchmark_configs():
-		pool = Pool(1)
 		iterations = 1
-		parameters = [(b, i) for i in range(iterations)]
-		print(parameters)
-		pool.starmap(run_benchmark_iteration, parameters, 1)
+		# pool = Pool(1)
+		# parameters = [(b, i) for i in range(iterations)]
+		# print(parameters)
+		# pool.starmap(run_benchmark_iteration, parameters, 1)
+		for i in range(iterations):
+			run_benchmark_iteration(b, i)
 	print("Total time for benchmarks: {}s".format(str(t.stop())[:6]))

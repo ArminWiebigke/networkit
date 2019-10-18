@@ -20,13 +20,13 @@
 namespace NetworKit {
 
 EgoNetPartition::EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-                                 const PartitionFunction &partitionFunction)
+                                 PartitionFunction partitionFunction)
 		: CommunityDetectionAlgorithm(egoNetData.G),
 		  directedG(egoNetData.directedG),
 		  egoGraph(std::move(egoGraph)),
 		  egoMapping(egoNetData.egoMapping),
 		  egoNode(egoNode),
-		  partitionFunction(partitionFunction),
+		  partitionFunction(std::move(partitionFunction)),
 		  parameters(egoNetData.parameters),
 		  groundTruth(egoNetData.groundTruth),
 		  egoNetData(egoNetData) {

@@ -104,7 +104,6 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 			algo.run()
 			self.cover = algo.getCover()
 
-		self.executionInfo = algo.getExecutionInfo()
 		self.egoNetPartitions = algo.getEgoNetPartitions()
 		self.egoNets = algo.getEgoNets()
 
@@ -128,9 +127,6 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 
 	def get_timings(self):
 		return self.timings
-
-	# def getExecutionInfo(self):
-	# 	return self.executionInfo
 
 	def ego_net_partition_of(self, u):
 		return copy(self.egoNetPartitions[u])

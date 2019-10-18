@@ -10,18 +10,19 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 def get_benchmark_configs():
 	benchmark_sets = [
 		# Scratchpad(),
-		EdgesScore(),
+		# EdgesScore(),
 		# EdgesFactor(),
 		# SigMerge(),
 		# SigExtIter(),
 		# SigCheckUpdated(),
 		# SigMaxCandidates(),
 		# SigClusterIter(),
+		SigMemoize(),
 		# ExtensionCompare(),
 		# LocalClustering(),
 		# ConnectPersonas(),
 		# GlobalClustering(),
-		CleanUp(),
+		# CleanUp(),
 		# CompareOther(),
 	]
 	# TODO: Wonanders hin?
@@ -262,6 +263,26 @@ class SigClusterIter(BenchmarkSet):
 		'plot_dir': 'extend/sig/cluster_iterative/',
 		EgoSplitClusteringAlgorithmsConfig: 'leiden local',
 		EgoSplitParameterConfig: ['no-extend', 'sig-cluster-iter'],
+		'store_ego_nets': True,
+		GraphSetsConfig:
+			['om'],
+		PlotGraphSetConfig:
+			['om'],
+		PlotSetConfig:
+			['ego_net_extend', 'timings'],
+		PlotAlgoSetConfig:
+			['all'],
+		'remove_algo_parts': ['Ego', ' | ', 'Leiden + Infomap', 'No Clean Up'],
+	}
+
+
+class SigMemoize(BenchmarkSet):
+	config = {
+		'name': 'sig_mem',
+		'result_dir': 'sig-mem',
+		'plot_dir': 'extend/sig/memoize/',
+		EgoSplitClusteringAlgorithmsConfig: 'leiden local',
+		EgoSplitParameterConfig: ['no-extend', 'sig-mem'],
 		'store_ego_nets': True,
 		GraphSetsConfig:
 			['om'],

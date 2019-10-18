@@ -67,40 +67,29 @@ class EgoSplitParameterConfig:
 	def get(ego_parameter_config):
 		ego_parameters = OrderedDict()
 		standard = {
-			'weightFactor': 0,
-			'weightOffset': 1,
-			'addEgoNode': 'No',
 			'Extend EgoNet Strategy': 'None',
 			'Extend and Partition Iterations': 1,
-			'Maximum Extend Factor': 0,
-			'addNodesExponent': 0,
 			'partitionFromGroundTruth': 'No',
+			'maxEgoNetsStored': 2000,
 			'connectPersonas': 'Yes',
 			'normalizePersonaCut': 'No',
 			'connectPersonasStrat': 'spanning',
 			'maxPersonaEdges': 1,
-			'personaEdgeWeightFactor': 1,
 			'normalizePersonaWeights': 'unweighted',
 			'iterationWeight': 'No',
-			'maxEgoNetsStored': 2000,
 		}
 		extend_standard = {
 			**standard,
 			'Extend and Partition Iterations': 1,
 			'Maximum Extend Factor': 5,
 			'addNodesExponent': 0.5,
-			'edgesBetweenNeigNeig': 'Yes',
 			'minNodeDegree': 2,
-			'extendOverDirected': 'No',
 			'keepOnlyTriangles': 'No',
-			'onlyDirectedCandidates': 'No',
-			'extendDirectedBack': 'Yes',
 		}
 		edge_scores_standard = {
 			**extend_standard,
 			'Extend EgoNet Strategy': 'Edges',
 			'Edges Score Strategy': 'Edges pow 2 div Degree',
-			'Edges Iterative': 'No',
 		}
 		significance_scores_standard = {
 			**extend_standard,
@@ -114,7 +103,6 @@ class EgoSplitParameterConfig:
 			'maxGroupsConsider': 99,
 			'secondarySigExtRounds': 99,
 			'signMerge': 'Yes',
-			'sigSecondRoundStrat': 'updateCandidates',
 			'Extend and Partition Iterations': 3,
 			'onlyCheckSignOfMaxCandidates': 'Yes',
 			'Check Candidates Factor': 10,
@@ -185,6 +173,13 @@ class EgoSplitParameterConfig:
 					**significance_scores_standard,
 					'Extend and Partition Iterations': iterations,
 				}
+		if "sig-mem" in ego_parameter_config:
+			for memoize in [True, False]:
+				name = 'Memoize' if memoize else 'Calculate'
+				ego_parameters[name] = {
+					**significance_scores_standard,
+					'useSigMemo': 'Yes' if memoize else 'No',
+				}
 		if "extend" in ego_parameter_config:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
@@ -228,41 +223,6 @@ class EgoSplitParameterConfig:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
 			}
-
-		# ego_parameters['gt'] = {
-		# 	**standard,
-		# 	'partitionFromGroundTruth': 'Yes',
-		# }
-		# ego_parameters['Edges'] = {
-		# 	**edge_scores_standard,
-		# }
-		# ego_parameters['Edges Iterative'] = {
-		# 	**edge_scores_standard,
-		# 	'Edges Iterative': 'Yes',
-		# }
-		# ego_parameters['Significance'] = {
-		# 	**significance_scores_standard,
-		# }
-		# for factor in [1, 2, 3, 4, 5, 8, 16]:
-		# 	name = 'e-{:02.0f}'.format(factor)
-		# 	ego_parameters[name] = {
-		# 		**edge_scores_standard,
-		# 		'Maximum Extend Factor': factor,
-		# 	}
-
-		# for max_candidates in [1, 2, 3, 5, 10, 99]:
-		# 	name = 'Significance Check {:1d}x'.format(max_candidates)
-		# 	ego_parameters[name] = {
-		# 		**significance_scores_standard,
-		# 		'Check Candidates Factor': max_candidates,
-		# 	}
-
-		# for iterations in [0, 1, 2]:
-		# 	name = 'Significance {:1d}x'.format(iterations)
-		# 	ego_parameters[name] = {
-		# 		**significance_scores_standard,
-		# 		'Extend and Partition Iterations': iterations,
-		# 	}
 
 		return ego_parameters
 
@@ -381,14 +341,12 @@ def original_ego_parameters():
 		'weightFactor': 0,
 		'weightOffset': 1,
 		'storeEgoNet': 'No',
-		'addEgoNode': 'No',
 		'Extend EgoNet Strategy': 'None',
 		'Extend and Partition Iterations': 1,
 		'Maximum Extend Factor': 0,
 		'addNodesExponent': 0,
 		'partitionFromGroundTruth': 'No',
 		'connectPersonas': 'No',
-		'personaEdgeWeightFactor': 1,
 		'maxEgoNetsStored': 2000,
 	}
 

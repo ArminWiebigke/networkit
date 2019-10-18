@@ -30,15 +30,6 @@ class CleanupGTest : public testing::Test {
 TEST_F(CleanupGTest, testCleanUp) {
 	METISGraphReader graphReader;
 	Graph G = graphReader.read("../input/10_clusters.graph");
-
-//		EdgeListReader reader('\t', 0);
-//		Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
-//		Cover C = CoverReader{}.read("/home/armin/graphs/com-amazon.all.dedup.cmty.txt",
-//		                             G);
-//		EdgeListReader reader(' ', 0);
-//		Graph G = reader.read("/home/armin/graphs/lfr_om3.txt");
-//		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
-//		G.removeSelfLoops();
 	node isolatedNode = G.addNode();
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "None";

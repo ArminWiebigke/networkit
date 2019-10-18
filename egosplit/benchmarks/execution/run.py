@@ -88,7 +88,7 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration):
 
 
 def get_result_dir():
-	return './results/'
+	return '../results/'
 
 
 def print_result_summary(summary, result_dir):
