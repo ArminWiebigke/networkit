@@ -38,4 +38,4 @@ def get_legend_args():
 
 def set_layout():
 	# plt.tight_layout(rect=(0, 0, 1, 0.96))
-	plt.tight_layout(pad=0.)
+	plt.tight_layout(pad=0.5)

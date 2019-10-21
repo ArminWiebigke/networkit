@@ -60,7 +60,6 @@ def make_plot(data,
 	if x_filter:
 		filtered_data.query(x_filter, inplace=True)
 	graphs = get_unique_values(filtered_data, 'Graph Name')
-	# print(filtered_data['Algorithm'])
 	filter_algos = [a[1:] for a in algo_matches if len(a) > 0 and a[0] == '!']
 	algo_matches = [a for a in algo_matches if len(a) == 0 or a[0] != '!']
 	algo_list = get_algo_list(algo_matches, add_algos, filter_algos, filtered_data)
@@ -163,7 +162,7 @@ def save_legend(ax, legend_file, hue, replace_label_func, max_cols, max_width):
 
 def crop_pdf(file_name):
 	subprocess.call(["pdfcrop",
-	                 # "--margins", "0 0 0 0",
+	                 "--margins", "0 0 0 0",
 	                 file_name, file_name])
 
 
@@ -352,6 +351,8 @@ def get_algo_list(algo_matches, add_algos, filter_algos, data):
 		algo_data = data.query('Algorithm.str.contains(@algo_match)')
 		algo_set = algo_set.union(set(get_unique_values(algo_data, 'Algorithm')))
 	# algo_set = set(get_unique_values(data, 'Algorithm'))
+	for filter in filter_algos:
+		algo_set = set(a for a in algo_set if filter not in a)
 	for algo in add_algos:
 		algo_set.add(algo)
 	# Set ground truth as last algorithm
@@ -361,8 +362,6 @@ def get_algo_list(algo_matches, add_algos, filter_algos, data):
 		algo_list = sorted(list(algo_set)) + [gt]
 	else:
 		algo_list = sorted(list(algo_set))
-	for filter in filter_algos:
-		algo_list = [a for a in algo_list if filter not in a]
 	return algo_list
 
 

@@ -28,7 +28,7 @@ def make_plots(config, data, algo_set_name, algo_set, graph_set_params, output_d
 	print(algo_set)
 	print(graph_set_params)
 	graph_set_name = graph_set_params['name']
-	plots_config = {
+	default_plots_config = {
 		'output_dir': output_dir,
 		'plot_type': (
 			PlotType.bar if 'bar_plot' in graph_set_params else PlotType.line),
@@ -44,7 +44,7 @@ def make_plots(config, data, algo_set_name, algo_set, graph_set_params, output_d
 		'plot_args': graph_set_params.get('plot_args', {}),
 	}
 	plot_func(
-		plots_config,
+		default_plots_config,
 		data=data,
 		config=config,
 		graph_set_name=graph_set_name,
@@ -74,7 +74,7 @@ def metric_plots(plots_config, **kwargs):
 		make_plot(**metric_plots_config)
 
 
-def timings_plots(plots_config, **kwargs):
+def timings_plots(default_plots_config, **kwargs):
 	print('Plots for Timings')
 	for timing in timings:
 		timings_plots_config = {
@@ -85,16 +85,16 @@ def timings_plots(plots_config, **kwargs):
 			                               kwargs['algo_set_name']),
 			'y': 'Running Time / (n + m)',
 			'ax_set': {
-				**plots_config['ax_set'],
+				**default_plots_config['ax_set'],
 				'ylim': 0,
 				'ylabel': r'Running Time / (n + m) [\SI{}{\micro\second}]',
 			}
 		}
-		timings_plots_config = {**plots_config, **timings_plots_config}
+		timings_plots_config = {**default_plots_config, **timings_plots_config}
 		make_plot(**timings_plots_config)
 
 
-def comm_sizes_plots(plots_config, **kwargs):
+def comm_sizes_plots(default_plots_config, **kwargs):
 	print('Plots for comm sizes')
 	comm_sizes_plots_config = {
 		'plot_subdir': 'comm_sizes/',
@@ -110,15 +110,15 @@ def comm_sizes_plots(plots_config, **kwargs):
 			'dodge': True,
 		},
 		'ax_set': {
-			**plots_config['ax_set'],
+			**default_plots_config['ax_set'],
 			'ylabel': 'Community Size ($\log_2$)',
 		},
 	}
-	comm_sizes_plots_config = {**plots_config, **comm_sizes_plots_config}
+	comm_sizes_plots_config = {**default_plots_config, **comm_sizes_plots_config}
 	make_plot(**comm_sizes_plots_config)
 
 
-def comm_f1_plots(plots_config, **kwargs):
+def comm_f1_plots(default_plots_config, **kwargs):
 	print('Plots for comm sizes')
 
 	comm_f1_plots_config = {
@@ -135,15 +135,15 @@ def comm_f1_plots(plots_config, **kwargs):
 			'dodge': True,
 		},
 		'ax_set': {
-			**plots_config['ax_set'],
+			**default_plots_config['ax_set'],
 			'ylabel': 'F1 Score',
 		}
 	}
-	comm_f1_plots_config = {**plots_config, **comm_f1_plots_config}
+	comm_f1_plots_config = {**default_plots_config, **comm_f1_plots_config}
 	make_plot(**comm_f1_plots_config)
 
 
-def num_comms_plots(plots_config, **kwargs):
+def num_comms_plots(default_plots_config, **kwargs):
 	print('Plots for num comms')
 	num_comms_plots_config = {
 		'plot_subdir': 'num_comms/',
@@ -152,23 +152,23 @@ def num_comms_plots(plots_config, **kwargs):
 		'file_name': 'num_comms_{}_{}'.format(kwargs['graph_set_name'], kwargs['algo_set_name']),
 		'y': 'Number of Communities',
 		'ax_set': {
-			**plots_config['ax_set'],
+			**default_plots_config['ax_set'],
 			'ylim': 0,
 		}
 	}
-	num_comms_plots_config = {**plots_config, **num_comms_plots_config}
+	num_comms_plots_config = {**default_plots_config, **num_comms_plots_config}
 	make_plot(**num_comms_plots_config)
 
 
-def ego_net_extend_plots(plots_config, **kwargs):
-	ego_net_plots(plots_config, ego_extend_metrics, **kwargs)
+def ego_net_extend_plots(default_plots_config, **kwargs):
+	ego_net_plots(default_plots_config, ego_extend_metrics, **kwargs)
 
 
-def ego_net_cluster_plots(plots_config, **kwargs):
-	ego_net_plots(plots_config, ego_cluster_metrics, **kwargs)
+def ego_net_cluster_plots(default_plots_config, **kwargs):
+	ego_net_plots(default_plots_config, ego_cluster_metrics, **kwargs)
 
 
-def ego_net_plots(plots_config, ego_metrics, **kwargs):
+def ego_net_plots(default_plots_config, ego_metrics, **kwargs):
 	print('Plots for ego-net metrics')
 	for ego_metric, file_name in ego_metrics.items():
 		ego_net_plots_config = {
@@ -179,26 +179,26 @@ def ego_net_plots(plots_config, ego_metrics, **kwargs):
 			                               kwargs['algo_set_name']),
 			'y': 'Value',
 			'ax_set': {
-				**plots_config['ax_set'],
+				**default_plots_config['ax_set'],
 				# 'ylim': (0, 1.05),
 				'ylim': ego_metric_ylim[ego_metric] if kwargs['graph_set_params'].get('set_ylim',
 				                                                                      True) else 0,
 				'ylabel': ego_metric,
 			}
 		}
-		ego_net_plots_config = {**plots_config, **ego_net_plots_config}
+		ego_net_plots_config = {**default_plots_config, **ego_net_plots_config}
 		make_plot(**ego_net_plots_config)
 
 
-def ego_net_x_extend_plots(plots_config, **kwargs):
-	ego_net_plots_per_graph(plots_config, ego_extend_metrics, **kwargs)
+def ego_net_x_extend_plots(default_plots_config, **kwargs):
+	ego_net_plots_per_graph(default_plots_config, ego_extend_metrics, **kwargs)
 
 
-def ego_net_x_cluster_plots(plots_config, **kwargs):
-	ego_net_plots_per_graph(*plots_config, ego_cluster_metrics, **kwargs)
+def ego_net_x_cluster_plots(default_plots_config, **kwargs):
+	ego_net_plots_per_graph(*default_plots_config, ego_cluster_metrics, **kwargs)
 
 
-def ego_net_plots_per_graph(plots_config, ego_metrics, **kwargs):
+def ego_net_plots_per_graph(default_plots_config, ego_metrics, **kwargs):
 	# Metrics for different Ego-Net sizes
 	print('Plots for ego-net metrics per graph')
 	for ego_metric, file_name in ego_metrics.items():
@@ -216,14 +216,14 @@ def ego_net_plots_per_graph(plots_config, ego_metrics, **kwargs):
 				# 'markersize': 3,
 			},
 			'ax_set': {
-				**plots_config['ax_set'],
+				**default_plots_config['ax_set'],
 				# 'ylim': (0, 1.05),
 				'ylim': ego_metric_ylim[ego_metric] if kwargs['graph_set_params'].get('set_ylim',
 				                                                                      True) else 0,
 				'ylabel': ego_metric,
 			}
 		}
-		ego_net_plots_config = {**plots_config, **ego_net_plots_config}
+		ego_net_plots_config = {**default_plots_config, **ego_net_plots_config}
 		make_plot(**ego_net_plots_config)
 
 

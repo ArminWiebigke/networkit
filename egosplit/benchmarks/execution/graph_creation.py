@@ -14,11 +14,11 @@ class GraphSetsConfig:
 		for graph_set in graph_sets:
 			graphs = []
 			if graph_set == "om":
-				graphs = create_om_graphs(1, 4)
+				graphs = create_om_graphs(1, 7)
 			elif graph_set == "mu":
-				graphs = create_mu_graphs(20, 25, 5)
+				graphs = create_mu_graphs(10, 70, 10)
 			elif graph_set == "overlap":
-				graphs = create_overlap_graphs(50, 50)
+				graphs = create_overlap_graphs(20, 80)
 			elif graph_set == "test":
 				graphs = create_om_graphs(3, 3)
 
@@ -113,7 +113,7 @@ def get_om_parameter(N, on, om, name):
 		't1': 2, 't2': 2, 'mu': mu, 'on': on, 'om': om})
 
 
-def create_overlap_graphs(min_overlap=20, max_overlap=100, step=20):
+def create_overlap_graphs(min_overlap=20, max_overlap=80, step=20):
 	lfr_graph_args = OrderedDict()
 	N = 2000
 	for overlap in range(min_overlap, max_overlap + 1, step):

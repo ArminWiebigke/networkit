@@ -17,12 +17,13 @@ def get_benchmark_configs():
 		# SigCheckUpdated(),
 		# SigMaxCandidates(),
 		# SigClusterIter(),
-		SigMemoize(),
+		# SigMemoize(),
 		# ExtensionCompare(),
 		# LocalClustering(),
 		# ConnectPersonas(),
 		# GlobalClustering(),
 		# CleanUp(),
+		NewCleanUp(),
 		# CompareOther(),
 	]
 	# TODO: Wonanders hin?
@@ -496,6 +497,51 @@ class CleanUp(BenchmarkSet):
 		'replace_legend':
 			{'No Clean Up': 'Original', 'Clean-merge': 'Cleaned',
 			 'Clean-remove': 'CleanRemove', 'OSLOM-full': 'OSLOM'},
+	}
+
+
+class NewCleanUp(BenchmarkSet):
+	config = {
+		'name':
+			'new_clean_up',
+		'result_dir':
+			'new_clean_up',
+		'plot_dir':
+			'new_clean_up/',
+		EgoSplitClusteringAlgorithmsConfig:
+			'standard',
+		EgoSplitParameterConfig:
+			['edges'],
+		CleanUpConfig:
+			'new_clean',
+		GraphSetsConfig: [
+			# 'om',
+			'overlap',
+			# 'mu',
+			# 'facebook',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+			# 'facebook',
+			# 'facebook_bar'
+		],
+		PlotSetConfig: [
+			'metrics',
+			'timings',
+			'comm_f1',
+			'comm_sizes',
+			'num_comms',
+		],
+		PlotAlgoSetConfig:
+			['all'],
+		'remove_algo_parts':
+			['Ego', ' | ', 'EdgesScore', 'Infomap + Surprise',
+			 'Leiden + Infomap',
+			 ],
+		'replace_legend':
+			{'No Clean Up': 'Original', 'Clean-merge': 'Cleaned old',
+			 'Clean-new': 'Cleaned new'},
 	}
 
 

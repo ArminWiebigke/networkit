@@ -48,6 +48,12 @@ class CleanUpConfig:
 			clean_ups = [
 				'Clean-merge',
 			]
+		elif clean_up_set == 'new_clean':
+			clean_ups = [
+				'No Clean Up',
+				'Clean-merge',
+				'Clean-new',
+			]
 		elif clean_up_set == 'test':
 			clean_ups = [
 				'No Clean Up',
