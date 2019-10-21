@@ -29,14 +29,12 @@ class EgoSplittingBenchmark: public testing::Test {
 };
 
 void benchEgoSplitting(const std::map<std::string, std::string>& parameters) {
-	Aux::Random::setSeed(234769, false);
-
 //	EdgeListReader reader('\t', 0);
 //	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
 //	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt", G);
-//	EdgeListReader reader(' ', 0);
-	METISGraphReader reader{};
-	Graph G = reader.read("../input/lfr_small.graph");
+	EdgeListReader reader(' ', 0);
+//	METISGraphReader reader{};
+	Graph G = reader.read("../input/lfr_om3.graph");
 
 	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
 		PLM plm(G, true, 1.0, "none");
@@ -54,19 +52,19 @@ void benchEgoSplitting(const std::map<std::string, std::string>& parameters) {
 	}
 }
 
-TEST_F(EgoSplittingBenchmark, benchSignificanceMemoization) {
-	std::map<std::string, std::string> parameters;
-	parameters["Extend EgoNet Strategy"] = "Significance";
-	parameters["Extend and Partition Iterations"] = "2";
-	parameters["useSigMemo"] = "Yes";
-	benchEgoSplitting(parameters);
-}
-
 TEST_F(EgoSplittingBenchmark, benchSignificance) {
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "Significance";
 	parameters["Extend and Partition Iterations"] = "2";
 	parameters["useSigMemo"] = "No";
+	benchEgoSplitting(parameters);
+}
+
+TEST_F(EgoSplittingBenchmark, benchSignificanceMemoization) {
+	std::map<std::string, std::string> parameters;
+	parameters["Extend EgoNet Strategy"] = "Significance";
+	parameters["Extend and Partition Iterations"] = "2";
+	parameters["useSigMemo"] = "Yes";
 	benchEgoSplitting(parameters);
 }
 

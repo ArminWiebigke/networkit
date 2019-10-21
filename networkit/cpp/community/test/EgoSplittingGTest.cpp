@@ -15,6 +15,7 @@
 #include "../EgoSplitting.h"
 #include "../PLM.h"
 #include "../../io/METISGraphReader.h"
+#include "../../generators/LFRGenerator.h"
 
 namespace NetworKit {
 

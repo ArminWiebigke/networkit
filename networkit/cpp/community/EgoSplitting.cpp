@@ -20,7 +20,7 @@
 #include "../coarsening/ParallelPartitionCoarsening.h"
 #include "../graph/RandomMaximumSpanningForest.h"
 #include "PLM.h"
-#include "EgoNetPartition.h"
+#include "EgoNetExtensionAndPartition.h"
 #include "../oslom/Stochastics.h"
 #include "../auxiliary/ParseString.h"
 
@@ -172,7 +172,7 @@ void EgoSplitting::createEgoNets() {
 		});
 		addTime(timer, "10    Build EgoNet");
 
-		EgoNetPartition extAndPartition(egoNetData, egoNode, egoGraph, localClusteringAlgo);
+		EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph, localClusteringAlgo);
 		extAndPartition.run();
 		Partition egoPartition = extAndPartition.getPartition();
 		Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();

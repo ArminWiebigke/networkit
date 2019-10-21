@@ -10,7 +10,7 @@ networkit_add_module(community
     DissimilarityMeasure.cpp
     DynamicNMIDistance.cpp
     EdgeCut.cpp
-    EgoNetPartition.cpp
+    EgoNetExtensionAndPartition.cpp
     EgoSplitting.cpp
     ExtendEdges.cpp
     ExtendEgoNetStrategy.cpp

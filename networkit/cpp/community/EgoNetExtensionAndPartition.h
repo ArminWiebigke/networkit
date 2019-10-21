@@ -1,12 +1,12 @@
 /*
- * EgoNetPartition.h
+ * EgoNetExtensionAndPartition.h
  *
  * Created: 2019-06-17
  * Author: Armin Wiebigke
  */
 
-#ifndef EGONETPARTITION_H
-#define EGONETPARTITION_H
+#ifndef EGONETEXTENSIONANDPARTITION_H
+#define EGONETEXTENSIONANDPARTITION_H
 
 #include <unordered_map>
 #include <string>
@@ -26,12 +26,12 @@ namespace NetworKit {
  * Create a partition of the ego-net of a given node.
  * Optionally, the ego-net is extended before the partitioning.
  */
-class EgoNetPartition : public CommunityDetectionAlgorithm, public Timings {
+class EgoNetExtensionAndPartition : public CommunityDetectionAlgorithm, public Timings {
 	using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:
-	EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-	                PartitionFunction partitionFunction);
+	EgoNetExtensionAndPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
+	                            PartitionFunction partitionFunction);
 
 	void run() override;
 
@@ -70,4 +70,4 @@ private:
 
 } /* namespace NetworKit */
 
-#endif /* EGONETPARTITION_H */
+#endif /* EGONETEXTENSIONANDPARTITION_H */

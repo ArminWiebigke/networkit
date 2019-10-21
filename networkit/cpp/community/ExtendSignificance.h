@@ -24,15 +24,10 @@
 namespace NetworKit {
 
 struct GroupProperties {
-	GroupProperties() = default;
-	explicit GroupProperties(int size) : groupTotal(size), groupOutgoing(size), externalStubs(size),
-	                                     externalNodes(size) {
-	}
-
-	std::vector<count> groupTotal;
-	std::vector<count> groupOutgoing;
-	std::vector<count> externalStubs;
-	std::vector<count> externalNodes;
+	count groupTotal;
+	count groupOutgoing;
+	count externalStubs;
+	count externalNodes;
 };
 
 class ExtendSignificance : public ExtendEgoNetStrategy {
@@ -59,7 +54,7 @@ private:
 	std::vector<count> coarseSizes;
 	count numGroups = 0;
 	std::vector<node> candidatesSorted;
-	GroupProperties groupProperties;
+	std::vector<GroupProperties> groupProperties;
 	SparseVector<node> &significantGroup;
 	std::unordered_set<node> addedCandidates;
 	// Algorithm parameters
@@ -68,7 +63,7 @@ private:
 	const bool sortGroupsStrat;
 	const double maxSignificance;
 	const count maxGroupCnt;
-	const count minEdgesToGroup;
+	const count minEdgesToGroup;  // Minimum number of edges to check for significance
 	const bool onlyCheckMaxCandidates;
 
 	void
@@ -76,37 +71,33 @@ private:
 
 	std::vector<node> getCandidates();
 
-	node addExtEdges(std::vector<node> &candidates);
+	void insertOutgoingEdgesIntoCoarseGraph(std::vector<node> &candidates);
 
 	std::vector<node> sortCandidatesByEdges(const std::vector<node> &candidates) const;
-
-	void secondRound();
 
 	void createCoarseGraph();
 
 	double
-	calcScore(count nodeDegree, count kIn, count grOut, count groupExtStubs, count extNodes) const;
+	calculateSScore(count nodeDegree, count kIn, count grOut, count groupExtStubs, count extNodes) const;
 
 	bool
-	checkMergedGroups(const std::string &t_prefix, Aux::Timer &timer, node v,
-	                  std::vector<std::pair<double, node>> &groupEdges,
-	                  const std::vector<double> &groupSigs);
+	checkSignificanceToMergedGroups(const std::string &t_prefix, Aux::Timer &timer, node candidate,
+	                                std::vector<std::pair<double, node>> &numEdgesToGroups,
+	                                const std::vector<double> &groupSigs);
 
 	bool addIfSignificant(node v, double significance, node group);
 
 	bool
-	checkSingleGroups(node v,
-	                  const std::vector<std::pair<double, node>> &groupEdges,
-	                  std::vector<double> &groupSigs);
+	checkSignificanceToSingleGroups(node candidate,
+	                                const std::vector<std::pair<double, node>> &numEdgesToGroups,
+	                                std::vector<double> &significanceToGroups);
 
-	void removeEgoNodeCandidate(std::vector<node> &candidates);
+	std::vector<GroupProperties> calculateGroupProperties() const;
 
-	GroupProperties calcGroupStubsCounts() const;
-
-	std::vector<std::pair<double, node>> sortGroupsByEdges(node v) const;
+	std::vector<std::pair<double, node>> sortGroupsByEdges(node candidate) const;
 
 	void
-	checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v);
+	checkCandidate(const std::string &t_prefix, node candidate);
 
 	void updateCandidates();
 

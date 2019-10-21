@@ -1,5 +1,5 @@
 /*
- * EgoNetPartition.cpp
+ * EgoNetExtensionAndPartition.cpp
  *
  * Created: 2019-06-17
  * Author: Armin Wiebigke
@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include "EgoNetPartition.h"
+#include "EgoNetExtensionAndPartition.h"
 #include "../auxiliary/Timer.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
 #include "../structures/NodeMapping.h"
@@ -19,8 +19,8 @@
 
 namespace NetworKit {
 
-EgoNetPartition::EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-                                 PartitionFunction partitionFunction)
+EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
+                                                         PartitionFunction partitionFunction)
 		: CommunityDetectionAlgorithm(egoNetData.G),
 		  directedG(egoNetData.directedG),
 		  egoGraph(std::move(egoGraph)),
@@ -32,13 +32,13 @@ EgoNetPartition::EgoNetPartition(const EgoNetData &egoNetData, node egoNode, Gra
 		  egoNetData(egoNetData) {
 }
 
-void EgoNetPartition::run() {
+void EgoNetExtensionAndPartition::run() {
 	extendAndPartition();
 
 	hasRun = true;
 }
 
-void EgoNetPartition::extendAndPartition() {
+void EgoNetExtensionAndPartition::extendAndPartition() {
 	Aux::Timer timer;
 	timer.start();
 	count extendIterations = extendIterationsCount();
@@ -77,14 +77,14 @@ void EgoNetPartition::extendAndPartition() {
 }
 
 count
-EgoNetPartition::extendIterationsCount() const {
+EgoNetExtensionAndPartition::extendIterationsCount() const {
 	count extendIterations = std::stoi(parameters.at("Extend and Partition Iterations"));
 	if (parameters.at("Extend EgoNet Strategy") == "Significance")
 		++extendIterations; // Significance needs a base partition
 	return extendIterations;
 }
 
-void EgoNetPartition::partitionEgoNet() {
+void EgoNetExtensionAndPartition::partitionEgoNet() {
 	if (parameters.at("partitionFromGroundTruth") == "Yes")
 		result = createGroundTruthPartition();
 	else if (egoGraph.numberOfEdges() == 0) {
@@ -97,7 +97,7 @@ void EgoNetPartition::partitionEgoNet() {
 }
 
 Partition
-EgoNetPartition::createGroundTruthPartition() const {
+EgoNetExtensionAndPartition::createGroundTruthPartition() const {
 	auto truthComms = groundTruth.subsetsOf(egoNode);
 	Partition part{egoGraph.upperNodeIdBound()};
 	egoGraph.forNodes([&](node v) {
@@ -113,7 +113,7 @@ EgoNetPartition::createGroundTruthPartition() const {
 }
 
 void
-EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
+EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	if (extendStrategy == "None")
 		return;
 	Aux::Timer timer;
@@ -181,7 +181,7 @@ EgoNetPartition::extendEgoNet(const std::string &extendStrategy) {
 	addTime(timer, "3a    Add candidates to ego-net");
 }
 
-void EgoNetPartition::removeLowDegreeNodes(count minDegree, count directNeighborsBound) {
+void EgoNetExtensionAndPartition::removeLowDegreeNodes(count minDegree, count directNeighborsBound) {
 	if (minDegree <= 0)
 		return;
 	count nodes_changed;
@@ -196,15 +196,15 @@ void EgoNetPartition::removeLowDegreeNodes(count minDegree, count directNeighbor
 	} while (nodes_changed > 0);
 }
 
-bool EgoNetPartition::isParallel() const {
+bool EgoNetExtensionAndPartition::isParallel() const {
 	return false;
 }
 
-std::string EgoNetPartition::toString() const {
-	return "EgoNetPartition";
+std::string EgoNetExtensionAndPartition::toString() const {
+	return "EgoNetExtensionAndPartition";
 }
 
-Graph EgoNetPartition::getExtendedEgoGraph() const {
+Graph EgoNetExtensionAndPartition::getExtendedEgoGraph() const {
 	return egoGraph;
 }
 

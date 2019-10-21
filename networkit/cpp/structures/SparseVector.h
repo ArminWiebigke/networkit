@@ -95,7 +95,7 @@ void SparseVector<T>::reset() {
 template<typename T>
 void SparseVector<T>::insert(index i, T value) {
 	usedIndexes.push_back(i);
-	data[i] = value;
+	data[i] = std::move(value);
 }
 
 template<typename T>

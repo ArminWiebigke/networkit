@@ -37,7 +37,7 @@ This folder contains many smaller graphs. They are used in the testing suite and
 | karate.graph                     | Format.METIS            | METISGraphReader        | 450                | 34              | 78              | FALSE    | FALSE    | n/a     |
 | lesmis.graph                     | Format.METIS            | METISGraphReader        | 2630               | 77              | 254             | FALSE    | TRUE     | n/a     |
 | lfr_om3.graph                    | Format.EdgeListSpaceZero| EdgeListReader          | 364                | 2000            | 39786           | FALSE    | FALSE    | n/a     |
-| lfr_small.graph                  | Format.METIS            | METISGraphReader        | 8                  | 200             | 1462            | FALSE    | FALSE    | n/a     |
+| lfr_small.graph                  | Format.METIS            | METISGraphReader        | 4                  | 200             | 595             | FALSE    | FALSE    | n/a     |
 | looptest1.gml                    | Format.GML              | GMLGraphReader          | 676                | 9               | 12              | FALSE    | FALSE    | n/a     |
 | looptest2.gml                    | Format.GML              | GMLGraphReader          | 754                | 9               | 14              | FALSE    | FALSE    | n/a     |
 | MIT8.edgelist                    | Format.EdgeListTabZero  | EdgeListReader          | 2425755            | 6440            | 251252          | FALSE    | FALSE    | n/a     |

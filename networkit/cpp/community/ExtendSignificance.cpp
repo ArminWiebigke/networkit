@@ -70,11 +70,11 @@ void ExtendSignificance::run() {
 	createCoarseGraph();
 	addTime(timer, "0    Coarsening");
 
-	std::vector<node> candidates = getCandidates();
+	auto candidates = getCandidates();
 	addTime(timer, "3    Find candidates");
 
-	addExtEdges(candidates);
-	groupProperties = calcGroupStubsCounts();
+	insertOutgoingEdgesIntoCoarseGraph(candidates);
+	groupProperties = calculateGroupProperties();
 	addTime(timer, "4    Calc outgoing edges");
 
 	candidatesSorted = sortCandidatesByEdges(candidates);
@@ -104,9 +104,13 @@ void ExtendSignificance::run() {
 	findSignificantCandidates("6");
 	addTime(timer, "6    Calc significance one");
 
-	count iterations = std::stoi(parameters.at("secondarySigExtRounds"));
-	for (count i = 0; i < iterations; ++i) {
-		secondRound();
+	count updateIterations = std::stoi(parameters.at("secondarySigExtRounds"));
+	for (count i = 0; i < updateIterations; ++i) {
+		if (addedCandidates.empty())
+			break;
+		updateCandidates();
+		addedCandidates.clear();
+		findSignificantCandidates("8");
 	}
 	addTime(timer, "8    Check updated candidates");
 
@@ -125,15 +129,19 @@ void ExtendSignificance::run() {
 	hasRun = true;
 }
 
+/**
+ * Remove significant nodes as candidates and update the remaining candidates
+ */
 void ExtendSignificance::updateCandidates() {
 	std::unordered_set<node> updatedCandidates;
 	for (node w : addedCandidates) {
 		node group = significantGroup[w];
 		// Update group stubs
-		groupProperties.groupTotal[group] += G.degree(w);
-		groupProperties.groupOutgoing[group] += G.degree(w) - 2 * edgesToGroups[w][group];
-		groupProperties.externalNodes[group] -= 1;
-		groupProperties.externalStubs[group] -= G.degree(w);
+		GroupProperties &properties = groupProperties[group];
+		properties.groupTotal += G.degree(w);
+		properties.groupOutgoing += G.degree(w) - 2 * edgesToGroups[w][group];
+		properties.externalNodes -= 1;
+		properties.externalStubs -= G.degree(w);
 		G.forNeighborsOf(w, [&](node v) {
 			// Update other candidates
 			if (!edgesToGroups[v].empty()) {
@@ -148,7 +156,7 @@ void ExtendSignificance::updateCandidates() {
 					// Don't count this edge twice if we add both candidates at the same time
 					newInternalStubs = 1;
 				}
-				groupProperties.groupOutgoing[group] -= newInternalStubs;
+				properties.groupOutgoing -= newInternalStubs;
 			}
 		});
 		edgesToGroups[w].clear();
@@ -163,7 +171,7 @@ void ExtendSignificance::updateCandidates() {
 	candidatesSorted.resize(newEnd - candidatesSorted.begin());
 }
 
-/*
+/**
  * Get coarse graph from base partition
  */
 void ExtendSignificance::createCoarseGraph() {
@@ -177,14 +185,6 @@ void ExtendSignificance::createCoarseGraph() {
 		coarseSizes[p] = coarseToEgo[p].size();
 	});
 	numGroups = coarseGraph.upperNodeIdBound();
-}
-
-void ExtendSignificance::secondRound() {
-	if (addedCandidates.empty())
-		return;
-	updateCandidates();
-	addedCandidates.clear();
-	findSignificantCandidates("8"); // TODO: Remove timer?
 }
 
 /**
@@ -211,13 +211,13 @@ ExtendSignificance::sortCandidatesByEdges(const std::vector<node> &candidates) c
 }
 
 /**
- * Insert a node that represents all external nodes and add the outgoing edges
+ * Insert a node in the coarse graph that represents all external nodes and add the outgoing edges
+ * of each group.
  */
-node
-ExtendSignificance::addExtEdges(std::vector<node> &candidates) {
-	// Calc outgoing edges for each group
+void
+ExtendSignificance::insertOutgoingEdgesIntoCoarseGraph(std::vector<node> &candidates) {
 	std::vector<count> groupToExternal(coarseGraph.numberOfNodes(), 0);
-	auto countEdgesOfNode = [&](node v){
+	auto countEdgesOfNode = [&](node v) {
 		for (index group = 0; group < edgesToGroups[v].size(); ++group) {
 			count numEdges = edgesToGroups[v][group];
 			groupToExternal[group] += numEdges;
@@ -232,66 +232,51 @@ ExtendSignificance::addExtEdges(std::vector<node> &candidates) {
 	for (index i = 0; i < coarseGraph.numberOfNodes() - 1; ++i) {
 		coarseGraph.addEdge(i, externalNode, groupToExternal[i]);
 	}
-	return externalNode;
 }
 
 std::vector<node>
 ExtendSignificance::getCandidates() {
 	std::vector<node> candidates;
-	std::vector<node> directNeighbors = egoMapping.globalNodes();
-	auto isDirectNeighbor = [&](node x) {
-		return egoMapping.isMapped(x);
-	};
-	auto countEdge = [&](node vLoc, node w, edgeweight weight) {
-		if (edgesToGroups[w].empty()) {
-			candidates.push_back(w);
-			edgesToGroups.insert(w, std::vector<count>(numGroups));
+	auto countEdge = [&](node group, node candidate, edgeweight weight) {
+		if (edgesToGroups[candidate].empty()) {
+			candidates.push_back(candidate);
+			edgesToGroups.insert(candidate, std::vector<count>(numGroups, 0));
 		}
-		edgesToGroups[w][vLoc] += (count) weight;
+		edgesToGroups[candidate][group] += (count) weight;
 	};
-	auto removeNeighborCandidates = [&]() {
-		for (node w : candidates) {
-			if (isDirectNeighbor(w)) {
-				edgesToGroups[w].clear();
+	std::vector<node> egoNetNodes = egoMapping.globalNodes();
+	for (node egoNetNode : egoNetNodes) {
+		node group = egoToCoarse[egoMapping.local(egoNetNode)];
+		G.forEdgesOf(egoNetNode, [&](node, node candidate, edgeweight weight) {
+			countEdge(group, candidate, weight);
+		});
+	}
+
+	auto shouldBeRemoved = [&](node x) {
+		// Remove ego-node and nodes of the ego-net as extension candidates
+		return egoMapping.isMapped(x) || x == egoNode;
+	};
+	auto removeEgoNetNodesAsCandidates = [&]() {
+		for (node v : candidates) {
+			if (shouldBeRemoved(v)) {
+				edgesToGroups[v].clear();
 			}
 		}
 		auto newEnd = std::remove_if(candidates.begin(), candidates.end(), [&](node w) {
-			return (isDirectNeighbor(w));
+			return (shouldBeRemoved(w));
 		});
 		candidates.resize(newEnd - candidates.begin());
 	};
-
-	for (node v : directNeighbors) {
-		node vLoc = egoToCoarse[egoMapping.local(v)];
-		G.forEdgesOf(v, [&](node, node w, edgeweight weight) {
-			countEdge(vLoc, w, weight);
-		});
-	}
-	removeNeighborCandidates();
-	removeEgoNodeCandidate(candidates);
+	removeEgoNetNodesAsCandidates();
 	return candidates;
-}
-
-void ExtendSignificance::removeEgoNodeCandidate(std::vector<node> &candidates) {
-	for (index i = 0; i < candidates.size(); ++i) {
-		if (candidates[i] == egoNode) {
-			candidates[i] = candidates.back();
-			candidates.pop_back();
-			break;
-		}
-	}
-	edgesToGroups[egoNode].clear();
 }
 
 void
 ExtendSignificance::findSignificantCandidates(const std::string &t_prefix) {
-	Aux::Timer timer; // TODO: Remove timer / move into checkCandidate
-	timer.start();
-
 	for (node candidate : candidatesSorted) {
 		if (enoughSignificantCandidates())
 			break;
-		checkCandidate(t_prefix, timer, candidate);
+		checkCandidate(t_prefix, candidate);
 	}
 }
 
@@ -300,31 +285,35 @@ bool ExtendSignificance::enoughSignificantCandidates() const {
 }
 
 void
-ExtendSignificance::checkCandidate(const std::string &t_prefix, Aux::Timer &timer, node v) {
-	std::vector<std::pair<double, node>> groupEdges = sortGroupsByEdges(v);
-	if (groupEdges.empty())
+ExtendSignificance::checkCandidate(const std::string &t_prefix, node candidate) {
+	Aux::Timer timer{};
+	timer.start();
+
+	std::vector<std::pair<double, node>> numEdgesToGroups = sortGroupsByEdges(candidate);
+	if (numEdgesToGroups.empty())
 		return;
 	addTime(timer, t_prefix + "b    Sort groups by edge count");
 
-	std::vector<double> groupSigs(numGroups);
-	bool added = checkSingleGroups(v, groupEdges, groupSigs);
+	std::vector<double> significanceToGroups(numGroups);
+	bool added = checkSignificanceToSingleGroups(candidate, numEdgesToGroups, significanceToGroups);
 	addTime(timer, t_prefix + "c    Significance single");
 	if (added)
 		return;
 
-	if (!mergeGroups)
-		return;
-	checkMergedGroups(t_prefix, timer, v, groupEdges, groupSigs);
-	addTime(timer, t_prefix + "f    Significance merge");
+	if (mergeGroups) {
+		checkSignificanceToMergedGroups(t_prefix, timer, candidate, numEdgesToGroups,
+		                                significanceToGroups);
+		addTime(timer, t_prefix + "f    Significance merge");
+	}
 }
 
-std::vector<std::pair<double, node>> ExtendSignificance::sortGroupsByEdges(node v) const {
+std::vector<std::pair<double, node>> ExtendSignificance::sortGroupsByEdges(node candidate) const {
 	std::vector<std::pair<double, node>> groupEdges;
-	groupEdges.reserve(edgesToGroups[v].size());
-	for (node p = 0; p < edgesToGroups[v].size(); ++p) {
-		count numEdges = edgesToGroups[v][p];
+	groupEdges.reserve(edgesToGroups[candidate].size());
+	for (node group = 0; group < edgesToGroups[candidate].size(); ++group) {
+		count numEdges = edgesToGroups[candidate][group];
 		if (numEdges >= minEdgesToGroup)
-			groupEdges.emplace_back(numEdges, p);
+			groupEdges.emplace_back(numEdges, group);
 	}
 	std::sort(groupEdges.rbegin(), groupEdges.rend());
 	return groupEdges;
@@ -334,85 +323,83 @@ std::vector<std::pair<double, node>> ExtendSignificance::sortGroupsByEdges(node 
  * For each group, calculate its properties (internal/outgoing stubs, external stubs/nodes)
  * @return data structure that contains the properties of all groups
  */
-GroupProperties ExtendSignificance::calcGroupStubsCounts() const {
-	GroupProperties stubs(numGroups);
+std::vector<GroupProperties> ExtendSignificance::calculateGroupProperties() const {
+	std::vector<GroupProperties> newGroupProperties(numGroups);
 	for (index group = 0; group < numGroups; ++group) {
 		if (!coarseGraph.hasNode(group))
 			continue;
 		auto groupDegree = (count) coarseGraph.weightedDegree(group);
-		stubs.groupTotal[group] = groupDegree;
-		stubs.groupOutgoing[group] = groupDegree - 2 * (count) coarseGraph.weight(group, group);
-		stubs.externalStubs[group] = 2 * G.numberOfEdges() - groupDegree;
-		stubs.externalNodes[group] = G.numberOfNodes() - coarseSizes[group];
+		GroupProperties &properties = newGroupProperties[group];
+		properties.groupTotal = groupDegree;
+		properties.groupOutgoing = groupDegree - 2 * (count) coarseGraph.weight(group, group);
+		properties.externalStubs = 2 * G.numberOfEdges() - groupDegree;
+		properties.externalNodes = G.numberOfNodes() - coarseSizes[group];
 	}
-	return stubs;
+	return newGroupProperties;
 }
 
 /**
  * Check the significance of the candidate to all groups. If the candidate is significant,
  * add it to the list of significant candidates.
- * @param v
- * @param groupEdges
- * @param groupSigs
+ * @param candidate
+ * @param numEdgesToGroups
+ * @param significanceToGroups significance of the candidate to the groups
  * @return true if the candidate is significant to at least on of the groups, else false
  */
-bool ExtendSignificance::checkSingleGroups(node v,
-                                           const std::vector<std::pair<double, node>> &groupEdges,
-                                           std::vector<double> &groupSigs) {
-	count nodeDegree = G.degree(v);
+bool ExtendSignificance::checkSignificanceToSingleGroups(
+		node candidate,
+		const std::vector<std::pair<double, node>> &numEdgesToGroups,
+		std::vector<double> &significanceToGroups) {
+	count nodeDegree = G.degree(candidate);
 	bool added = false;
 	count calcedGroups = 0;
-	for (auto it : groupEdges) {
+	for (auto it : numEdgesToGroups) {
 		if (calcedGroups >= maxGroupCnt)
 			break;
 		++calcedGroups;
-		count numEdges = it.first;
-		node p = it.second;
-		double sScore = calcScore(nodeDegree, numEdges, groupProperties.groupOutgoing[p],
-		                          groupProperties.externalStubs[p],
-		                          groupProperties.externalNodes[p]);
-		groupSigs[p] = sScore;
-		added = addIfSignificant(v, sScore, p);
+		count numEdgesToGroup = it.first;
+		node group = it.second;
+		GroupProperties &properties = groupProperties[group];
+		double sScore = calculateSScore(nodeDegree,
+		                                numEdgesToGroup,
+		                                properties.groupOutgoing,
+		                                properties.externalStubs,
+		                                properties.externalNodes);
+		significanceToGroups[group] = sScore;
+		added = addIfSignificant(candidate, sScore, group);
 		if (added)
 			break;
 	}
 	return added;
 }
 
-bool ExtendSignificance::addIfSignificant(node v, double significance, node group) {
-	if (significance <= maxSignificance) {
-		significantCandidates.push_back(v);
-		significantGroup.insert(v, group);
-		addedCandidates.insert(v);
-		return true;
-	}
-	return false;
-};
-
 bool
-ExtendSignificance::checkMergedGroups(const std::string &t_prefix, Aux::Timer &timer, node v,
-                                      std::vector<std::pair<double, node>> &groupEdges,
-                                      const std::vector<double> &groupSigs) {
-	count nodeDegree = G.degree(v);
+ExtendSignificance::checkSignificanceToMergedGroups(
+		const std::string &t_prefix, Aux::Timer &timer,
+		node candidate,
+		std::vector<std::pair<double, node>> &numEdgesToGroups,
+		const std::vector<double> &groupSigs) {
+	count nodeDegree = G.degree(candidate);
 	if (sortGroupsStrat) {
-		std::sort(groupEdges.begin(), groupEdges.end(), [&](std::pair<double, node> a,
-		                                                    std::pair<double, node> b) {
+		std::sort(numEdgesToGroups.begin(), numEdgesToGroups.end(), [&](std::pair<double, node> a,
+		                                                                std::pair<double, node> b) {
 			return (groupSigs[a.second]) > groupSigs[b.second];
 		});
 	}
 	addTime(timer, t_prefix + "d    Sort groups by Significance");
 
-	auto it = groupEdges.begin();
+	auto it = numEdgesToGroups.begin();
 	node bestGroup = it->second;
 	std::vector<node> mergedGroups{bestGroup};
-	count totalStubsMerged = groupProperties.groupTotal[bestGroup];
-	count outStubsMerged = groupProperties.groupOutgoing[bestGroup];
-	count extStubsMerged = groupProperties.externalStubs[bestGroup];
-	count extNodesMerged = groupProperties.externalNodes[bestGroup];
+	GroupProperties &properties = groupProperties[bestGroup];
+	count totalStubsMerged = properties.groupTotal;
+	count outStubsMerged = properties.groupOutgoing;
+	count extStubsMerged = properties.externalStubs;
+	count extNodesMerged = properties.externalNodes;
 	count numEdgesMerged = (int) it->first;
 	bool added = false;
 
-	for (++it; it < groupEdges.end(); ++it) {
+	for (++it; it < numEdgesToGroups.end(); ++it) {
 		node groupToMerge = it->second;
 		if (groupSigs[groupToMerge] == 1.0)
 			break;
@@ -424,17 +411,18 @@ ExtendSignificance::checkMergedGroups(const std::string &t_prefix, Aux::Timer &t
 		if (newInternalStubs == 0)
 			continue;
 		// Merge group
-		extStubsMerged -= groupProperties.groupTotal[groupToMerge];
-		totalStubsMerged += groupProperties.groupTotal[groupToMerge];
-		outStubsMerged += groupProperties.groupOutgoing[groupToMerge] - newInternalStubs;
+		GroupProperties &mergeProperties = groupProperties[groupToMerge];
+		extStubsMerged -= mergeProperties.groupTotal;
+		totalStubsMerged += mergeProperties.groupTotal;
+		outStubsMerged += mergeProperties.groupOutgoing - newInternalStubs;
 		extNodesMerged -= coarseSizes[groupToMerge];
 		numEdgesMerged += (count) it->first;
 		mergedGroups.push_back(groupToMerge);
 
 		// Calculate new significance
-		double sScore = calcScore(nodeDegree, numEdgesMerged, outStubsMerged,
-		                          extStubsMerged, extNodesMerged);
-		added = addIfSignificant(v, sScore, bestGroup);
+		double sScore = calculateSScore(nodeDegree, numEdgesMerged, outStubsMerged,
+		                                extStubsMerged, extNodesMerged);
+		added = addIfSignificant(candidate, sScore, bestGroup);
 		if (added) {
 			break;
 		}
@@ -443,8 +431,8 @@ ExtendSignificance::checkMergedGroups(const std::string &t_prefix, Aux::Timer &t
 }
 
 double
-ExtendSignificance::calcScore(count nodeDegree, count kIn, count grOut, count groupExtStubs,
-                              count extNodes) const {
+ExtendSignificance::calculateSScore(count nodeDegree, count kIn, count grOut, count groupExtStubs,
+                                    count extNodes) const {
 	double rScore = stochasticSignificance.rScore(nodeDegree, kIn, grOut, groupExtStubs);
 	double returnVal;
 	if (useSigMemo) {
@@ -469,6 +457,16 @@ ExtendSignificance::calcScore(count nodeDegree, count kIn, count grOut, count gr
 	return returnVal;
 }
 
+bool ExtendSignificance::addIfSignificant(node v, double significance, node group) {
+	if (significance <= maxSignificance) {
+		significantCandidates.push_back(v);
+		significantGroup.insert(v, group);
+		addedCandidates.insert(v);
+		return true;
+	}
+	return false;
+}
+
 std::string ExtendSignificance::toString() const {
 	return "ExtendSignificance";
 }
@@ -481,4 +479,5 @@ void ExtendSignificance::resetData() {
 	significantGroup.reset();
 	edgesToGroups.reset();
 }
+
 } /* namespace NetworKit */
