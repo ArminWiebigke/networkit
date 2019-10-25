@@ -112,7 +112,14 @@ class EgoSplitParameterConfig:
 		if "no-extend" in ego_parameter_config:
 			ego_parameters['No Extension'] = standard
 		if "edges-score" in ego_parameter_config:
-			for score in ['Edges', 'Edges div Degree', 'Edges pow 2 div Degree', 'Random']:
+			for score in ['Edges', 'Edges div Degree', 'Edges pow 2 div Degree', 'Random', 'Significance']:
+				name = 'Extend: {}'.format(score)
+				ego_parameters[name] = {
+					**edge_scores_standard,
+					'Edges Score Strategy': score,
+				}
+		if "edges-significance" in ego_parameter_config:
+			for score in ['Edges pow 2 div Degree', 'Random', 'Significance']:
 				name = 'Extend: {}'.format(score)
 				ego_parameters[name] = {
 					**edge_scores_standard,

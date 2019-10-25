@@ -10,7 +10,8 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 def get_benchmark_configs():
 	benchmark_sets = [
 		# Scratchpad(),
-		# EdgesScore(),
+		EdgesScore(),
+		EdgesScoreGlobal(),
 		# EdgesFactor(),
 		# SigMerge(),
 		# SigExtIter(),
@@ -23,7 +24,7 @@ def get_benchmark_configs():
 		# ConnectPersonas(),
 		# GlobalClustering(),
 		# CleanUp(),
-		NewCleanUp(),
+		# NewCleanUp(),
 		# CompareOther(),
 	]
 	# TODO: Wonanders hin?
@@ -83,29 +84,70 @@ class EdgesScore(BenchmarkSet):
 		'result_dir':
 			'edges_score',
 		'plot_dir':
-			'extend/edges/score_norm/',
+			'extend/edges/score/',
 		EgoSplitClusteringAlgorithmsConfig:
 			'fast',
 		EgoSplitParameterConfig:
 			['no-extend', 'edges-score'],
 		'store_ego_nets':
 			True,
-		GraphSetsConfig:
-			['om'],
-		PlotGraphSetConfig:
-			['om'],
-		PlotSetConfig:
-			['ego_net_extend'],
-		PlotAlgoSetConfig:
-			['all'],
+		GraphSetsConfig: [
+			'om',
+		],
+		PlotGraphSetConfig: [
+			'om',
+		],
+		PlotSetConfig: [
+			'ego_net_extend',
+			'timings',
+			'metrics'
+		],
+		PlotAlgoSetConfig: [
+			'all',
+		],
 		'remove_algo_parts':
 			['Ego', ' | ', 'PLP + PLM', 'No Clean Up'],
 		'replace_legend': {
-			'Extend: Edges': '$q_1$',
-			'Extend: Edges div Degree': '$q_2$',
-			'Extend: Edges pow 2 div Degree': '$q_3$',
-			'Extend: Random': '$q_4$'
+			# 'Extend: Edges': '$q_1$',
+			# 'Extend: Edges div Degree': '$q_2$',
+			# 'Extend: Edges pow 2 div Degree': '$q_3$',
+			# 'Extend: Random': '$q_4$'
 		},
+	}
+
+
+class EdgesScoreGlobal(BenchmarkSet):
+	config = {
+		'name':
+			'edges_score',
+		'result_dir':
+			'edges_score',
+		'plot_dir':
+			'extend_edges_significance/',
+		EgoSplitClusteringAlgorithmsConfig:
+			'standard',
+		EgoSplitParameterConfig:
+			['no-extend', 'edges-significance'],
+		'store_ego_nets':
+			True,
+		GraphSetsConfig: [
+			'om',
+			'mu',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+		],
+		PlotSetConfig: [
+			'ego_net_extend',
+			'timings',
+			'metrics'
+		],
+		PlotAlgoSetConfig: [
+			'Leiden-Info',
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', 'PLP + PLM', 'No Clean Up'],
 	}
 
 

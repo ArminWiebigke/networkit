@@ -39,7 +39,7 @@
 #include "../../generators/ClusteredRandomGraphGenerator.h"
 #include "../../generators/ErdosRenyiGenerator.h"
 #include "../CoverF1Similarity.h"
-#include "../EgoSplitting.h"
+#include "../egosplitting/EgoSplitting.h"
 #include "../../structures/Cover.h"
 #include "../Coverage.h"
 #include "../LPPotts.h"

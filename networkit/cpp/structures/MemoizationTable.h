@@ -30,7 +30,9 @@ public:
 	 * @param function
 	 * @return true if function was set, false if the function was already set
 	 */
-	bool trySetValueFunc(std::function<T(index)> function);
+	void setValueFunc(std::function<T(index)> function);
+
+	bool valueFunctionIsSet();
 
 private:
 	std::function<T(index)> valueFunc;
@@ -56,12 +58,11 @@ MemoizationTable<T>::MemoizationTable(T emptyVal, size_t initSize) :
 }
 
 template<typename T>
-bool MemoizationTable<T>::trySetValueFunc(std::function<T(index)> function) {
+void MemoizationTable<T>::setValueFunc(std::function<T(index)> function) {
 	if (valueFuncSet)
-		return false;
+		throw std::runtime_error("Value function was already set!");
 	MemoizationTable::valueFunc = std::move(function);
 	valueFuncSet = true;
-	return true;
 }
 
 template<typename T>
@@ -77,9 +78,13 @@ T MemoizationTable<T>::getValue(index i) {
 
 template<typename T>
 MemoizationTable<T>::~MemoizationTable() {
-	std::cout << "Values calulated: " << valuesCalculated << std::endl;
+//	std::cout << "Values calulated: " << valuesCalculated << std::endl;
 }
 
+template<typename T>
+bool MemoizationTable<T>::valueFunctionIsSet() {
+	return valueFuncSet;
+}
 
 } // namespace NetworKit
 

@@ -10,11 +10,6 @@ networkit_add_module(community
     DissimilarityMeasure.cpp
     DynamicNMIDistance.cpp
     EdgeCut.cpp
-    EgoNetExtensionAndPartition.cpp
-    EgoSplitting.cpp
-    ExtendEdges.cpp
-    ExtendEgoNetStrategy.cpp
-    ExtendSignificance.cpp
     GraphClusteringTools.cpp
     GraphStructuralRandMeasure.cpp
     HubDominance.cpp
@@ -42,10 +37,22 @@ networkit_add_module(community
     SignificanceCleanup.cpp
     SLPA.cpp
     StablePartitionNodes.cpp
+    cleanup/MergeCommunities.cpp
+    cleanup/SignificanceCommunityCleanUp.cpp
+    cleanup/SingleCommunityCleanUp.cpp
+    cleanup/StochasticDistribution.cpp
+    cleanup/StochasticSignificance.cpp
+    egosplitting/EgoNetExtensionAndPartition.cpp
+    egosplitting/EgoSplitting.cpp
+    egosplitting/ExtendEdges.cpp
+    egosplitting/ExtendEgoNetStrategy.cpp
+    egosplitting/ExtendSignificance.cpp
     )
 
 networkit_module_link_modules(community
     auxiliary base coarsening components flow graph matching structures)
 
 add_subdirectory(test)
+add_subdirectory(cleanup/test)
+add_subdirectory(egosplitting/test)
 

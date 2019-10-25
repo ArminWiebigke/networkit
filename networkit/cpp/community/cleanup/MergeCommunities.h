@@ -8,10 +8,10 @@
 #ifndef NETWORKIT_MERGECOMMUNITIES_H
 #define NETWORKIT_MERGECOMMUNITIES_H
 
-#include "../graph/Graph.h"
+#include "../../graph/Graph.h"
 #include "SingleCommunityCleanUp.h"
-#include "../structures/Partition.h"
-#include "../base/Algorithm.h"
+#include "../../structures/Partition.h"
+#include "../../base/Algorithm.h"
 
 namespace NetworKit {
 
@@ -28,7 +28,7 @@ public:
 
 	void run() override;
 
-	std::vector<Community> & getCleanedCommunities();
+	std::vector<Community> getCleanedCommunities();
 
 	std::string toString() const override;
 

@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "../../generators/ClusteredRandomGraphGenerator.h"
-#include "../../community/EgoSplitting.h"
+#include "../../community/egosplitting/EgoSplitting.h"
 #include "../../structures/Cover.h"
 #include "../../io/EdgeListReader.h"
 #include "../../io/CoverReader.h"

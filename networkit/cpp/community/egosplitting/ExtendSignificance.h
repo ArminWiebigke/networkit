@@ -10,15 +10,15 @@
 
 #include <vector>
 
-#include "../graph/Graph.h"
-#include "../structures/NodeMapping.h"
-#include "../auxiliary/Timings.h"
-#include "../structures/LowToHighDirectedGraph.h"
-#include "../structures/Partition.h"
-#include "../base/Algorithm.h"
+#include "../../graph/Graph.h"
+#include "../../structures/NodeMapping.h"
+#include "../../auxiliary/Timings.h"
+#include "../../structures/LowToHighDirectedGraph.h"
+#include "../../structures/Partition.h"
+#include "../../base/Algorithm.h"
 #include "EgoSplitting.h"
 #include "ExtendEgoNetStrategy.h"
-#include "../structures/MemoizationTable.h"
+#include "../../structures/MemoizationTable.h"
 #include "../cleanup/StochasticSignificance.h"
 
 namespace NetworKit {
@@ -60,7 +60,7 @@ private:
 	// Algorithm parameters
 	const bool useSigMemo;
 	const bool mergeGroups;
-	const bool sortGroupsStrat;
+	const bool sortGroupsBySignificance;
 	const double maxSignificance;
 	const count maxGroupCnt;
 	const count minEdgesToGroup;  // Minimum number of edges to check for significance

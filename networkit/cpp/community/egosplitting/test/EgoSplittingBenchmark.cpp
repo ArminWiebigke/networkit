@@ -7,20 +7,20 @@
 
 #include <gtest/gtest.h>
 
-#include "../../auxiliary/Random.h"
-#include "../PLP.h"
-#include "../PLM.h"
-#include "../Modularity.h"
+#include "../../../auxiliary/Random.h"
+#include "../../PLP.h"
+#include "../../PLM.h"
+#include "../../Modularity.h"
 #include "../EgoSplitting.h"
-#include "../LPPotts.h"
-#include "../../centrality/Betweenness.h"
-#include "../../centrality/PageRank.h"
-#include "../../auxiliary/Timer.h"
-#include "../../structures/Partition.h"
-#include "../../graph/Graph.h"
-#include "../../io/METISGraphReader.h"
-#include "../../io/EdgeListReader.h"
-#include "../../generators/ClusteredRandomGraphGenerator.h"
+#include "../../LPPotts.h"
+#include "../../../centrality/Betweenness.h"
+#include "../../../centrality/PageRank.h"
+#include "../../../auxiliary/Timer.h"
+#include "../../../structures/Partition.h"
+#include "../../../graph/Graph.h"
+#include "../../../io/METISGraphReader.h"
+#include "../../../io/EdgeListReader.h"
+#include "../../../generators/ClusteredRandomGraphGenerator.h"
 
 namespace NetworKit {
 

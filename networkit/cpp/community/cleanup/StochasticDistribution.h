@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#include "../Globals.h"
+#include "../../Globals.h"
 
 namespace NetworKit {
 

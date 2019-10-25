@@ -13,7 +13,7 @@
 #include "../PLP.h"
 #include "../PLM.h"
 #include "../Modularity.h"
-#include "../EgoSplitting.h"
+#include "../egosplitting/EgoSplitting.h"
 #include "../LPPotts.h"
 #include "../../centrality/Betweenness.h"
 #include "../../centrality/PageRank.h"

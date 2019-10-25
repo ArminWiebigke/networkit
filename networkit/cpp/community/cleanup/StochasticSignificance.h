@@ -9,7 +9,7 @@
 #define NETWORKIT_STOCHASTICSIGNIFICANCE_H
 
 #include "StochasticDistribution.h"
-#include "../Globals.h"
+#include "../../Globals.h"
 
 namespace NetworKit {
 
@@ -22,7 +22,7 @@ public:
 	explicit StochasticSignificance(count maxValue);
 
 	/**
-	 * Calculate the s-score
+	 * Calculate the r-score
 	 * @param kIn Number of edges between node and community
 	 * @param cOut Number of outgoing stubs from the community
 	 * @param extStubs Number of stubs in the rest of the graph (without the node and the community)
@@ -32,8 +32,8 @@ public:
 	double rScore(count k, count kIn, count cOut, count extStubs) const;
 
 	/**
-	 * Calculate the order statistic
-	 * @param rScore the s-Score of the candidate
+	 * Calculate the order statistic (s-score)
+	 * @param rScore the r-score of the candidate
 	 * @param externalNodes the number of external nodes
 	 * @param pos the position of the candidate
 	 * @return

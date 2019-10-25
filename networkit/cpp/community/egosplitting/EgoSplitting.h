@@ -1,5 +1,5 @@
 /*
- * EgoSplitting.h
+ * egosplitting.h
  *
  * Created: 2018-12-11
  * Author: Armin Wiebigke
@@ -12,17 +12,17 @@
 #include <functional>
 #include <ostream>
 
-#include "../Globals.h"
-#include "../base/Algorithm.h"
-#include "../structures/Cover.h"
-#include "../structures/LowToHighDirectedGraph.h"
-#include "../structures/NodeMapping.h"
-#include "../auxiliary/Timer.h"
-#include "../auxiliary/Timings.h"
-#include "../structures/MemoizationTable.h"
+#include "../../Globals.h"
+#include "../../base/Algorithm.h"
+#include "../../structures/Cover.h"
+#include "../../structures/LowToHighDirectedGraph.h"
+#include "../../structures/NodeMapping.h"
+#include "../../auxiliary/Timer.h"
+#include "../../auxiliary/Timings.h"
+#include "../../structures/MemoizationTable.h"
 #include "../cleanup/StochasticDistribution.h"
 #include "../cleanup/StochasticSignificance.h"
-#include "../structures/SparseVector.h"
+#include "../../structures/SparseVector.h"
 
 namespace NetworKit {
 

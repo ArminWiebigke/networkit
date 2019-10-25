@@ -8,9 +8,9 @@
 #ifndef NETWORKIT_CLEAN_UP_H
 #define NETWORKIT_CLEAN_UP_H
 
-#include "../base/Algorithm.h"
-#include "../graph/Graph.h"
-#include "../structures/Cover.h"
+#include "../../base/Algorithm.h"
+#include "../../graph/Graph.h"
+#include "../../structures/Cover.h"
 #include "StochasticSignificance.h"
 #include "SingleCommunityCleanUp.h"
 
@@ -37,27 +37,16 @@ public:
 	                             double scoreThreshold = 0.1,
 	                             double minOverlapRatio = 0.5);
 
-	/**
-	 * Run the algorithm.
-	 */
 	void run() override;
 
 	/**
 	 * Get the result cover.
-	 * @return cover containing the cleaned communities
+	 * @return A cover containing the cleaned communities
 	 */
 	Cover getCover();
 
-	/**
-	 * Get a string representation of the algorithm.
-	 *
-	 * @return string representation of algorithm and parameters.
-	 */
 	std::string toString() const override;
 
-	/**
-	 * @return True if algorithm can run multi-threaded.
-	 */
 	bool isParallel() const override;
 
 private:

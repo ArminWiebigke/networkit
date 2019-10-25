@@ -10,8 +10,9 @@
 
 #include <unordered_map>
 
-#include "../base/Algorithm.h"
-#include "../Globals.h"
+#include "../../base/Algorithm.h"
+#include "../../Globals.h"
+#include "../../auxiliary/Timings.h"
 #include "EgoSplitting.h"
 
 namespace NetworKit {

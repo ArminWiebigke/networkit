@@ -8,19 +8,19 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include "../../generators/ClusteredRandomGraphGenerator.h"
-#include "../../community/EgoSplitting.h"
-#include "../../structures/Cover.h"
-#include "../../io/EdgeListReader.h"
-#include "../../io/CoverReader.h"
+#include "../../../generators/ClusteredRandomGraphGenerator.h"
+#include "../../egosplitting/EgoSplitting.h"
+#include "../../../structures/Cover.h"
+#include "../../../io/EdgeListReader.h"
+#include "../../../io/CoverReader.h"
 #include "../SignificanceCommunityCleanUp.h"
 #include "../StochasticDistribution.h"
-#include "../../io/METISGraphReader.h"
-#include "../../generators/ErdosRenyiGenerator.h"
+#include "../../../io/METISGraphReader.h"
+#include "../../../generators/ErdosRenyiGenerator.h"
 #include "../SingleCommunityCleanUp.h"
 #include "../MergeCommunities.h"
-#include "../../io/METISGraphWriter.h"
-#include "../../oslom/OslomCleanUp.h"
+#include "../../../io/METISGraphWriter.h"
+#include "../../../oslom/OslomCleanUp.h"
 
 namespace NetworKit {
 
@@ -86,12 +86,6 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 
 	std::set<node> cleanedCommunity = singleCommunityCleanUp.clean(testCommunity);
 
-	count includedCliqueNodes = 0;
-	for (node u = 0; u < cliqueSize; ++u)
-		includedCliqueNodes += cleanedCommunity.count(u);
-	EXPECT_EQ(includedCliqueNodes, cliqueSize);
-	// Often there are one or two nodes which are strongly connected to the clique by chance
-	EXPECT_EQ(cleanedCommunity.size(), cliqueSize);
 	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 
@@ -117,7 +111,6 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUpOslom) {
 		testCommunity.insert(u);
 	Cover cover(G.upperNodeIdBound());
 	cover.addSubset(testCommunity);
-
 	std::vector<std::string> arguments{"-simple_cleanup",
 	                                   "-merge_discarded", "-discard_max_extend_groups",
 	                                   "-max_extend", "2",
@@ -129,11 +122,6 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUpOslom) {
 
 	EXPECT_EQ(cleanedCover.numberOfSubsets(), 1);
 	std::set<node> cleanedCommunity = cleanedCover.getMembers(0);
-	count includedCliqueNodes = 0;
-	for (node u = 0; u < cliqueSize; ++u)
-		includedCliqueNodes += cleanedCommunity.count(u);
-	EXPECT_EQ(includedCliqueNodes, cliqueSize);
-	EXPECT_EQ(cleanedCommunity.size(), cliqueSize);
 	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 
@@ -169,15 +157,8 @@ TEST_F(CleanupGTest, testMergeDiscarded) {
 	auto cleanedCommunities = mergeCommunities.getCleanedCommunities();
 
 	EXPECT_EQ(cleanedCommunities.size(), 1);
-	if (cleanedCommunities.empty())
-		return;
 	auto cleanedCommunity = cleanedCommunities.front();
-	count includedCliqueNodes = 0;
-	for (node u = 0; u < cliqueSize; ++u)
-		includedCliqueNodes += cleanedCommunity.count(u);
-	EXPECT_EQ(includedCliqueNodes, cliqueSize);
-	// Often there are one or two nodes which are strongly connected to the clique by chance
-	EXPECT_LE(cleanedCommunity.size(), cliqueSize + 2);
+	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 
 TEST_F(CleanupGTest, testBinomialCoeff) {

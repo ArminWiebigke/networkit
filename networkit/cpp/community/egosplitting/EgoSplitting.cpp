@@ -1,5 +1,5 @@
 /*
- * EgoSplitting.h
+ * egosplitting.h
  *
  * Created: 2018-12-11
  * Author: Armin Wiebigke
@@ -12,17 +12,17 @@
 #include <algorithm>
 
 #include "EgoSplitting.h"
-#include "../structures/Partition.h"
-#include "../components/ConnectedComponents.h"
-#include "../auxiliary/Log.h"
-#include "../auxiliary/SignalHandling.h"
-#include "../auxiliary/Timer.h"
-#include "../coarsening/ParallelPartitionCoarsening.h"
-#include "../graph/RandomMaximumSpanningForest.h"
-#include "PLM.h"
+#include "../../structures/Partition.h"
+#include "../../components/ConnectedComponents.h"
+#include "../../auxiliary/Log.h"
+#include "../../auxiliary/SignalHandling.h"
+#include "../../auxiliary/Timer.h"
+#include "../../coarsening/ParallelPartitionCoarsening.h"
+#include "../../graph/RandomMaximumSpanningForest.h"
+#include "../PLM.h"
 #include "EgoNetExtensionAndPartition.h"
-#include "../oslom/Stochastics.h"
-#include "../auxiliary/ParseString.h"
+#include "../../oslom/Stochastics.h"
+#include "../../auxiliary/ParseString.h"
 
 #define true_or_throw(cond, msg) if (!cond) throw std::runtime_error(msg)
 #define W(x) #x << "=" << x << ", "
@@ -424,7 +424,7 @@ Cover EgoSplitting::getCover() {
 }
 
 std::string EgoSplitting::toString() const {
-	return "EgoSplitting";
+	return "egosplitting";
 }
 
 std::unordered_map<node, std::vector<WeightedEdge>> EgoSplitting::getEgoNets() {

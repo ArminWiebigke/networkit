@@ -165,7 +165,7 @@ void MergeCommunities::checkMergedCommunities() {
 	}
 }
 
-std::vector<Community> &MergeCommunities::getCleanedCommunities() {
+std::vector<Community> MergeCommunities::getCleanedCommunities() {
 	return cleanedCommunities;
 }
 

@@ -4909,7 +4909,7 @@ cdef cppclass ClusteringFunctionWrapper:
 
 			return move((<Partition>(pyP))._this)
 
-cdef extern from "cpp/cleanup/SignificanceCommunityCleanUp.h":
+cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
 	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
 		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
 			double scoreThreshold, double minOverlapRatio) except +
@@ -4949,7 +4949,7 @@ cdef extern from "cpp/graph/Graph.h":
 		node v
 		edgeweight weight
 
-cdef extern from "cpp/community/EgoSplitting.h":
+cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
 		_EgoSplitting(_Graph G) except +
 		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +

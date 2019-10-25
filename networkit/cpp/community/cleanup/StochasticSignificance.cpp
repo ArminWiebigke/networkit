@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "StochasticSignificance.h"
-#include "../auxiliary/Random.h"
+#include "../../auxiliary/Random.h"
 
 namespace NetworKit {
 
@@ -19,8 +19,7 @@ StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue) 
 double
 StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) const {
 	assert(kIn <= cOut);
-	count openStubs = extStubs + cOut; // TODO: Include cOut or not?
-//	count openStubs = extStubs;
+	count openStubs = extStubs + cOut;
 	dist.setMaxValue(openStubs);
 
 	double exactProb = 0, rightCum = 0;
@@ -37,7 +36,7 @@ StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) c
 
 	double bootRandomness = Aux::Random::real(-0.5, 0.5) * 1e-6;
 	double bootInterval = (0.5 + bootRandomness) * dist.hypergeometricDist(openStubs, cOut, k, kIn);
-//	double bootInterval = (0.5 + bootRandomness) * exactProb; // TODOe: Use this instead of hypergeom.
+//	double bootInterval = (0.5 + bootRandomness) * exactProb; // TODO: Use this instead of hypergeom.
 	double score = rightCum + bootInterval;
 //	double score = rightCum + exactProb; // TODO: Use bootInterval or not?
 //	assert(score <= 1.001);

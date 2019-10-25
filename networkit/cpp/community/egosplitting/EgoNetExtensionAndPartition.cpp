@@ -9,13 +9,13 @@
 #include <utility>
 
 #include "EgoNetExtensionAndPartition.h"
-#include "../auxiliary/Timer.h"
-#include "../coarsening/ParallelPartitionCoarsening.h"
-#include "../structures/NodeMapping.h"
-#include "../oslom/Stochastics.h"
+#include "../../auxiliary/Timer.h"
+#include "../../coarsening/ParallelPartitionCoarsening.h"
+#include "../../structures/NodeMapping.h"
+#include "../../oslom/Stochastics.h"
 #include "ExtendSignificance.h"
 #include "ExtendEdges.h"
-#include "../auxiliary/ParseString.h"
+#include "../../auxiliary/ParseString.h"
 
 namespace NetworKit {
 

@@ -8,9 +8,9 @@
 #include <set>
 
 #include "ExtendSignificance.h"
-#include "../auxiliary/ParseString.h"
-#include "../coarsening/ParallelPartitionCoarsening.h"
-#include "../oslom/Stochastics.h"
+#include "../../auxiliary/ParseString.h"
+#include "../../coarsening/ParallelPartitionCoarsening.h"
+#include "../../oslom/Stochastics.h"
 #include "../cleanup/StochasticDistribution.h"
 #include "EgoSplitting.h"
 
@@ -28,7 +28,7 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
 		  stochasticSignificance(egoNetData.stochasticSignificance),
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
 		  mergeGroups(parameters.at("signMerge") == "Yes"),
-		  sortGroupsStrat(parameters.at("sortGroups") == "Significance"),
+		  sortGroupsBySignificance(parameters.at("sortGroups") == "Significance"),
 		  maxSignificance(Aux::stringToDouble(parameters.at("maxSignificance"))),
 		  maxGroupCnt(std::stoi(parameters.at("maxGroupsConsider"))),
 		  minEdgesToGroup(std::stoi(parameters.at("minEdgesToGroupSig"))),
@@ -41,26 +41,28 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
 }
 
 void ExtendSignificance::setMemoizationFunction() const {
-	double maxSig = maxSignificance;
-	// For a given number of external nodes, calculate the minimal s-score that is significant
-	// We can then simply compare the s-values instead of calculating the ordered statistics
-	// Only works if the position is known before. 0 ( = best random node) in this case.
-	const StochasticSignificance &stoch = stochasticSignificance;
-	sigTable.trySetValueFunc([maxSig, &stoch](index extNodes) {
-		double minRScore = 0.125;
-		double step = 0.0625;
-		count iterations = 20;
-		for (count i = 0; i < iterations; ++i) {
-			double sig = stoch.orderStatistic(minRScore, extNodes, 1);
-			if (sig < maxSig) {
-				minRScore += step;
-			} else {
-				minRScore -= step;
+	if (!sigTable.valueFunctionIsSet()) {
+		double maxSig = maxSignificance;
+		// For a given number of external nodes, calculate the minimal s-score that is significant
+		// We can then simply compare the s-values instead of calculating the ordered statistics
+		// Only works if the position is known before. 1 ( = best random node) in this case.
+		const StochasticSignificance &stoch = stochasticSignificance;
+		sigTable.setValueFunc([maxSig, &stoch](index extNodes) {
+			double minRScore = 0.125;
+			double step = 0.0625;
+			count iterations = 20;
+			for (count i = 0; i < iterations; ++i) {
+				double sig = stoch.orderStatistic(minRScore, extNodes, 1);
+				if (sig < maxSig) {
+					minRScore += step;
+				} else {
+					minRScore -= step;
+				}
+				step /= 2;
 			}
-			step /= 2;
-		}
-		return minRScore;
-	});
+			return minRScore;
+		});
+	}
 }
 
 void ExtendSignificance::run() {
@@ -380,13 +382,13 @@ ExtendSignificance::checkSignificanceToMergedGroups(
 		std::vector<std::pair<double, node>> &numEdgesToGroups,
 		const std::vector<double> &groupSigs) {
 	count nodeDegree = G.degree(candidate);
-	if (sortGroupsStrat) {
-		std::sort(numEdgesToGroups.begin(), numEdgesToGroups.end(), [&](std::pair<double, node> a,
-		                                                                std::pair<double, node> b) {
-			return (groupSigs[a.second]) > groupSigs[b.second];
-		});
+	if (sortGroupsBySignificance) {
+		std::sort(numEdgesToGroups.begin(), numEdgesToGroups.end(),
+		          [&](std::pair<double, node> a, std::pair<double, node> b) {
+			          return (groupSigs[a.second]) > groupSigs[b.second];
+		          });
+		addTime(timer, t_prefix + "d    Sort groups by Significance");
 	}
-	addTime(timer, t_prefix + "d    Sort groups by Significance");
 
 	auto it = numEdgesToGroups.begin();
 	node bestGroup = it->second;
@@ -396,21 +398,18 @@ ExtendSignificance::checkSignificanceToMergedGroups(
 	count outStubsMerged = properties.groupOutgoing;
 	count extStubsMerged = properties.externalStubs;
 	count extNodesMerged = properties.externalNodes;
-	count numEdgesMerged = (int) it->first;
+	count numEdgesMerged = it->first;
 	bool added = false;
 
 	for (++it; it < numEdgesToGroups.end(); ++it) {
 		node groupToMerge = it->second;
 		if (groupSigs[groupToMerge] == 1.0)
 			break;
+		// Merge group
 		count newInternalStubs = 0;
 		for (node mergedGroup : mergedGroups) {
 			newInternalStubs += 2 * (count) coarseGraph.weight(mergedGroup, groupToMerge);
 		}
-		// Groups have to be connected (?)
-		if (newInternalStubs == 0)
-			continue;
-		// Merge group
 		GroupProperties &mergeProperties = groupProperties[groupToMerge];
 		extStubsMerged -= mergeProperties.groupTotal;
 		totalStubsMerged += mergeProperties.groupTotal;

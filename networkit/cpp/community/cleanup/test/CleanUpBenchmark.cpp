@@ -7,10 +7,10 @@
 
 #include <gtest/gtest.h>
 
-#include "../../auxiliary/Timer.h"
-#include "../../graph/Graph.h"
-#include "../../io/EdgeListReader.h"
-#include "../../community/EgoSplitting.h"
+#include "../../../auxiliary/Timer.h"
+#include "../../../graph/Graph.h"
+#include "../../../io/EdgeListReader.h"
+#include "../../egosplitting/EgoSplitting.h"
 #include "../SignificanceCommunityCleanUp.h"
 
 namespace NetworKit {
@@ -33,7 +33,7 @@ TEST_F(CleanUpBenchmark, benchCommunityCleanup) {
 	algo.run();
 	Cover cover = algo.getCover();
 	timer.stop();
-	std::cout << "EgoSplitting took " << timer.elapsedMilliseconds() << "ms" << std::endl;
+	std::cout << "egosplitting took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 
 	timer.start();
 	SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);

@@ -10,8 +10,8 @@
 
 #include "ExtendEgoNetStrategy.h"
 #include "EgoSplitting.h"
-#include "../auxiliary/Timings.h"
-#include "../structures/SparseVector.h"
+#include "../../auxiliary/Timings.h"
+#include "../../structures/SparseVector.h"
 
 namespace NetworKit {
 
@@ -27,8 +27,20 @@ public:
 	std::string toString() const override;
 
 private:
+	using NodeAndScore = std::pair<node, double>;
 	SparseVector<double> &nodeScores;
-	double normalizeScore(node v, double score) const;
+	std::string scoreStrategy;
+	StochasticSignificance significance;
+	count outgoingStubs;
+	count externalStubs;
+
+	double calculateScore(node v, count numEdges) const;
+
+	std::vector<NodeAndScore> calculateScores(const std::vector<node> &candidates) const;
+
+	std::vector<node> searchForCandidates();
+
+	void takeBestCandidates(std::vector<NodeAndScore> &candidatesAndScores);
 };
 
 } /* namespace NetworKit */
