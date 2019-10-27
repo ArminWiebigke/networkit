@@ -55,6 +55,8 @@ private:
 	const Cover &groundTruth;
 	const EgoNetData &egoNetData;
 
+	void extendAndPartition();
+
 	void partitionEgoNet();
 
 	void extendEgoNet(const std::string &extendStrategy);
@@ -64,8 +66,6 @@ private:
 	Partition createGroundTruthPartition() const;
 
 	count extendIterationsCount() const;
-
-	void extendAndPartition();
 };
 
 } /* namespace NetworKit */

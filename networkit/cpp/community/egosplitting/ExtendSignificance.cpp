@@ -104,7 +104,6 @@ void ExtendSignificance::run() {
 	assert(debugTest());
 
 	findSignificantCandidates("6");
-	addTime(timer, "6    Calc significance one");
 
 	count updateIterations = std::stoi(parameters.at("secondarySigExtRounds"));
 	for (count i = 0; i < updateIterations; ++i) {
@@ -112,9 +111,9 @@ void ExtendSignificance::run() {
 			break;
 		updateCandidates();
 		addedCandidates.clear();
-		findSignificantCandidates("8");
+		findSignificantCandidates("6");
 	}
-	addTime(timer, "8    Check updated candidates");
+	addTime(timer, "6    Find significant candidates");
 
 #ifndef NDEBUG
 	std::set<node> resultSet;

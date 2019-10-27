@@ -9,12 +9,11 @@
 #include <utility>
 
 #include "EgoNetExtensionAndPartition.h"
-#include "../../auxiliary/Timer.h"
 #include "../../coarsening/ParallelPartitionCoarsening.h"
 #include "../../structures/NodeMapping.h"
 #include "../../oslom/Stochastics.h"
 #include "ExtendSignificance.h"
-#include "ExtendEdges.h"
+#include "ExtendByScore.h"
 #include "../../auxiliary/ParseString.h"
 
 namespace NetworKit {
@@ -134,7 +133,7 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 		addTimings(extendEgoNetStrategy.getTimings(), "33");
 	};
 	if (extendStrategy == "Edges") { ;
-		getExtendNodes(ExtendEdges(egoNetData, extendNodeCnt, egoGraph, egoNode));
+		getExtendNodes(ExtendByScore(egoNetData, extendNodeCnt, egoGraph, egoNode));
 	} else if (extendStrategy == "Significance") {
 		assert(result.numberOfElements() >= egoGraph.numberOfNodes());
 		getExtendNodes(ExtendSignificance(egoNetData, result, extendNodeCnt, egoGraph,
@@ -161,8 +160,6 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	}
 
 	// Add edges to ego-net
-	// TODO?: We already looked at the edges from neighbors to neighbors of neighbors, store these
-	//  for each candidate. Then we only have to add edges between neighbors of neighbors.
 	for (node v : egoMapping.globalNodes()) {
 		directedG.forEdgesOf(v, [&](node, node w, edgeweight weight) {
 			if (egoMapping.isMapped(w)) {

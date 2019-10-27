@@ -8,18 +8,12 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include "../../../generators/ClusteredRandomGraphGenerator.h"
 #include "../../egosplitting/EgoSplitting.h"
-#include "../../../structures/Cover.h"
 #include "../../../io/EdgeListReader.h"
-#include "../../../io/CoverReader.h"
 #include "../SignificanceCommunityCleanUp.h"
-#include "../StochasticDistribution.h"
 #include "../../../io/METISGraphReader.h"
 #include "../../../generators/ErdosRenyiGenerator.h"
-#include "../SingleCommunityCleanUp.h"
 #include "../MergeCommunities.h"
-#include "../../../io/METISGraphWriter.h"
 #include "../../../oslom/OslomCleanUp.h"
 
 namespace NetworKit {

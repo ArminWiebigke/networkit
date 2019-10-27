@@ -10,7 +10,6 @@
 
 #include "../../../auxiliary/Random.h"
 #include "../../../generators/ClusteredRandomGraphGenerator.h"
-#include "../../../graph/Graph.h"
 #include "../../../io/EdgeListReader.h"
 #include "../EgoSplitting.h"
 #include "../../PLM.h"

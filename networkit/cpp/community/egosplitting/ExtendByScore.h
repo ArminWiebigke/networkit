@@ -1,5 +1,5 @@
 /*
- * ExtendEdges.h
+ * ExtendByScore.h
  *
  * Created: 2019-06-19
  * Author: Armin Wiebigke
@@ -15,10 +15,10 @@
 
 namespace NetworKit {
 
-class ExtendEdges : public ExtendEgoNetStrategy {
+class ExtendByScore : public ExtendEgoNetStrategy {
 public:
-	explicit ExtendEdges(const EgoNetData &egoNetData, count maxCandidates,
-	                     const Graph &egoGraph, node egoNode);
+	explicit ExtendByScore(const EgoNetData &egoNetData, count maxCandidates,
+	                       const Graph &egoGraph, node egoNode);
 
 	void run() override;
 

@@ -14,15 +14,11 @@
 #include "EgoSplitting.h"
 #include "../../structures/Partition.h"
 #include "../../components/ConnectedComponents.h"
-#include "../../auxiliary/Log.h"
 #include "../../auxiliary/SignalHandling.h"
-#include "../../auxiliary/Timer.h"
 #include "../../coarsening/ParallelPartitionCoarsening.h"
 #include "../../graph/RandomMaximumSpanningForest.h"
 #include "../PLM.h"
 #include "EgoNetExtensionAndPartition.h"
-#include "../../oslom/Stochastics.h"
-#include "../../auxiliary/ParseString.h"
 
 #define true_or_throw(cond, msg) if (!cond) throw std::runtime_error(msg)
 #define W(x) #x << "=" << x << ", "
@@ -72,7 +68,6 @@ void EgoSplitting::init() {
 	parameters["connectPersonas"] = "Yes";
 	parameters["normalizePersonaCut"] = "No";
 	parameters["connectPersonasStrat"] = "spanning";
-	parameters["maxPersonaEdges"] = "1";
 	parameters["normalizePersonaWeights"] = "unweighted";
 	parameters["iterationWeight"] = "No";
 
@@ -172,7 +167,8 @@ void EgoSplitting::createEgoNets() {
 		});
 		addTime(timer, "10    Build EgoNet");
 
-		EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph, localClusteringAlgo);
+		EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
+		                                            localClusteringAlgo);
 		extAndPartition.run();
 		Partition egoPartition = extAndPartition.getPartition();
 		Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
@@ -281,20 +277,13 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	// Insert edges between the personas
 	std::string strategy = parameters.at("connectPersonasStrat");
 	if (strategy == "spanning") {
-		// TODO: Better weights
-		// Every persona gets at most 'iterations' edges
-		count iterations = std::stoi(parameters.at("maxPersonaEdges"));
-		for (count i = 0; i < iterations; ++i) {
-			RandomMaximumSpanningForest span{coarseGraph};
-			span.run();
-			auto spanningForest = span.getMSF();
-			spanningForest.forEdges([&](node u, node v, edgeweight w) {
-				if (parameters.at("iterationWeight") == "Yes")
-					w = 1.0 / (i + 1);
-				addPersonaEdge(u, v, w);
-				coarseGraph.removeEdge(u, v);
-			});
-		}
+		RandomMaximumSpanningForest span{coarseGraph};
+		span.run();
+		auto spanningForest = span.getMSF();
+		spanningForest.forEdges([&](node u, node v, edgeweight w) {
+			addPersonaEdge(u, v, w);
+			coarseGraph.removeEdge(u, v);
+		});
 	} else if (strategy == "all") {
 		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
 			addPersonaEdge(u, v, w);
