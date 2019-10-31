@@ -20,6 +20,7 @@ networkit_add_module(community
     LPDegreeOrdered.cpp
     LPPotts.cpp
     LocalCoverEvaluation.cpp
+	LocalMoveMapEquation.cpp
     LocalPartitionEvaluation.cpp
     Modularity.cpp
     NMIDistance.cpp

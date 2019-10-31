@@ -5,4 +5,4 @@ pandas >= 0.25
 Cython
 python-igraph
 leidenalg
-infomap
+infomap==1.0.0b50
