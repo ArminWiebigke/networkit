@@ -31,7 +31,7 @@ def get_benchmark_configs():
 	# To enforce a specific order of the algorithms, numbers are added to algorithm names.
 	# In the plots, these numbers should be removed.
 	for benchmark_set in benchmark_sets:
-		benchmark_set.remove_algo_parts.extend(['({:03.0f})'.format(i) for i in range(0, 30)])
+		benchmark_set.remove_algo_parts.extend(['({:03.0f})'.format(i) for i in range(30)])
 	return benchmark_sets
 
 
@@ -489,9 +489,9 @@ class GlobalClustering(BenchmarkSet):
 			'comm_sizes',
 		],
 		PlotAlgoSetConfig:
-			['Info-local', 'Leiden-local'],
+			['Info-local', 'Leiden-local', 'MapEquation-local'],
 		'remove_algo_parts':
-			['Ego', ' | ', 'No Clean Up', 'Infomap + ', 'Leiden + ', 'No Extension', 'EdgesScore'],
+			['Ego', ' | ', 'No Clean Up', 'Infomap + ', 'Leiden + ', 'MapEquation + ', 'No Extension', 'EdgesScore'],
 		'replace_legend':
 			{'Leiden': 'LeidenMod', 'Potts': 'LPPotts'},
 	}

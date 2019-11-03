@@ -16,26 +16,20 @@ def set_sns_style():
 	        )
 
 
-def set_legend(ax, legend_handles=None, legend_labels=None):
+def set_legend(ax, num_columns, legend_handles, legend_labels):
 	legend_args = {
-		**get_legend_args(),
+		"fontsize": legend_font_size(),
+		"ncol": num_columns,
 		"loc": "lower center",
-		"bbox_to_anchor": (0.5, 1.01)
+		"bbox_to_anchor": (0.5, 1.01),
 	}
-	if legend_handles is None:
-		ax.legend(**legend_args)
-	else:
-		ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
-
-
-def get_legend_args():
-	legend_args = {
-		# "ncol": 3,
-		"prop": {'size': 8}
-	}
-	return legend_args
+	ax.legend(**legend_args, handles=legend_handles, labels=legend_labels)
 
 
 def set_layout():
 	# plt.tight_layout(rect=(0, 0, 1, 0.96))
 	plt.tight_layout(pad=0.5)
+
+
+def legend_font_size():
+	return 10

@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from egosplit.benchmarks.execution.cleanup import CleanUpConfig
-from networkit.community import PLM, PLP, LPPotts
+from networkit.community import PLM, PLP, LPPotts, LocalMoveMapEquation
 from egosplit.benchmarks.data_structures.algorithms import *
 from egosplit.external import *
 
@@ -12,30 +12,27 @@ class EgoSplitClusteringAlgorithmsConfig:
 		partition_algos = OrderedDict()
 
 		if ego_part_algos == "local" or ego_part_algos == "global":
-			partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
+			# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 			partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-			# partition_algos['Potts_0.01'] = [lambda g: LPPotts(g, 0.01, 1, 20).run().getPartition()]
-			# partition_algos['Potts_0.05'] = [lambda g: LPPotts(g, 0.05, 1, 20).run().getPartition()]
-			partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
-			# partition_algos['LPPotts_par'] = [
-			# 	lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
-			# 	lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()]
+			# partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 			partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 			partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
 			partition_algos['Leiden'] = [lambda g: partitionLeiden(g, 'modularity')]
-			# partition_algos['Leiden_Sig'] = [lambda g: partitionLeiden(g, 'significance')]
-			# partition_algos['Leiden_SigRes'] = [lambda g: leidenSignificance(g)]
+			partition_algos['MapEquation'] = [lambda g: LocalMoveMapEquation(g, False).run().getPartition()]
+			partition_algos['MapEquationHierarch'] = [lambda g: LocalMoveMapEquation(g, True).run().getPartition()]
 
 			new_p_algos = {}
 			for name, p_algos in partition_algos.items():
 				if ego_part_algos == "local":
 					new_p_algos[name + ' + Infomap'] = [p_algos[0],
-					                                    lambda g: partitionInfomap(
-						                                    g)]  # Infomap global
+					                                    lambda g: partitionInfomap(g)]
 				if ego_part_algos == 'global':
-					new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g), p_algos[0]]
+					# new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g), p_algos[0]]
 					new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
 					                                   p_algos[0]]
+					# new_p_algos['MapEquation + ' + name] = [
+					# 	lambda g: LocalMoveMapEquation(g, False).run().getPartition(),
+					# 	p_algos[0]]
 			partition_algos = new_p_algos
 
 		if ego_part_algos == "best":

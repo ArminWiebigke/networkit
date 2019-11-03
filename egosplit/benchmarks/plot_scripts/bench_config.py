@@ -42,6 +42,7 @@ class PlotAlgoSetConfig:
 			'Info-Info': ['Infomap + Infomap'],
 			'Info-local': ['Infomap + '],
 			'Leiden-local': ['Leiden + '],
+			'MapEquation-local': ['MapEquation + '],
 			'Info-Surprise': ['Infomap + Surprise', '!Remove Overlapping'],
 			'Info-Surprise-noOSLOM': ['Infomap + Surprise', '!OSLOM-full', '!Remove Overlapping'],
 			'Leiden-Info': ['Leiden + Infomap', '!Remove Overlapping'],

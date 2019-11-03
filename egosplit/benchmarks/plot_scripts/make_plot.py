@@ -7,7 +7,7 @@ from enum import Enum
 from matplotlib.ticker import MultipleLocator, StrMethodFormatter, Formatter
 from pandas import DataFrame, Series
 
-from egosplit.benchmarks.plot_scripts.plot_config import set_layout, set_legend, get_legend_args
+from egosplit.benchmarks.plot_scripts.plot_config import set_layout, set_legend, legend_font_size
 from egosplit.benchmarks.plot_scripts.read_data import create_column_if_missing
 
 
@@ -41,7 +41,8 @@ def make_plot(data,
               title=None,
               max_legend_cols=5,
               max_legend_width=90,
-              plot_type=PlotType.line,):
+              plot_type=PlotType.line,
+              hide_legend=False):
 	replace_legend = replace_legend or {}
 	add_algos = add_algos or []
 	remove_algo_part = remove_algo_part or []
@@ -69,13 +70,10 @@ def make_plot(data,
 		return
 
 	# Create plots
-	# set_sns_style(font_size)  # TODO: This is not working, does not change font size
-	def create_plot(graph_data, single_x_value=False):
+	def create_plot(graph_data, remove_xlabel=False):
 		num_x_values = len(get_unique_values(graph_data, x))
 		this_plot_type = confirm_plot_type(plot_type, graph_data, num_x_values)
 		this_plot_args = get_plot_args(algo_list, hue, plot_args, this_plot_type, x, y)
-		# a4_dims = (8, 6)
-		# fig, ax = plt.subplots(figsize=a4_dims)
 		fig, ax = plt.subplots()
 		this_plot_args = {
 			**this_plot_args,
@@ -86,9 +84,18 @@ def make_plot(data,
 
 		sns.despine(ax=ax)
 		set_ax(fig, ax, ax_set, x)
-		clean_legend(ax, remove_algo_part)
-		ax.legend().remove()
-		if single_x_value:
+
+		def replace_label_func(l):
+			return replace_legend_entry(l, remove_algo_part, replace_legend)
+		handles, labels = ax.get_legend_handles_labels()
+		remove_label(hue, handles, labels)
+		labels = [replace_label_func(l) for l in labels]
+		handles, labels, num_columns = transpose_legend(handles, labels, max_legend_cols, max_legend_width)
+		set_legend(ax, num_columns, handles, labels)
+
+		if hide_legend:
+			ax.legend().remove()
+		if remove_xlabel:
 			ax.get_xaxis().set_visible(False)
 		set_layout()
 
@@ -99,18 +106,14 @@ def make_plot(data,
 		# crop_pdf(plot_file)
 		plt.close(fig)
 
-		def replace_label_func(l):
-			return replace_legend_entry(l, remove_algo_part, replace_legend)
 		with open(output_dir + 'tables/' + plot_subdir + file_name + '.tex', 'w') as f:
 			f.write(latex_table(graph_data, hue, x, y, replace_label_func))
-
 		legend_file = output_dir + plot_subdir + '{}.pdf'.format(legend_file_name)
-		save_legend(ax, legend_file, hue, replace_label_func, max_legend_cols, max_legend_width)
+		save_legend(handles, labels, num_columns, legend_file)
 
 	# Make one plot per graph if graph is not on the x-axis
 	if one_plot_per_graph:
 		file_name_base = file_name
-		# title_base = title or ''
 		for graph in graphs:
 			file_name = file_name_base + '_' + graph
 			graph_data = filtered_data.query('`Graph Name` == @graph')
@@ -127,37 +130,29 @@ def make_plot(data,
 		create_plot(filtered_data)
 
 
-def save_legend(ax, legend_file, hue, replace_label_func, max_cols, max_width):
-	if os.path.exists(legend_file):
-		return
-	fig_leg = plt.figure()
-	ax_leg = fig_leg.add_subplot(111)
-	handles, labels = ax.get_legend_handles_labels()
-	if hue in labels:
-		idx = labels.index(hue)
+def remove_label(to_remove, handles, labels):
+	if to_remove in labels:
+		idx = labels.index(to_remove)
 		del labels[idx]
 		del handles[idx]
-	# labels, handles = zip(*(sorted(zip(labels, handles), key=lambda t: t)))
-	# Remove/replace labels
-	labels = [replace_label_func(l) for l in labels]
-	num_columns = max_cols
 
-	while legend_too_long(labels, num_columns, max_width):
-		num_columns -= 1
 
-	handles, labels = transpose_legend(handles, labels, num_columns)
-	ax_leg.legend(
-		# title=hue,
+def save_legend(handles, labels, num_columns, legend_file):
+	if os.path.exists(legend_file):
+		return
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	ax.legend(
 		handles=handles,
 		labels=labels,
 		ncol=num_columns,
-		**get_legend_args(),
-		loc='center')
+		fontsize=legend_font_size(),
+	)
 	# hide the axes frame and the x/y labels
-	ax_leg.axis('off')
-	fig_leg.savefig(legend_file)
+	ax.axis('off')
+	fig.savefig(legend_file)
 	crop_pdf(legend_file)
-	plt.close(fig_leg)
+	plt.close(fig)
 
 
 def crop_pdf(file_name):
@@ -166,23 +161,29 @@ def crop_pdf(file_name):
 	                 file_name, file_name])
 
 
-def transpose_legend(handles, labels, num_columns):
+def transpose_legend(handles, labels, max_columns, max_legend_width):
+	num_columns = max_columns
+	while legend_too_long(labels, num_columns, max_legend_width):
+		num_columns -= 1
 	new_handles = []
 	new_labels = []
 	for i in range(num_columns):
 		new_handles.extend(handles[i::num_columns])
 		new_labels.extend(labels[i::num_columns])
-	return new_handles, new_labels
+	return new_handles, new_labels, num_columns
 
 
 def legend_too_long(labels, num_columns, max_width):
-	max_width = max_width - 9 * num_columns
 	if num_columns == 1:
 		return False
-	for line in [labels[i:i + num_columns] for i in range(0, len(labels), num_columns)]:
-		length = sum([len(l) for l in line])
-		if length > max_width:
-			return True
+	num_columns = min(num_columns, len(labels))
+	max_width = max_width - 9 * num_columns  # Extra space between columns
+	column_length_sum = 0
+	for i in range(num_columns):
+		labels_in_column = [labels[idx] for idx in range(i, len(labels), num_columns)]
+		column_length_sum += max([len(l) for l in labels_in_column])
+	if column_length_sum > max_width:
+		return True
 	return False
 
 
@@ -230,15 +231,6 @@ def confirm_plot_type(plot_type, graph_data, x_values):
 
 def get_unique_values(filtered_data, column):
 	return filtered_data.groupby(column).mean().index.values
-
-
-def clean_legend(ax, remove_algo_part):
-	legend_handles, legend_labels = ax.get_legend_handles_labels()
-	assert (isinstance(remove_algo_part, list))
-	remove_list = remove_algo_part
-	for remove in remove_list:
-		legend_labels = [l.replace(remove, '') for l in legend_labels]
-	set_legend(ax, legend_handles, legend_labels)
 
 
 def draw_plot(plot_type, plot_args):

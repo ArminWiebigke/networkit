@@ -63,7 +63,6 @@ def partitionInfomap(G):
 	for e in G.edges():
 		infomapWrapper.addLink(e[0], e[1], G.weight(e[0], e[1]))
 	infomapWrapper.run()
-
 	partition = structures.Partition(G.upperNodeIdBound())
 	partition.setUpperBound(G.upperNodeIdBound())
 	for node in infomapWrapper.iterLeafNodes():
