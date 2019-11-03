@@ -45,7 +45,7 @@ std::vector<node> ExtendByScore::searchForCandidates() {
 	count internalStubs = 0;
 	outgoingStubs = 0;
 	auto countEdges = [&](node egoNetNode, node neighbor, edgeweight weight) {
-		if (nodeScores[neighbor] == 0.0) {
+		if (!nodeScores.indexIsUsed(neighbor)) {
 			candidates.push_back(neighbor);
 			nodeScores.insert(neighbor, 0.0);
 		}

@@ -40,14 +40,14 @@ public:
 	 * @param globalNode The global node.
 	 * @return The mapped local node.
 	 */
-	node local(node globalNode) const;
+	node toLocal(node globalNode) const;
 
 	/**
 	 * Get the global node from a local node.
 	 * @param localNode The local node.
 	 * @return The mapped global node.
 	 */
-	node global(node localNode) const;
+	node toGlobal(node localNode) const;
 
 	/**
 	 * Check if a global node is mapped.

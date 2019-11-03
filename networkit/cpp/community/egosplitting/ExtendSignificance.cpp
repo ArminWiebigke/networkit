@@ -239,7 +239,7 @@ std::vector<node>
 ExtendSignificance::getCandidates() {
 	std::vector<node> candidates;
 	auto countEdge = [&](node group, node candidate, edgeweight weight) {
-		if (edgesToGroups[candidate].empty()) {
+		if (!edgesToGroups.indexIsUsed(candidate)) {
 			candidates.push_back(candidate);
 			edgesToGroups.insert(candidate, std::vector<count>(numGroups, 0));
 		}
@@ -247,7 +247,7 @@ ExtendSignificance::getCandidates() {
 	};
 	std::vector<node> egoNetNodes = egoMapping.globalNodes();
 	for (node egoNetNode : egoNetNodes) {
-		node group = egoToCoarse[egoMapping.local(egoNetNode)];
+		node group = egoToCoarse[egoMapping.toLocal(egoNetNode)];
 		G.forEdgesOf(egoNetNode, [&](node, node candidate, edgeweight weight) {
 			countEdge(group, candidate, weight);
 		});

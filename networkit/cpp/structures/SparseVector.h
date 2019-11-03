@@ -64,30 +64,42 @@ public:
 	 */
 	const T& operator[](index i) const;
 
+	/**
+	 * Get all indexes into which elements were inserted.
+	 */
+	std::vector<index> insertedIndexes();
+
+	/**
+	 * Clear the value, setting the size to 0.
+	 */
+	void clear();
+
+	bool indexIsUsed(index idx);
+
 private:
 	std::vector<T> data;
 	std::vector<index> usedIndexes;
-	T defaultValue;
+	T emptyValue;
 };
 
 
 template<typename T>
-SparseVector<T>::SparseVector() : defaultValue(T{}) {
+SparseVector<T>::SparseVector() : emptyValue(T{}) {
 }
 
 template<typename T>
-SparseVector<T>::SparseVector(count size) : data(size), defaultValue(T{}) {
+SparseVector<T>::SparseVector(count size) : data(size), emptyValue(T{}) {
 }
 
 template<typename T>
 SparseVector<T>::SparseVector(count size, T defaultValue) : data(size, defaultValue),
-                                                            defaultValue(defaultValue) {
+                                                            emptyValue(defaultValue) {
 }
 
 template<typename T>
 void SparseVector<T>::reset() {
 	for (index i : usedIndexes) {
-		data[i] = defaultValue;
+		data[i] = emptyValue;
 	}
 	usedIndexes.clear();
 }
@@ -115,12 +127,30 @@ count SparseVector<T>::elementCount() const{
 
 template<typename T>
 void SparseVector<T>::resize(index size) {
-	data.resize(size, defaultValue);
+	data.resize(size, emptyValue);
 }
 
 template<typename T>
 index SparseVector<T>::size() const {
 	return data.size();
+}
+
+template<typename T>
+std::vector<index> NetworKit::SparseVector<T>::insertedIndexes() {
+	return usedIndexes;
+}
+
+template<typename T>
+void NetworKit::SparseVector<T>::clear() {
+	usedIndexes.clear();
+	usedIndexes.shrink_to_fit();
+	data.clear();
+	data.shrink_to_fit();
+}
+
+template<typename T>
+bool NetworKit::SparseVector<T>::indexIsUsed(index idx) {
+	return data[idx] != emptyValue;
 }
 
 } /* namespace NetworKit */

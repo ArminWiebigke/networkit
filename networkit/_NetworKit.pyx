@@ -5131,6 +5131,38 @@ cdef class SLPA(Algorithm):
 		return Partition().setThis((<_SLPA*>(self._this)).getPartition())
 
 
+cdef extern from "cpp/community/LocalMoveMapEquation.h":
+	cdef cppclass _LocalMoveMapEquation "NetworKit::LocalMoveMapEquation"(_Algorithm):
+		_LocalMoveMapEquation(_Graph, bool, count) except +
+		_Partition getPartition() except +
+
+cdef class LocalMoveMapEquation(Algorithm):
+	"""
+    Constructor
+
+    Parameters
+    ----------
+    G : networkit.Graph
+        The graph on which the algorithm has to run.
+    hierarchical: bool
+        (optional) Iteratively create a graph of the locally optimal clusters and optimize locally on that graph.
+    maxIterations: count
+        (optional) The maximum number of local move iterations.
+    """
+
+	cdef Graph _G
+
+	def __cinit__(self, Graph G not None, hierarchical = False, maxIterations = 256):
+		self._G = G
+		self._this = new _LocalMoveMapEquation(G._this, hierarchical, maxIterations)
+
+	"""
+	Get the result of the algorithm.
+	"""
+	def getPartition(self):
+		return Partition().setThis((<_LocalMoveMapEquation*>(self._this)).getPartition())
+
+
 cdef class DissimilarityMeasure:
 	""" Abstract base class for partition/community dissimilarity measures """
 	# TODO: use conventional class design of parametrized constructor, run-method and getters

@@ -161,7 +161,7 @@ void EgoSplitting::createEgoNets() {
 			directedG.forEdgesOf(v, [&](node, node w, edgeweight weight2) {
 				if (egoMapping.isMapped(w)) {
 					// we have found a triangle u-v-w
-					egoGraph.addEdge(egoMapping.local(v), egoMapping.local(w), weight2);
+					egoGraph.addEdge(egoMapping.toLocal(v), egoMapping.toLocal(w), weight2);
 				}
 			});
 		});
@@ -181,7 +181,7 @@ void EgoSplitting::createEgoNets() {
 
 		// Store ego-net partition with extended nodes
 		for (node i : extendedEgoGraph.nodes()) {
-			egoNetExtendedPartitions[egoNode].emplace(egoMapping.global(i),
+			egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
 			                                          egoPartition.subsetOf(i));
 		}
 //		assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
@@ -196,7 +196,7 @@ void EgoSplitting::createEgoNets() {
 //		assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
 		for (node i : G.neighbors(egoNode)) {
 			egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
-					egoMapping.local(i)));
+					egoMapping.toLocal(i)));
 		}
 		addTime(timer, "17    Store EgoNet Partition");
 
@@ -220,11 +220,11 @@ void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapp
 	std::vector<WeightedEdge> edges;
 	edges.reserve(egoGraph.numberOfEdges());
 	egoGraph.forNodes([&](node u) {
-		node globalId = egoMapping.global(u);
+		node globalId = egoMapping.toGlobal(u);
 		edges.emplace_back(globalId, globalId, defaultEdgeWeight);
 	});
 	egoGraph.forEdges([&](node u, node v, edgeweight weight) {
-		edges.emplace_back(egoMapping.global(u), egoMapping.global(v), weight);
+		edges.emplace_back(egoMapping.toGlobal(u), egoMapping.toGlobal(v), weight);
 	});
 	egoNets[egoNode] = edges;
 }

@@ -12,6 +12,7 @@
 #include "../../generators/ClusteredRandomGraphGenerator.h"
 #include "../egosplitting/EgoSplitting.h"
 #include "../PLM.h"
+#include "../../io/EdgeListReader.h"
 
 namespace NetworKit {
 
@@ -26,7 +27,7 @@ TEST_F(MapEquationBenchmark, benchLarge) {
 	Aux::Timer timer{};
 	timer.start();
 
-	LocalMoveMapEquation mapequation(G);
+	LocalMoveMapEquation mapequation(G, false);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 
@@ -36,10 +37,13 @@ TEST_F(MapEquationBenchmark, benchLarge) {
 }
 
 TEST_F(MapEquationBenchmark, benchLargeHierachical) {
-	Aux::Random::setSeed(2342556, false);
-	ClusteredRandomGraphGenerator generator(5000, 200, 0.5, 0.002);
-	Graph G = generator.generate();
-	Partition groundTruth = generator.getCommunities();
+//	Aux::Random::setSeed(2342556, false);
+//	ClusteredRandomGraphGenerator generator(5000, 200, 0.5, 0.002);
+//	Graph G = generator.generate();
+	EdgeListReader reader('\t', 0);
+	Graph G = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
+//	Cover C = CoverReader{}.read("/home/armin/graphs/com-amazon.all.dedup.cmty.txt", G);
+//	Partition groundTruth = generator.getCommunities();
 	Aux::Timer timer{};
 	timer.start();
 
@@ -50,6 +54,7 @@ TEST_F(MapEquationBenchmark, benchLargeHierachical) {
 	timer.stop();
 	std::cout << mapequation.toString() << " took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 	std::cout << partition.numberOfSubsets() << " clusters" << std::endl;
+
 }
 
 }

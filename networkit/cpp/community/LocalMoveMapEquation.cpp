@@ -11,43 +11,27 @@
 #include <chrono>
 #include <cmath>
 #include <random>
-#include <iostream>
 
 #include "LocalMoveMapEquation.h"
 #include "../graph/Graph.h"
-#include "mapequation/hash_map.h"
 #include "../structures/Partition.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
 
 namespace NetworKit {
 
-LocalMoveMapEquation::LocalMoveMapEquation(Graph &graph, bool hierarchical)
-		: LocalMoveMapEquation(graph, hierarchical, 0) {
-}
-
-LocalMoveMapEquation::LocalMoveMapEquation(Graph &graph, bool hierarchical,
-                                           long double sum_p_log_p_w_alpha)
-		: graph(graph), hierarchical(hierarchical),
-		  sum_p_log_p_w_alpha(sum_p_log_p_w_alpha), clusterVolume(graph.upperNodeIdBound()),
-		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()) {
+LocalMoveMapEquation::LocalMoveMapEquation(Graph &graph, bool hierarchical, count maxIterations)
+		: graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
+		  clusterVolume(graph.upperNodeIdBound()),
+		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()),
+		  neighborClusterWeights(graph.upperNodeIdBound(), none){
 }
 
 void LocalMoveMapEquation::run() {
+	if (hasRun)
+		throw std::runtime_error("Algorithm was already run!");
 	partition.allToSingletons();
 
-	graph.forNodes([&](node u) {
-		// Calculate cluster cut and volume
-		graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
-			if (u == v) {
-				weight *= 2; // loop weight counts twice
-			} else {
-				clusterCut[u] += weight;
-				totalCut += weight;
-			}
-			clusterVolume[u] += weight;
-			totalVolume += weight;
-		});
-	});
+	calculateClusterCutAndVolume();
 
 #ifndef NDEBUG
 	update_p_log_p_sums();
@@ -58,140 +42,124 @@ void LocalMoveMapEquation::run() {
 					return sum + plogp_rel(vol);
 				});
 	}
-	std::vector<count> debug_cluster_cut(clusterCut.size(), 0);
-
-	//	std::cout << "sum_p_log_p_cluster_cut: " << sum_p_log_p_cluster_cut << std::endl
-	//		  << "sum_p_log_p_cluster_cut_plus_vol: " << sum_p_log_p_cluster_cut_plus_vol << std::endl
-	//		  << "sum_p_log_p_w_alpha: " << sum_p_log_p_w_alpha << std::endl
-	//		  << "totalCut: " << totalCut << std::endl
-	//		  << "totalVolume: " << totalVolume << std::endl;
 #endif
 
-//	auto compress_cluster_ids = [&]() {
-//		auto oldPartition = partition.getVector();
-//		partition.compact();
-//		for (const auto& subset : partition.getSubsets()) {
-//			node v = *subset.begin();
-//			index oldSubset = oldPartition[v];
-//			index newSubset = partition[v];
-//			clusterVolume[lid] = clusterVolume[u];
-//			clusterCut[lid] = clusterCut[u];
-//
-//		}
-//
-//		for (node u = 0; u < clusterVolume.size(); ++u) {
-//			if (id_mapper.is_global_id_mapped(u)) {
-//				node lid = id_mapper.to_local(u);
-//				clusterVolume[lid] = clusterVolume[u];
-//				clusterCut[lid] = clusterCut[u];
-//			}
-//		}
-//
-//		index newUpperBound = partition.upperBound();
-//		clusterVolume.resize(newUpperBound);
-//		clusterCut.resize(newUpperBound);
-//		std::cout << "Resizing from " << clusterVolume.size() << " to " << newUpperBound << std::endl;
-//	};
-
-	HashMap<node, count, std::hash<node>, 2, none> neighborClusterWeights;
-	for (size_t iteration = 0; iteration < max_rounds; ++iteration) {
-		bool moved = false;
-		size_t nodesMoved = 0;
-		std::cout << "\nIteration " << iteration << std::endl;
+	for (size_t iteration = 0; iteration < maxIterations; ++iteration) {
+		bool anyMoved = false;
+		count nodesMoved = 0;
+		INFO("\nIteration ", iteration);
 #ifndef NDEBUG
-		std::cout << "Map equation is " << map_equation() << std::endl;
+		INFO("Map equation is ", map_equation());
 #endif
 
-		// Try to move all nodes once
 		graph.forNodesInRandomOrder([&](node u) {
-			neighborClusterWeights.clear(5);
-
-			// Find neighbor clusters
-			count degree = 0;
-			count loop = 0;
-			count weightToCurrent = 0;
-			node currentCluster = partition[u];
-			graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
-				degree += weight;
-				if (u != v) {
-					node neighborCluster = partition[v];
-					if (neighborCluster == currentCluster) {
-						weightToCurrent += weight;
-					} else {
-						neighborClusterWeights[neighborCluster] += weight;
-					}
-				} else {
-					loop += weight;
-					degree += weight;
-				}
-			});
-			assert(degree == graph.weightedDegree(u));
-
-			// Calculate best cluster
-			node targetCluster = currentCluster;
-			double bestGain = fitnessChange(u, degree, loop, currentCluster, currentCluster, weightToCurrent,
-			                                weightToCurrent);
-			neighborClusterWeights.forEach([&](const std::pair<node, count> &it) {
-				node neighborCluster = it.first;
-				count neighborClusterWeight = it.second;
-				double gain = fitnessChange(u, degree, loop, currentCluster, neighborCluster, neighborClusterWeight,
-				                            weightToCurrent);
-				if (gain < bestGain || (gain == bestGain && neighborCluster < targetCluster)) {
-					bestGain = gain;
-					targetCluster = neighborCluster;
-				}
-			});
-
-			// Move node to best cluster
-			if (targetCluster != currentCluster) {
-				moveNode(u, degree, loop, currentCluster, targetCluster, neighborClusterWeights[targetCluster],
-				         weightToCurrent);
-				moved = true;
+			bool moved = tryLocalMove(u);
+			if (moved) {
+				anyMoved = true;
 				++nodesMoved;
 			}
 		});
 
-		{
-//			ScopedTimer timer("Compressing cluster ids");
-//			compress_cluster_ids();
+		INFO("Moved ", nodesMoved, " nodes");
+		if (!anyMoved) {
+			break;
 		}
-
-		std::cout << "Moved " << nodesMoved << " nodes" << std::endl;
-
-		if (!moved) break;
 	}
 
 	partition.compact();
 	if (hierarchical && partition.numberOfSubsets() < graph.numberOfNodes()) {
-		std::cout << "Run hierarchical with " << partition.numberOfSubsets() << " nodes (" << graph.numberOfNodes()
-		          << ")" << std::endl;
-		//#ifndef NDEBUG
-		//		update_p_log_p_sums();
-		//		std::cout << "sum_p_log_p_cluster_cut: " << sum_p_log_p_cluster_cut << std::endl
-		//			  << "sum_p_log_p_cluster_cut_plus_vol: " << sum_p_log_p_cluster_cut_plus_vol << std::endl
-		//			  << "sum_p_log_p_w_alpha: " << sum_p_log_p_w_alpha << std::endl
-		//			  << "totalCut: " << totalCut << std::endl
-		//			  << "totalVolume: " << totalVolume << std::endl;
-		//#endif
-		// free some memory
-		clusterVolume.clear();
-		clusterVolume.shrink_to_fit();
-		clusterCut.clear();
-		clusterCut.shrink_to_fit();
-
-		ParallelPartitionCoarsening coarsening(graph, partition);
-		coarsening.run();
-		Graph metaGraph = coarsening.getCoarseGraph();
-		auto fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
-
-		LocalMoveMapEquation recursion(metaGraph, true, sum_p_log_p_w_alpha);
-		recursion.run();
-		Partition metaPartition = recursion.getPartition();
-
-		graph.forNodes([&](node u) {
-			partition[u] = metaPartition[fineToCoarseMapping[u]];
-		});
+		runHierarchical();
 	}
+
+	hasRun = true;
+}
+
+void LocalMoveMapEquation::calculateClusterCutAndVolume() {
+	graph.forNodes([&](node u) {
+		graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
+			if (u != v) {
+				clusterCut[u] += weight;
+				totalCut += weight;
+			} else {
+				weight *= 2; // loop weight counts twice
+			}
+			clusterVolume[u] += weight;
+			totalVolume += weight;
+		});
+	});
+}
+
+bool LocalMoveMapEquation::tryLocalMove(node u) {
+	// Find neighbor clusters
+	count degree = 0;
+	count loop = 0;
+	count weightToCurrent = 0;
+	node currentCluster = partition[u];
+	graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
+		degree += weight;
+		if (u != v) {
+			node neighborCluster = partition[v];
+			if (neighborCluster == currentCluster) {
+				weightToCurrent += weight;
+			} else {
+				if (!neighborClusterWeights.indexIsUsed(neighborCluster))
+					neighborClusterWeights.insert(neighborCluster, 0);
+				neighborClusterWeights[neighborCluster] += weight;
+			}
+		} else {
+			loop += weight;
+			degree += weight;
+		}
+	});
+	assert(degree == graph.weightedDegree(u));
+
+	// Calculate best cluster
+	node targetCluster = currentCluster;
+	double bestChange = fitnessChange(u, degree, loop, currentCluster, currentCluster, weightToCurrent,
+	                                  weightToCurrent);
+	for (index neighborCluster : neighborClusterWeights.insertedIndexes()) {
+		count neighborClusterWeight = neighborClusterWeights[neighborCluster];
+		double change = fitnessChange(u, degree, loop, currentCluster, neighborCluster, neighborClusterWeight,
+		                              weightToCurrent);
+		if (change < bestChange || (change == bestChange && neighborCluster < targetCluster)) {
+			bestChange = change;
+			targetCluster = neighborCluster;
+		}
+	}
+
+	// Move node to best cluster
+	bool moved = false;
+	if (targetCluster != currentCluster) {
+		moveNode(u, degree, loop, currentCluster, targetCluster, neighborClusterWeights[targetCluster],
+		         weightToCurrent);
+		moved = true;
+	}
+
+	neighborClusterWeights.reset();
+	return moved;
+}
+
+void LocalMoveMapEquation::runHierarchical() {
+	INFO("Run hierarchical with ", partition.numberOfSubsets(), " nodes (", graph.numberOfNodes());
+	// free some memory
+	clusterVolume.clear();
+	clusterVolume.shrink_to_fit();
+	clusterCut.clear();
+	clusterCut.shrink_to_fit();
+	neighborClusterWeights.clear();
+
+	ParallelPartitionCoarsening coarsening(graph, partition);
+	coarsening.run();
+	Graph metaGraph = coarsening.getCoarseGraph();
+	auto fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
+
+	LocalMoveMapEquation recursion(metaGraph, true, maxIterations);
+	recursion.run();
+	Partition metaPartition = recursion.getPartition();
+
+	graph.forNodes([&](node u) {
+		partition[u] = metaPartition[fineToCoarseMapping[u]];
+	});
 }
 
 Partition LocalMoveMapEquation::getPartition() {
@@ -250,10 +218,6 @@ LocalMoveMapEquation::fitnessChange(node, count degree, count loopWeight, node c
 	                      - (2 * (targetClusterCutNew - targetClusterCutCurrent)));
 }
 
-std::string LocalMoveMapEquation::toString() const {
-	return "LocalMoveMapEquation";
-}
-
 void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node currentCluster,
                                     node targetCluster, count weightToTarget,
                                     count weightToCurrent) {
@@ -282,26 +246,6 @@ void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node
 	partition.moveToSubset(targetCluster, u);
 
 #ifndef NDEBUG
-
-	if (false) {
-//			debug_cluster_cut.assign(clusterCut.size(), 0);
-//			for (auto it = graph.get_iterator(); it.is_valid(); ++it) {
-//				const node u = *it;
-//				const node part_u = partition[u];
-//				it.for_neighbors([&](node v, count w) {
-//					if (part_u != partition[v]) {
-//						debug_cluster_cut[part_u] += w;
-//					}
-//				});
-//			}
-//
-//			for (size_t i = 0; i < debug_cluster_cut.size(); ++i) {
-//				assert(clusterCut[i] == debug_cluster_cut[i]);
-//			}
-
-		//assert(std::accumulate(debug_cluster_cut.begin(), debug_cluster_cut.end(), 0ul) == totalCut);
-	}
-
 	update_p_log_p_sums();
 	long double new_val = map_equation();
 	assert(new_val > 0);
@@ -310,6 +254,10 @@ void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node
 //	std::cout << "After update: " << map_equation() << std::endl;
 	assert(std::accumulate(clusterCut.begin(), clusterCut.end(), 0ull) == totalCut);
 #endif
+}
+
+std::string LocalMoveMapEquation::toString() const {
+	return "LocalMoveMapEquation";
 }
 
 #ifndef NDEBUG

@@ -100,7 +100,7 @@ EgoNetExtensionAndPartition::createGroundTruthPartition() const {
 	auto truthComms = groundTruth.subsetsOf(egoNode);
 	Partition part{egoGraph.upperNodeIdBound()};
 	egoGraph.forNodes([&](node v) {
-		auto comms = groundTruth.subsetsOf(egoMapping.global(v));
+		auto comms = groundTruth.subsetsOf(egoMapping.toGlobal(v));
 		std::vector<node> overlap(truthComms.size());
 		std::set_intersection(truthComms.begin(), truthComms.end(), comms.begin(), comms.end(),
 		                      overlap.begin());
@@ -163,8 +163,8 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	for (node v : egoMapping.globalNodes()) {
 		directedG.forEdgesOf(v, [&](node, node w, edgeweight weight) {
 			if (egoMapping.isMapped(w)) {
-				node vLocal = egoMapping.local(v);
-				node wLocal = egoMapping.local(w);
+				node vLocal = egoMapping.toLocal(v);
+				node wLocal = egoMapping.toLocal(w);
 				// Edges between direct neighbors are already in the Egonet
 				if (vLocal < directNeighborsBound && wLocal < directNeighborsBound)
 					return;
