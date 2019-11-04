@@ -42,7 +42,7 @@ def make_plot(data,
               max_legend_cols=5,
               max_legend_width=90,
               plot_type=PlotType.line,
-              hide_legend=False):
+              legend_in_separate_file=False):
 	replace_legend = replace_legend or {}
 	add_algos = add_algos or []
 	remove_algo_part = remove_algo_part or []
@@ -93,8 +93,10 @@ def make_plot(data,
 		handles, labels, num_columns = transpose_legend(handles, labels, max_legend_cols, max_legend_width)
 		set_legend(ax, num_columns, handles, labels)
 
-		if hide_legend:
+		if legend_in_separate_file:
 			ax.legend().remove()
+			legend_file = output_dir + plot_subdir + '{}.pdf'.format(legend_file_name)
+			save_legend(handles, labels, num_columns, legend_file)
 		if remove_xlabel:
 			ax.get_xaxis().set_visible(False)
 		set_layout()
@@ -106,10 +108,8 @@ def make_plot(data,
 		# crop_pdf(plot_file)
 		plt.close(fig)
 
-		with open(output_dir + 'tables/' + plot_subdir + file_name + '.tex', 'w') as f:
-			f.write(latex_table(graph_data, hue, x, y, replace_label_func))
-		legend_file = output_dir + plot_subdir + '{}.pdf'.format(legend_file_name)
-		save_legend(handles, labels, num_columns, legend_file)
+		with open(output_dir + 'tables/' + plot_subdir + file_name + '.tex', 'w') as table_file:
+			table_file.write(latex_table(graph_data, hue, x, y, replace_label_func))
 
 	# Make one plot per graph if graph is not on the x-axis
 	if one_plot_per_graph:

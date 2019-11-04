@@ -21,6 +21,8 @@ class GraphSetsConfig:
 				graphs = create_overlap_graphs(20, 80)
 			elif graph_set == "test":
 				graphs = create_om_graphs(3, 3)
+			elif graph_set == 'facebook':
+				graphs = facebook_graphs()
 
 			all_graphs.extend(graphs)
 		return all_graphs

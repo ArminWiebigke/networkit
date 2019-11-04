@@ -10,8 +10,8 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 def get_benchmark_configs():
 	benchmark_sets = [
 		# Scratchpad(),
-		EdgesScore(),
-		EdgesScoreGlobal(),
+		# EdgesScore(),
+		EdgesScoreSignificance(),
 		# EdgesFactor(),
 		# SigMerge(),
 		# SigExtIter(),
@@ -44,7 +44,7 @@ class Scratchpad(BenchmarkSet):
 		'plot_dir':
 			'test/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'standard',
+			'best',
 		EgoSplitParameterConfig:
 			['test'],
 		CleanUpConfig: 'test',
@@ -116,27 +116,29 @@ class EdgesScore(BenchmarkSet):
 	}
 
 
-class EdgesScoreGlobal(BenchmarkSet):
+class EdgesScoreSignificance(BenchmarkSet):
 	config = {
 		'name':
-			'edges_score',
+			'edges_score_sig',
 		'result_dir':
-			'edges_score',
+			'edges_score_sig',
 		'plot_dir':
 			'extend_edges_significance/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'standard',
+			'best',
 		EgoSplitParameterConfig:
 			['no-extend', 'edges-significance'],
 		'store_ego_nets':
 			True,
 		GraphSetsConfig: [
 			'om',
-			'mu',
+			# 'mu',
+			'facebook'
 		],
 		PlotGraphSetConfig: [
 			'om',
-			'mu',
+			# 'mu',
+			'facebook',
 		],
 		PlotSetConfig: [
 			'ego_net_extend',
@@ -147,7 +149,7 @@ class EdgesScoreGlobal(BenchmarkSet):
 			'Leiden-Info',
 		],
 		'remove_algo_parts':
-			['Ego', ' | ', 'PLP + PLM', 'No Clean Up'],
+			['Ego', ' | ', 'Leiden + Infomap', 'No Clean Up'],
 	}
 
 
@@ -365,7 +367,7 @@ class ExtensionCompare(BenchmarkSet):
 			# 'facebook_bar',
 		],
 		PlotSetConfig: [
-			# 'ego_net_extend',
+			'ego_net_extend',
 			'timings',
 		],
 		PlotAlgoSetConfig:
@@ -392,14 +394,14 @@ class LocalClustering(BenchmarkSet):
 		GraphSetsConfig: [
 			'om',
 			'overlap',
-			'mu',
-			'facebook',
+			# 'mu',
+			# 'facebook',
 		],
 		PlotGraphSetConfig: [
 			'om',
-			'mu',
-			'facebook',
-			'facebook_bar',
+			# 'mu',
+			# 'facebook',
+			# 'facebook_bar',
 		],
 		PlotSetConfig: [
 			'metrics',
@@ -471,16 +473,16 @@ class GlobalClustering(BenchmarkSet):
 		EgoSplitParameterConfig:
 			['edges'],
 		GraphSetsConfig: [
-			# 'om',
+			'om',
 			'overlap',
 			# 'mu',
 			# 'facebook',
 		],
 		PlotGraphSetConfig: [
 			'om',
-			'mu',
-			'facebook',
-			'facebook_bar'
+			# 'mu',
+			# 'facebook',
+			# 'facebook_bar'
 		],
 		PlotSetConfig: [
 			'metrics',
@@ -506,7 +508,7 @@ class CleanUp(BenchmarkSet):
 		'plot_dir':
 			'clean_up/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'best',
+			'two_best',
 		EgoSplitParameterConfig:
 			['edges'],
 		CleanUpConfig:
@@ -551,20 +553,20 @@ class NewCleanUp(BenchmarkSet):
 		'plot_dir':
 			'new_clean_up/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'standard',
+			'best',
 		EgoSplitParameterConfig:
 			['edges'],
 		CleanUpConfig:
 			'new_clean',
 		GraphSetsConfig: [
-			# 'om',
+			'om',
 			'overlap',
 			# 'mu',
 			# 'facebook',
 		],
 		PlotGraphSetConfig: [
 			'om',
-			'mu',
+			# 'mu',
 			# 'facebook',
 			# 'facebook_bar'
 		],
@@ -582,7 +584,7 @@ class NewCleanUp(BenchmarkSet):
 			 'Leiden + Infomap',
 			 ],
 		'replace_legend':
-			{'No Clean Up': 'Original', 'Clean-merge': 'Cleaned old',
+			{'No Clean Up': 'Uncleaned', 'Clean-merge': 'Cleaned old',
 			 'Clean-new': 'Cleaned new'},
 	}
 
@@ -596,11 +598,11 @@ class CompareOther(BenchmarkSet):
 		'plot_dir':
 			'compare_other/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'standard',
+			'best',
 		EgoSplitParameterConfig:
 			['edges'],
 		CleanUpConfig:
-			'best',
+			'two_best',
 		'other_algos': [
 			other_algorithms['GCE'],
 			other_algorithms['Moses'],

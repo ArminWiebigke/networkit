@@ -11,7 +11,7 @@ class EgoSplitClusteringAlgorithmsConfig:
 	def get(ego_part_algos):
 		partition_algos = OrderedDict()
 
-		if ego_part_algos == "local" or ego_part_algos == "global":
+		if ego_part_algos == 'local' or ego_part_algos == 'global':
 			# partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 			partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 			# partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
@@ -23,7 +23,7 @@ class EgoSplitClusteringAlgorithmsConfig:
 
 			new_p_algos = {}
 			for name, p_algos in partition_algos.items():
-				if ego_part_algos == "local":
+				if ego_part_algos == 'local':
 					new_p_algos[name + ' + Infomap'] = [p_algos[0],
 					                                    lambda g: partitionInfomap(g)]
 				if ego_part_algos == 'global':
@@ -35,23 +35,23 @@ class EgoSplitClusteringAlgorithmsConfig:
 					# 	p_algos[0]]
 			partition_algos = new_p_algos
 
-		if ego_part_algos == "best":
+		if ego_part_algos == 'two_best':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
 			partition_algos['Infomap + Surprise'] = [lambda g: partitionInfomap(g),
 			                                         lambda g: partitionLeiden(g, 'surprise')]
-		if ego_part_algos == "Leiden/Infomap + Infomap":
+		if ego_part_algos == 'Leiden/Infomap + Infomap':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
 			partition_algos['Infomap + Infomap'] = [lambda g: partitionInfomap(g),
 			                                        lambda g: partitionInfomap(g)]
-		if ego_part_algos == "standard":
+		if ego_part_algos == 'best':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
-		if ego_part_algos == "leiden local":
+		if ego_part_algos == 'leiden local':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
-		if ego_part_algos == "fast":
+		if ego_part_algos == 'fast':
 			partition_algos['PLP + PLM'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
 			                                lambda g: PLM(g, True, 1.0,
 			                                              'none').run().getPartition()]
@@ -106,30 +106,30 @@ class EgoSplitParameterConfig:
 			'onlyUpdatedCandidates': 'Yes',
 		}
 
-		if "no-extend" in ego_parameter_config:
+		if 'no-extend' in ego_parameter_config:
 			ego_parameters['No Extension'] = standard
-		if "edges-score" in ego_parameter_config:
+		if 'edges-score' in ego_parameter_config:
 			for score in ['Edges', 'Edges div Degree', 'Edges pow 2 div Degree', 'Random', 'Significance']:
 				name = 'Extend: {}'.format(score)
 				ego_parameters[name] = {
 					**edge_scores_standard,
 					'Edges Score Strategy': score,
 				}
-		if "edges-significance" in ego_parameter_config:
+		if 'edges-significance' in ego_parameter_config:
 			for score in ['Edges pow 2 div Degree', 'Random', 'Significance']:
 				name = 'Extend: {}'.format(score)
 				ego_parameters[name] = {
 					**edge_scores_standard,
 					'Edges Score Strategy': score,
 				}
-		if "edges-factor" in ego_parameter_config:
+		if 'edges-factor' in ego_parameter_config:
 			for factor in [1, 2, 3, 5, 10, 20]:
 				name = r'$\alpha = {}$'.format(factor)
 				ego_parameters[name] = {
 					**edge_scores_standard,
 					'Maximum Extend Factor': factor,
 				}
-		if "sig-merge" in ego_parameter_config:
+		if 'sig-merge' in ego_parameter_config:
 			for merge in [False, True]:
 				name = 'Single + Merged Clusters' if merge else 'Single Clusters'
 				ego_parameters[name] = {
@@ -139,11 +139,11 @@ class EgoSplitParameterConfig:
 					'secondarySigExtRounds': 0,
 					'Extend and Partition Iterations': 1,
 				}
-		if "sig-max-candidates" in ego_parameter_config:
+		if 'sig-max-candidates' in ego_parameter_config:
 			for max_factor in [1, 2, 3, 5, 10, 20, 10000]:
 				name = r'$\gamma = {}$'.format(max_factor)
 				if max_factor == 10000:
-					name = "All candidates"
+					name = 'All candidates'
 				ego_parameters[name] = {
 					**significance_scores_standard,
 					'onlyCheckSignOfMaxCandidates': 'Yes',
@@ -151,9 +151,9 @@ class EgoSplitParameterConfig:
 					'secondarySigExtRounds': 0,
 					'Extend and Partition Iterations': 1,
 				}
-		if "sig-ext-iter" in ego_parameter_config:
+		if 'sig-ext-iter' in ego_parameter_config:
 			for iterations in [0, 1, 2, 3, 5, 10, 100]:
-				name = '{} Iteration{}'.format(iterations, "" if iterations == 1 else "s")
+				name = '{} Iteration{}'.format(iterations, '' if iterations == 1 else 's')
 				ego_parameters[name] = {
 					**significance_scores_standard,
 					# 'onlyCheckSignOfMaxCandidates': 'No',
@@ -161,7 +161,7 @@ class EgoSplitParameterConfig:
 					'onlyUpdatedCandidates': 'No',
 					'Extend and Partition Iterations': 1,
 				}
-		if "sig-check-updated" in ego_parameter_config:
+		if 'sig-check-updated' in ego_parameter_config:
 			for updated in [False, True]:
 				name = 'Only Improved' if updated else 'All'
 				ego_parameters[name] = {
@@ -170,28 +170,28 @@ class EgoSplitParameterConfig:
 					# 'onlyCheckSignOfMaxCandidates': 'No',
 					'Extend and Partition Iterations': 1,
 				}
-		if "sig-cluster-iter" in ego_parameter_config:
+		if 'sig-cluster-iter' in ego_parameter_config:
 			for iterations in [1, 2, 3, 5, 8]:
 				name = '$I_c$ = {}'.format(iterations)
 				ego_parameters[name] = {
 					**significance_scores_standard,
 					'Extend and Partition Iterations': iterations,
 				}
-		if "sig-mem" in ego_parameter_config:
+		if 'sig-mem' in ego_parameter_config:
 			for memoize in [True, False]:
 				name = 'Memoize' if memoize else 'Calculate'
 				ego_parameters[name] = {
 					**significance_scores_standard,
 					'useSigMemo': 'Yes' if memoize else 'No',
 				}
-		if "extend" in ego_parameter_config:
+		if 'extend' in ego_parameter_config:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
 			}
 			ego_parameters['Significance'] = {
 				**significance_scores_standard,
 			}
-		if "connect-persona" in ego_parameter_config:
+		if 'connect-persona' in ego_parameter_config:
 			ego_parameters['EdgesScore | No Connection'] = {
 				**edge_scores_standard,
 				'connectPersonas': 'No',
@@ -219,11 +219,11 @@ class EgoSplitParameterConfig:
 				'normalizePersonaCut': 'No',
 				'normalizePersonaWeights': 'unweighted',
 			}
-		if "edges" in ego_parameter_config:
+		if 'edges' in ego_parameter_config:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
 			}
-		if "test" in ego_parameter_config:
+		if 'test' in ego_parameter_config:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
 			}
@@ -291,7 +291,7 @@ def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_
 def egosplit_partition_algorithms(ego_part_algos):
 	partition_algos = OrderedDict()
 
-	if ego_part_algos == "local" or ego_part_algos == "global":
+	if ego_part_algos == 'local' or ego_part_algos == 'global':
 		partition_algos['PLP'] = [lambda g: PLP(g, 1, 20).run().getPartition()]
 		partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 		# partition_algos['Potts_0.01'] = [lambda g: LPPotts(g, 0.01, 1, 20).run().getPartition()]
@@ -308,7 +308,7 @@ def egosplit_partition_algorithms(ego_part_algos):
 
 		new_p_algos = {}
 		for name, p_algos in partition_algos.items():
-			if ego_part_algos == "local":
+			if ego_part_algos == 'local':
 				new_p_algos[name + ' + Infomap'] = [p_algos[0],
 				                                    lambda g: partitionInfomap(g)]  # Infomap global
 			if ego_part_algos == 'global':
@@ -317,23 +317,23 @@ def egosplit_partition_algorithms(ego_part_algos):
 				                                   p_algos[0]]
 		partition_algos = new_p_algos
 
-	if ego_part_algos == "best":
+	if ego_part_algos == 'best':
 		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 		                                       lambda g: partitionInfomap(g)]
 		partition_algos['Infomap + Surprise'] = [lambda g: partitionInfomap(g),
 		                                         lambda g: partitionLeiden(g, 'surprise')]
-	if ego_part_algos == "Leiden/Infomap + Infomap":
+	if ego_part_algos == 'Leiden/Infomap + Infomap':
 		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 		                                       lambda g: partitionInfomap(g)]
 		partition_algos['Infomap + Infomap'] = [lambda g: partitionInfomap(g),
 		                                        lambda g: partitionInfomap(g)]
-	if ego_part_algos == "standard":
+	if ego_part_algos == 'standard':
 		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 		                                       lambda g: partitionInfomap(g)]
-	if ego_part_algos == "leiden local":
+	if ego_part_algos == 'leiden local':
 		partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 		                                       lambda g: partitionInfomap(g)]
-	if ego_part_algos == "fast":
+	if ego_part_algos == 'fast':
 		partition_algos['PLP + PLM'] = [lambda g: PLP(g, 1, 20).run().getPartition(),
 		                                lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 
