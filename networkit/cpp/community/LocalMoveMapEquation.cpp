@@ -34,22 +34,22 @@ void LocalMoveMapEquation::run() {
 	calculateClusterCutAndVolume();
 
 #ifndef NDEBUG
-	update_p_log_p_sums();
+	updatePLogPSums();
 
-	if (sum_p_log_p_w_alpha == 0) {
-		sum_p_log_p_w_alpha = std::accumulate<decltype(clusterCut.begin()), long double>(
+	if (sumPLogPwAlpha == 0) {
+		sumPLogPwAlpha = std::accumulate<decltype(clusterCut.begin()), long double>(
 				clusterVolume.begin(), clusterVolume.end(), .0, [&](long double sum, count vol) {
-					return sum + plogp_rel(vol);
+					return sum + plogpRel(vol);
 				});
 	}
 #endif
 
-	for (size_t iteration = 0; iteration < maxIterations; ++iteration) {
+	for (count iteration = 0; iteration < maxIterations; ++iteration) {
 		bool anyMoved = false;
 		count nodesMoved = 0;
 		INFO("\nIteration ", iteration);
 #ifndef NDEBUG
-		INFO("Map equation is ", map_equation());
+		INFO("Map equation is ", mapEquation());
 #endif
 
 		graph.forNodesInRandomOrder([&](node u) {
@@ -222,8 +222,8 @@ void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node
                                     node targetCluster, count weightToTarget,
                                     count weightToCurrent) {
 #ifndef NDEBUG
-	long double old_val = map_equation();
-	assert(old_val > 0);
+	long double oldVal = mapEquation();
+	assert(oldVal > 0);
 	double moveFitness = fitnessChange(u, degree, loopWeight, currentCluster, targetCluster, weightToTarget,
 									   weightToCurrent);
 	double stayFitness = fitnessChange(u, degree, loopWeight, currentCluster, currentCluster, weightToCurrent,
@@ -246,12 +246,12 @@ void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node
 	partition.moveToSubset(targetCluster, u);
 
 #ifndef NDEBUG
-	update_p_log_p_sums();
-	long double new_val = map_equation();
-	assert(new_val > 0);
+	updatePLogPSums();
+	long double newVal = mapEquation();
+	assert(newVal > 0);
 //	std::cout << "Move node " << u << " from cluster " << currentCluster << " to " << targetCluster << std::endl;
-//	std::cout << "Old: " << old_val << ", fitnessDiff: " << fitnessDiff << " new: " << new_val << std::endl;
-//	std::cout << "After update: " << map_equation() << std::endl;
+//	std::cout << "Old: " << oldVal << ", fitnessDiff: " << fitnessDiff << " new: " << newVal << std::endl;
+//	std::cout << "After update: " << mapEquation() << std::endl;
 	assert(std::accumulate(clusterCut.begin(), clusterCut.end(), 0ull) == totalCut);
 #endif
 }
@@ -262,7 +262,7 @@ std::string LocalMoveMapEquation::toString() const {
 
 #ifndef NDEBUG
 
-double LocalMoveMapEquation::plogp_rel(count w) {
+double LocalMoveMapEquation::plogpRel(count w) {
 	if (w > 0) {
 		double p = static_cast<double>(w) / totalVolume;
 		return p * log(p);
@@ -270,21 +270,21 @@ double LocalMoveMapEquation::plogp_rel(count w) {
 	return 0;
 }
 
-void LocalMoveMapEquation::update_p_log_p_sums() {
-	sum_p_log_p_cluster_cut = std::accumulate<decltype(clusterCut.begin()), long double>(
+void LocalMoveMapEquation::updatePLogPSums() {
+	sumPLogPClusterCut = std::accumulate<decltype(clusterCut.begin()), long double>(
 			clusterCut.begin(), clusterCut.end(), .0, [&](long double sum, count cut) {
-				return sum + plogp_rel(cut);
+				return sum + plogpRel(cut);
 			});
 
-	sum_p_log_p_cluster_cut_plus_vol = 0;
-	for (size_t i = 0; i < clusterCut.size(); ++i) {
-		sum_p_log_p_cluster_cut_plus_vol += plogp_rel(clusterCut[i] + clusterVolume[i]);
+	sumPLogPClusterCutPlusVol = 0;
+	for (index i = 0; i < clusterCut.size(); ++i) {
+		sumPLogPClusterCutPlusVol += plogpRel(clusterCut[i] + clusterVolume[i]);
 	}
 }
 
-double LocalMoveMapEquation::map_equation() {
-	return plogp_rel(totalCut) - 2 * sum_p_log_p_cluster_cut + sum_p_log_p_cluster_cut_plus_vol -
-		   sum_p_log_p_w_alpha;
+double LocalMoveMapEquation::mapEquation() {
+	return plogpRel(totalCut) - 2 * sumPLogPClusterCut + sumPLogPClusterCutPlusVol -
+	       sumPLogPwAlpha;
 }
 
 #endif

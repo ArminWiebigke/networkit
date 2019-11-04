@@ -53,12 +53,12 @@ private:
 	              node targetCluster, count weightToTarget, edgeid weightToCurrent);
 
 #ifndef NDEBUG
-	long double sum_p_log_p_w_alpha = 0;
-	long double sum_p_log_p_cluster_cut = 0;
-	long double sum_p_log_p_cluster_cut_plus_vol = 0;
-	double plogp_rel(count w);
-	void update_p_log_p_sums();
-	double map_equation();
+	long double sumPLogPwAlpha = 0;
+	long double sumPLogPClusterCut = 0;
+	long double sumPLogPClusterCutPlusVol = 0;
+	double plogpRel(count w);
+	void updatePLogPSums();
+	double mapEquation();
 #endif
 
 	bool tryLocalMove(node u);

@@ -18,7 +18,7 @@ class SparseVectorGTest : public testing::Test {
 TEST_F(SparseVectorGTest, testEmpty){
 	SparseVector<int> vector;
 
-	ASSERT_EQ(vector.elementCount(), 0);
+	ASSERT_EQ(vector.size(), 0);
 }
 
 TEST_F(SparseVectorGTest, testInsertion){
@@ -27,7 +27,7 @@ TEST_F(SparseVectorGTest, testInsertion){
 	vector.insert( 3, 11);
 	vector.insert(10, 12);
 
-	ASSERT_EQ(vector.elementCount(), 3);
+	ASSERT_EQ(vector.size(), 3);
 	ASSERT_EQ(vector[0], 0);
 	ASSERT_EQ(vector[1], 10);
 	ASSERT_EQ(vector[3], 11);
@@ -39,7 +39,7 @@ TEST_F(SparseVectorGTest, testAssignment){
 	vector.insert(1, 1);
 	vector[1] = 2;
 
-	ASSERT_EQ(vector.elementCount(), 1);
+	ASSERT_EQ(vector.size(), 1);
 	ASSERT_EQ(vector[0], 0);
 	ASSERT_EQ(vector[1], 2);
 }
@@ -50,29 +50,29 @@ TEST_F(SparseVectorGTest, testReset){
 	vector.insert(4, 2);
 	vector.reset();
 
-	ASSERT_EQ(vector.elementCount(), 0);
+	ASSERT_EQ(vector.size(), 0);
 	ASSERT_EQ(vector[1], 0);
 	ASSERT_EQ(vector[4], 0);
 }
 
-TEST_F(SparseVectorGTest, testResize){
+TEST_F(SparseVectorGTest, testSetUpperBound){
 	SparseVector<int> vector(5);
 	vector.insert(1, 1);
-	vector.resize(10);
+	vector.setUpperBound(10);
 
-	ASSERT_EQ(vector.elementCount(), 1);
+	ASSERT_EQ(vector.size(), 1);
 	ASSERT_EQ(vector[1], 1);
 	ASSERT_EQ(vector[5], 0);
-	ASSERT_EQ(vector.size(), 10);
+	ASSERT_EQ(vector.upperBound(), 10);
 }
 
-TEST_F(SparseVectorGTest, testDefaultValue){
+TEST_F(SparseVectorGTest, testEmptyValue){
 	SparseVector<int> vector(5, 1);
 	vector.insert(1, 5);
-	vector.resize(10);
+	vector.setUpperBound(10);
 	vector.reset();
 
-	ASSERT_EQ(vector.elementCount(), 0);
+	ASSERT_EQ(vector.size(), 0);
 	ASSERT_EQ(vector[1], 1);
 	ASSERT_EQ(vector[5], 1);
 	ASSERT_EQ(vector[9], 1);

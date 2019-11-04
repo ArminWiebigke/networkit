@@ -23,29 +23,33 @@ class SparseVector {
 public:
 	SparseVector();
 
+	/**
+	 * Construct an empty vector. Empty values are created using the default constructor.
+	 * @param size upper bound for the maximum usable index
+	 */
 	explicit SparseVector(index size);
 
-	SparseVector(index size, T defaultValue);
+	/**
+	 * Construct an empty vector.
+	 * @param size upper bound for the maximum usable index
+	 * @param emptyValue value used for empty entries
+	 */
+	SparseVector(index size, T emptyValue);
 
 	/**
 	 * Resize the vector so that indexes up to size-1 can be used.
 	 */
-	void resize(index size);
+	void setUpperBound(index size);
+
+	/**	 *
+	 * @return the upper bound of the indexes that can be used
+	 */
+	index upperBound() const;
 
 	/**
-	 * @return the size, i.e. the upper bound of the index that can be used
+	 * @return the number of inserted elements.
 	 */
-	index size() const;
-
-	/**
-	 * Reset all values to the default value, so it is "empty". The size is not changed.
-	 */
-	void reset();
-
-	/**
-	 * Returns the number of inserted elements.
-	 */
-	count elementCount() const;
+	count size() const;
 
 	/**
 	 * Insert an value at position a given position.
@@ -70,11 +74,20 @@ public:
 	std::vector<index> insertedIndexes();
 
 	/**
-	 * Clear the value, setting the size to 0.
+	 * Returns true iff an element was previously inserted at the given index.
+	 * @param idx
+	 */
+	bool indexIsUsed(index idx);
+
+	/**
+	 * Reset all values to the default value, so it is "empty". The upper bound is not changed.
+	 */
+	void reset();
+
+	/**
+	 * Clear the vector, setting the upper bound of usable indexes to 0.
 	 */
 	void clear();
-
-	bool indexIsUsed(index idx);
 
 private:
 	std::vector<T> data;
@@ -88,12 +101,12 @@ SparseVector<T>::SparseVector() : emptyValue(T{}) {
 }
 
 template<typename T>
-SparseVector<T>::SparseVector(count size) : data(size), emptyValue(T{}) {
+SparseVector<T>::SparseVector(count size) : SparseVector(size, T{}) {
 }
 
 template<typename T>
-SparseVector<T>::SparseVector(count size, T defaultValue) : data(size, defaultValue),
-                                                            emptyValue(defaultValue) {
+SparseVector<T>::SparseVector(count size, T emptyValue) : data(size, emptyValue),
+                                                            emptyValue(emptyValue) {
 }
 
 template<typename T>
@@ -121,18 +134,18 @@ const T &NetworKit::SparseVector<T>::operator[](NetworKit::index i) const {
 }
 
 template<typename T>
-count SparseVector<T>::elementCount() const{
-	return usedIndexes.size();
-}
-
-template<typename T>
-void SparseVector<T>::resize(index size) {
+void SparseVector<T>::setUpperBound(index size) {
 	data.resize(size, emptyValue);
 }
 
 template<typename T>
-index SparseVector<T>::size() const {
+index SparseVector<T>::upperBound() const {
 	return data.size();
+}
+
+template<typename T>
+count SparseVector<T>::size() const{
+	return usedIndexes.size();
 }
 
 template<typename T>
