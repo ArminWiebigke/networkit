@@ -22,7 +22,7 @@ namespace NetworKit {
 
 class LocalMoveMapEquation : public Algorithm {
 public:
-	explicit LocalMoveMapEquation(Graph &graph, bool hierarchical = false, count maxIterations = 256);
+	explicit LocalMoveMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256);
 
 	void run() override;
 
@@ -34,7 +34,7 @@ public:
 	std::string toString() const override;
 
 private:
-	Graph &graph;
+	const Graph &graph;
 	bool hierarchical;
 	count maxIterations;
 

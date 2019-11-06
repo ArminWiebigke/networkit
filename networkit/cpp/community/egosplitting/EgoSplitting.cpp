@@ -19,40 +19,42 @@
 #include "../../graph/RandomMaximumSpanningForest.h"
 #include "../PLM.h"
 #include "EgoNetExtensionAndPartition.h"
-
-#define true_or_throw(cond, msg) if (!cond) throw std::runtime_error(msg)
-#define W(x) #x << "=" << x << ", "
+#include "../LocalMoveMapEquation.h"
 
 namespace NetworKit {
 
-EgoSplitting::EgoSplitting(const Graph &G)
-		: G(G) {
-	PartitionFunction clusterAlgo = [](const Graph &G) {
-		PLM algo(G, true, 1.0, "none");
-		algo.run();
-		return algo.getPartition();
-	};
-	localClusteringAlgo = clusterAlgo;
-	globalClusteringAlgo = clusterAlgo;
-	init();
+EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
+		: EgoSplitting(G, parallelEgoNetEvaluation,
+//		               [](const Graph &G) {
+//			               PLM algo(G, true, 1.0, "none");
+//			               algo.run();
+//			               return algo.getPartition();
+//		               },
+//		               [](const Graph &G) {
+////			               LocalMoveMapEquation algo(G); //TODO: Sometimes crashes/takes all RAM
+//			               PLM algo(G, true, 1.0, "none");
+//			               algo.run();
+//			               return algo.getPartition();
+//		               }
+                       PLMWrapper(), PLMWrapper()
+) {
+	std::cout << "Default EgoSplitting" << std::endl;
 }
 
-EgoSplitting::EgoSplitting(const Graph &G,
-                           PartitionFunction clusterAlgo)
-		: EgoSplitting(G, clusterAlgo, std::move(clusterAlgo)) {
+EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction clusterAlgo)
+		: EgoSplitting(G, parallelEgoNetEvaluation, clusterAlgo, std::move(clusterAlgo)) {
 }
 
-EgoSplitting::EgoSplitting(const Graph &G,
-                           PartitionFunction localClusterAlgo,
+EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction localClusterAlgo,
                            PartitionFunction globalClusterAlgo)
-		: G(G),
+		: Algorithm(), G(G),
+		  parallelEgoNetEvaluation(parallelEgoNetEvaluation),
 		  localClusteringAlgo(std::move(localClusterAlgo)),
 		  globalClusteringAlgo(std::move(globalClusterAlgo)) {
 	init();
 }
 
 void EgoSplitting::init() {
-	hasRun = false;
 	personaEdges.resize(G.upperNodeIdBound());
 	egoNetPartitions.resize(G.upperNodeIdBound());
 	egoNetExtendedPartitions.resize(G.upperNodeIdBound());
@@ -101,7 +103,7 @@ void EgoSplitting::run() {
 		throw std::runtime_error("Algorithm has already been run!");
 	if (G.numberOfSelfLoops() > 0)
 		throw std::runtime_error("No self-loops allowed!");
-	assert(timings.empty());
+	assert(timingsEmpty());
 	Aux::SignalHandler handler;
 	Aux::Timer timer;
 	timer.start();
@@ -133,80 +135,89 @@ void EgoSplitting::run() {
 	hasRun = true;
 }
 
+
 void EgoSplitting::createEgoNets() {
-	NodeMapping egoMapping(G); // Assign local IDs to the neighbors
-
-	MemoizationTable<double> sigTable(-1.0, G.upperNodeIdBound());
-	SparseVector<double> nodeScores(G.upperNodeIdBound());
-	SparseVector<node> significantGroup(G.upperNodeIdBound(), none);
-	SparseVector<std::vector<count>> edgesToGroups(G.upperNodeIdBound());
-	StochasticSignificance stochasticSignificance(2 * G.numberOfEdges());
-	EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
-	                      significantGroup, edgesToGroups, stochasticSignificance};
-	Aux::SignalHandler handler;
-	Aux::Timer timer;
-
-	G.forNodes([&](node egoNode) {
-		INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
-		handler.assureRunning();
+#pragma omp parallel if (parallelEgoNetEvaluation)
+	{
+		Aux::SignalHandler signalHandler;
+		Aux::Timer timer, totalTimer;
 		timer.start();
+		totalTimer.start();
+		NodeMapping egoMapping(G); // Assign local IDs to the neighbors
+		MemoizationTable<double> sigTable(-1.0, G.upperNodeIdBound());
+		SparseVector<double> nodeScores(G.upperNodeIdBound());
+		SparseVector<node> significantGroup(G.upperNodeIdBound(), none);
+		SparseVector<std::vector<count>> edgesToGroups(G.upperNodeIdBound());
+		StochasticSignificance stochasticSignificance(2 * G.numberOfEdges());
+		EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
+		                      significantGroup, edgesToGroups, stochasticSignificance};
+		addTime(timer, "11    Data Setup");
 
-		Graph egoGraph(G.degree(egoNode), true);
-		// Find neighbors == nodes of the ego-net
-		G.forEdgesOf(egoNode, [&](node, node v) {
-			egoMapping.addNode(v);
-		});
-		// Find all triangles and add the edges to the egoGraph
-		G.forEdgesOf(egoNode, [&](node, node v, edgeweight weight1) {
-			directedG.forEdgesOf(v, [&](node, node w, edgeweight weight2) {
-				if (egoMapping.isMapped(w)) {
-					// we have found a triangle u-v-w
-					egoGraph.addEdge(egoMapping.toLocal(v), egoMapping.toLocal(w), weight2);
-				}
+#pragma omp for
+		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
+			if (!G.hasNode(egoNode)) continue;
+//		G.parallelForNodes([&](node egoNode) {
+//			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
+			signalHandler.assureRunning();
+
+			Graph egoGraph(G.degree(egoNode), true);
+			// Find neighbors == nodes of the ego-net
+			G.forEdgesOf(egoNode, [&](node, node v) {
+				egoMapping.addNode(v);
 			});
-		});
-		addTime(timer, "10    Build EgoNet");
+			// Find all triangles and add the edges to the egoGraph
+			G.forEdgesOf(egoNode, [&](node, node v, edgeweight weight1) {
+				directedG.forEdgesOf(v, [&](node, node w, edgeweight weight2) {
+					if (egoMapping.isMapped(w)) {
+						// we have found a triangle u-v-w
+						egoGraph.addEdge(egoMapping.toLocal(v), egoMapping.toLocal(w), weight2);
+					}
+				});
+			});
+			addTime(timer, "13    Build EgoNet");
 
-		EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
-		                                            localClusteringAlgo);
-		extAndPartition.run();
-		Partition egoPartition = extAndPartition.getPartition();
-		Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
-		addTimings(extAndPartition.getTimings(), "11");
-		addTime(timer, "11    Extend and Partition EgoNet");
+			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
+			                                            localClusteringAlgo);
+			extAndPartition.run();
+			Partition egoPartition = extAndPartition.getPartition();
+			Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
+			addTimings(extAndPartition.getTimings(), "11");
+			addTime(timer, "15    Extend and Partition EgoNet");
 
-		if (parameters.at("storeEgoNet") == "Yes") // only for analysis
-			storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
-		addTime(timer, "15    Store EgoNet");
+			if (parameters.at("storeEgoNet") == "Yes") // only for analysis
+				storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
+			addTime(timer, "18    Store EgoNet");
 
-		// Store ego-net partition with extended nodes
-		for (node i : extendedEgoGraph.nodes()) {
-			egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
-			                                          egoPartition.subsetOf(i));
-		}
+			// Store ego-net partition with extended nodes
+			for (node i : extendedEgoGraph.nodes()) {
+				egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
+				                                          egoPartition.subsetOf(i));
+			}
 //		assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
-		// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
-		Partition directNeighborPartition(egoGraph.upperNodeIdBound());
-		directNeighborPartition.setUpperBound(egoPartition.upperBound());
-		egoGraph.forNodes([&](node v) {
-			directNeighborPartition.addToSubset(egoPartition.subsetOf(v), v);
-		});
-		directNeighborPartition.compact(true);
-		egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
+			// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
+			Partition directNeighborPartition(egoGraph.upperNodeIdBound());
+			directNeighborPartition.setUpperBound(egoPartition.upperBound());
+			egoGraph.forNodes([&](node v) {
+				directNeighborPartition.addToSubset(egoPartition.subsetOf(v), v);
+			});
+			directNeighborPartition.compact(true);
+			egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
 //		assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
-		for (node i : G.neighbors(egoNode)) {
-			egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
-					egoMapping.toLocal(i)));
+			for (node i : G.neighbors(egoNode)) {
+				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
+						egoMapping.toLocal(i)));
+			}
+			addTime(timer, "19    Store EgoNet Partition");
+
+			if (parameters.at("connectPersonas") == "Yes")
+				personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
+			addTime(timer, "15    Connect Personas");
+
+			egoMapping.reset();
+			addTime(timer, "1x    Clean up");
 		}
-		addTime(timer, "17    Store EgoNet Partition");
-
-		if (parameters.at("connectPersonas") == "Yes")
-			personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
-		addTime(timer, "13    Connect Personas");
-
-		egoMapping.reset();
-		addTime(timer, "1x    Clean up");
-	});
+		addTime(totalTimer, "10    EgoNet Sum");
+	}
 }
 
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
@@ -433,6 +444,40 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
+}
+
+PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refine), gamma(gamma), par(par) {
+}
+
+std::function<Partition(const Graph &)> PLMFactory::getFunction() const {
+	const bool &refine_cpy = refine;
+	const double &gamma_cpy = gamma;
+	const std::string &par_cpy = par;
+	return [refine_cpy, gamma_cpy, par_cpy](const Graph &G) {
+		PLM plm(G, refine_cpy, gamma_cpy, par_cpy);
+		plm.run();
+		return plm.getPartition();
+	};
+}
+
+ClusteringFunction PLMFactory::getFunctionObj() const {
+	return ClusteringFunction(getFunction());
+}
+
+std::function<Partition(const Graph &)> ClusteringFunctionFactory::getFunction() const {
+	throw std::runtime_error("Don't use this class directly!");
+}
+
+ClusteringFunction ClusteringFunctionFactory::getFunctionObj() const {
+	throw std::runtime_error("Don't use this class directly!");
+}
+
+Partition ClusteringFunction::operator()(const Graph &G) {
+	return func(G);
+}
+
+ClusteringFunction::ClusteringFunction(std::function<Partition(const Graph &G)> func) : func(std::move(func)) {
+
 }
 
 } /* namespace NetworKit */

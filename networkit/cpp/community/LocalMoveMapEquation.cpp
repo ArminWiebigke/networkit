@@ -19,7 +19,7 @@
 
 namespace NetworKit {
 
-LocalMoveMapEquation::LocalMoveMapEquation(Graph &graph, bool hierarchical, count maxIterations)
+LocalMoveMapEquation::LocalMoveMapEquation(const Graph &graph, bool hierarchical, count maxIterations)
 		: graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
 		  clusterVolume(graph.upperNodeIdBound()),
 		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()),

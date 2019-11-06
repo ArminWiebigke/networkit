@@ -24,17 +24,20 @@ void testEgoSplitting(const std::map<std::string, std::string>& parameters) {
 	METISGraphReader reader{};
 	Graph G = reader.read("../input/lfr_small.graph");
 
-	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
-		PLM plm(G, true, 1.0, "none");
-		plm.run();
-		return plm.getPartition();
-	};
-
-	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
+//	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
+//		PLM plm(G, true, 1.0, "none");
+//		plm.run();
+//		return plm.getPartition();
+//	};
+//	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
+//	EgoSplitting algo(G);
+	PLMFactory clusterFactory{};
+	EgoSplitting algo(G, true, clusterFactory.getFunctionObj(), clusterFactory.getFunctionObj());
 	algo.setParameters(parameters);
 	algo.run();
 	Cover cover = algo.getCover();
 
+	std::cout << algo.timingsAsString() << std::endl;
 	EXPECT_GE(cover.numberOfSubsets(), 5);
 	for (auto size : cover.subsetSizes()) {
 		EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
@@ -42,6 +45,7 @@ void testEgoSplitting(const std::map<std::string, std::string>& parameters) {
 }
 
 TEST_F(EgoSplittingGTest, testEgoSplitting) {
+//	Aux::Log::setLogLevel("INFO");
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "None";
 	testEgoSplitting(parameters);

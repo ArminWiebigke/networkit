@@ -19,6 +19,7 @@
 #include "../../structures/LowToHighDirectedGraph.h"
 #include "../../auxiliary/Timings.h"
 #include "EgoSplitting.h"
+#include "../../auxiliary/ParallelTimings.h"
 
 namespace NetworKit {
 
@@ -26,7 +27,7 @@ namespace NetworKit {
  * Create a partition of the ego-net of a given node.
  * Optionally, the ego-net is extended before the partitioning.
  */
-class EgoNetExtensionAndPartition : public CommunityDetectionAlgorithm, public Timings {
+class EgoNetExtensionAndPartition : public CommunityDetectionAlgorithm, public ParallelTimings {
 	using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:

@@ -86,12 +86,12 @@ void ParallelPartitionCoarsening::run() {
 					threadSafeIncreaseWeight(u, v, w);
 				});
 			}
-		}, Gcombined.numberOfNodes() > (1 << 20));
+		}, Gcombined.numberOfNodes() > (1u << 20u));
 
 
 		// ensure consistency of data structure
 		DEBUG("numEdges: ", numEdges);
-		count twiceM = std::accumulate(numEdges.begin(), numEdges.end(), 0);
+		count twiceM = std::accumulate(numEdges.begin(), numEdges.end(), (count) 0);
 		assert (twiceM % 2 == 0);
 		Gcombined.m = (twiceM / 2);
 
@@ -110,7 +110,7 @@ void ParallelPartitionCoarsening::run() {
 		// iterate over edges of G and create edges in coarse graph or update edge and node weights in Gcon
 		DEBUG("create edges in coarse graphs");
 		GraphBuilder b(nextNodeId, true, false);
-		#pragma omp parallel for schedule(guided) if (nextNodeId > (1 << 20))
+//		#pragma omp parallel for schedule(guided) if (nextNodeId > (1u << 20u))
 		for (omp_index su = 0; su < static_cast<omp_index>(nextNodeId); su++) {
 			std::map<index, edgeweight> outEdges;
 			for (node u : nodesPerSuperNode[su]) {

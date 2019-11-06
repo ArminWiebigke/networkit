@@ -4888,8 +4888,65 @@ cdef class OLP(Algorithm):
 	def getCover(self):
 		return Cover().setThis((<_OLP*>(self._this)).getCover())
 
+cdef extern from "cpp/graph/Graph.h":
+	cdef struct _WeightedEdge "NetworKit::WeightedEdge":
+		node u
+		node v
+		edgeweight weight
+
+"""
+cdef extern from "cpp/community/PLM.h":
+	cdef cppclass _PLMWrapper "NetworKit::PLMWrapper":
+		_PLMWrapper() except +
+		_PLMWrapper(refine) except +
+		_Partition cython_call_operator(_Graph G)
+
+cdef cppclass ClusteringFunction:
+	_Partition cython_call_operator(const _Graph& G):
+		pass
+
+#cdef class ClusteringFunctionWrapperPython:
+#	cdef ClusteringFunctionWrapperCpp* _this
+
+cdef class PLMWrapper:
+	cdef ClusteringFunction *_this
+	def __cinit__(self, refine):
+		self._this = <ClusteringFunction*>(new _PLMWrapper(refine))
+
+	cdef _Partition cython_call_operator(const _Graph& G) nogil:
+		return (*_this)(G) # Geht niemals
+"""
+
+
+cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
+	cdef cppclass _ClusteringFunction "NetworKit::ClusteringFunction":
+		_ClusteringFunction()
+		_ClusteringFunction(_ClusteringFunction other)
+
+	cdef cppclass _ClusteringFunctionFactory "NetworKit::ClusteringFunctionFactory":
+		_ClusteringFunctionFactory()
+		_ClusteringFunction getFunctionObj() except +
+
+	cdef cppclass _PLMFactory "NetworKit::PLMFactory"(_ClusteringFunctionFactory):
+		_PLMFactory(bool_t refine, double gamma, string par)
+
+cdef class ClusteringFunctionFactory:
+	cdef _ClusteringFunctionFactory *_this
+
+	cdef _ClusteringFunction getCppFunction(self):
+		return self._this.getFunctionObj()
+
+	def canBeCalledInParallel(self):
+		return True
+
+cdef class PLMFactory(ClusteringFunctionFactory):
+	def __cinit__(self, refine, gamma, par):
+		self._this = new _PLMFactory(refine, gamma, stdstring(par))
+
 cdef cppclass ClusteringFunctionWrapper:
 	void* callback
+	ClusteringFunctionWrapper():
+		pass
 	void setCallback(object callback):
 		this.callback = <void*>callback
 	_Partition cython_call_operator(const _Graph& G) nogil:
@@ -4909,51 +4966,14 @@ cdef cppclass ClusteringFunctionWrapper:
 
 			return move((<Partition>(pyP))._this)
 
-cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
-	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
-		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
-			double scoreThreshold, double minOverlapRatio) except +
-		_Cover getCover() except +
-
-cdef class SignificanceCommunityCleanUp(Algorithm):
-	"""
-	Constructor to the Ego-Splitting community detection algorithm.
-
-	Parameters
-	----------
-	G : networkit.Graph
-		The graph on which the algorithm has to run.
-	cover
-	"""
-
-	cdef Graph _G
-	cdef Cover _C
-
-	def __cinit__(self, Graph G not None, Cover C not None, double significanceThreshold,
-			double scoreThreshold, double minOverlapRatio):
-		self._G = G
-		self._C = C
-		self._this = new _SignificanceCommunityCleanUp(G._this, C._this, significanceThreshold,
-			scoreThreshold, minOverlapRatio)
-
-	"""
-	Get the result of the algorithm.
-	"""
-	def getCover(self):
-		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
-
-
-cdef extern from "cpp/graph/Graph.h":
-	cdef struct _WeightedEdge "NetworKit::WeightedEdge":
-		node u
-		node v
-		edgeweight weight
-
 cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
-		_EgoSplitting(_Graph G) except +
-		_EgoSplitting(_Graph G, ClusteringFunctionWrapper) except +
-		_EgoSplitting(_Graph G, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction, _ClusteringFunction) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper, _ClusteringFunction) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
 		unordered_map[string, double] getTimings() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
@@ -4980,30 +5000,53 @@ cdef class EgoSplitting(Algorithm):
 	cdef Graph _G
 	cdef object _localClusteringCallback
 	cdef object _globalClusteringCallback
-	cdef ClusteringFunctionWrapper localCallback
-	cdef ClusteringFunctionWrapper globalCallback
 	cdef Cover _groundTruth
 
 	def __cinit__(self, Graph G not None, object localClusteringCallback = None,
 			object globalClusteringCallback = None):
 		self._G = G
-		if localClusteringCallback is None and globalClusteringCallback is not None:
-			raise TypeError("Error, no local clustering algorithm was given.")
-
-		if localClusteringCallback is not None:
-			self._localClusteringCallback = localClusteringCallback
-			self.localCallback.setCallback(localClusteringCallback)
-			if globalClusteringCallback is not None:
-				self._globalClusteringCallback = globalClusteringCallback
-				self.globalCallback.setCallback(globalClusteringCallback)
-			else:
-				self._globalClusteringCallback = localClusteringCallback
-				self.globalCallback.setCallback(localClusteringCallback)
+		cdef ClusteringFunctionFactory localFactory
+		cdef ClusteringFunctionFactory globalFactory
+		cdef _ClusteringFunction localCallback
+		cdef _ClusteringFunction globalCallback
+		cdef ClusteringFunctionWrapper localWrapper
+		cdef ClusteringFunctionWrapper globalWrapper
+		cdef bool_t egoNetsParallel = False
 
 		if localClusteringCallback is None:
-			self._this = new _EgoSplitting(G._this)
+			self._this = new _EgoSplitting(G._this, True)
 		else:
-			self._this = new _EgoSplitting(G._this, self.localCallback, self.globalCallback)
+			if isinstance(localClusteringCallback, ClusteringFunctionFactory):
+				egoNetsParallel = localClusteringCallback.canBeCalledInParallel()
+				localFactory = localClusteringCallback
+				localCallback = localFactory.getCppFunction()
+			else:
+				self._localClusteringCallback = localClusteringCallback
+				localWrapper.setCallback(localClusteringCallback)
+
+			if globalClusteringCallback is None:
+				if isinstance(localClusteringCallback, ClusteringFunctionFactory):
+					self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, localCallback)
+				else:
+					self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, localWrapper)
+			else:
+				if isinstance(globalClusteringCallback, ClusteringFunctionFactory):
+					globalFactory = globalClusteringCallback
+					globalCallback = globalFactory.getCppFunction()
+					if isinstance(localClusteringCallback, ClusteringFunctionFactory):
+						self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, globalCallback)
+					else:
+						self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, globalCallback)
+
+				else:
+					self._globalClusteringCallback = globalClusteringCallback
+					globalWrapper.setCallback(globalClusteringCallback)
+					if isinstance(localClusteringCallback, ClusteringFunctionFactory):
+						self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, globalWrapper)
+					else:
+						self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, globalWrapper)
+
+
 
 	"""
 	Get the result of the algorithm.
@@ -5042,6 +5085,38 @@ cdef class EgoSplitting(Algorithm):
 		self._groundTruth = groundTruth
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
 
+cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
+	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
+		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
+			double scoreThreshold, double minOverlapRatio) except +
+		_Cover getCover() except +
+
+cdef class SignificanceCommunityCleanUp(Algorithm):
+	"""
+	Constructor to the Ego-Splitting community detection algorithm.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		The graph on which the algorithm has to run.
+	cover
+	"""
+
+	cdef Graph _G
+	cdef Cover _C
+
+	def __cinit__(self, Graph G not None, Cover C not None, double significanceThreshold,
+			double scoreThreshold, double minOverlapRatio):
+		self._G = G
+		self._C = C
+		self._this = new _SignificanceCommunityCleanUp(G._this, C._this, significanceThreshold,
+			scoreThreshold, minOverlapRatio)
+
+	"""
+	Get the result of the algorithm.
+	"""
+	def getCover(self):
+		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
 
 cdef extern from "cpp/oslom/OslomCleanUp.h":
 	cdef cppclass _OslomCleanUp "NetworKit::OslomCleanUp"(_Algorithm):

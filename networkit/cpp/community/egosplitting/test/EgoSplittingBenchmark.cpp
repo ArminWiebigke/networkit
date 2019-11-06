@@ -17,32 +17,51 @@
 
 namespace NetworKit {
 
-class EgoSplittingBenchmark: public testing::Test {
+class EgoSplittingBenchmark : public testing::Test {
+public:
+	Graph testGraph;
 
+	EgoSplittingBenchmark() {
+//		EdgeListReader reader('\t', 0);
+//		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
+//		EdgeListReader reader(' ', 0);
+//		METISGraphReader reader{};
+//		testGraph G = reader.read("../input/lfr_om3.graph");
+		METISGraphReader reader{};
+		testGraph = reader.read("../input/FB_Auburn71.graph");
+	}
+
+	void benchEgoSplitting(const std::map<std::string, std::string> &parameters) {
+//		std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
+//			PLM plm(G, true, 1.0, "none");
+//			plm.run();
+//			return plm.getPartition();
+//		};
+//		EgoSplitting algo(testGraph, clusterAlgo, clusterAlgo);
+		EgoSplitting algo(testGraph);
+		algo.setParameters(parameters);
+		algo.run();
+		Cover cover = algo.getCover();
+
+		std::cout << algo.timingsAsString() << std::endl;
+		for (auto size : cover.subsetSizes()) {
+			EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
+		}
+	}
 };
 
-void benchEgoSplitting(const std::map<std::string, std::string>& parameters) {
-//	EdgeListReader reader('\t', 0);
-//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
-//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt", G);
-	EdgeListReader reader(' ', 0);
-//	METISGraphReader reader{};
-	Graph G = reader.read("../input/lfr_om3.graph");
 
-	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
-		PLM plm(G, true, 1.0, "none");
-		plm.run();
-		return plm.getPartition();
-	};
+TEST_F(EgoSplittingBenchmark, benchNoExtend) {
+	std::map<std::string, std::string> parameters;
+	parameters["Extend EgoNet Strategy"] = "None";
+	benchEgoSplitting(parameters);
+}
 
-	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
-	algo.setParameters(parameters);
-	algo.run();
-	Cover cover = algo.getCover();
-
-	for (auto size : cover.subsetSizes()) {
-		EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
-	}
+TEST_F(EgoSplittingBenchmark, benchEdges) {
+	std::map<std::string, std::string> parameters;
+	parameters["Extend EgoNet Strategy"] = "Edges";
+	parameters["Edges Score Strategy"] = "Edges pow 2 div Degree";
+	benchEgoSplitting(parameters);
 }
 
 TEST_F(EgoSplittingBenchmark, benchSignificance) {
@@ -53,7 +72,7 @@ TEST_F(EgoSplittingBenchmark, benchSignificance) {
 	benchEgoSplitting(parameters);
 }
 
-TEST_F(EgoSplittingBenchmark, benchSignificanceMemoization) {
+TEST_F(EgoSplittingBenchmark, DISABLED_benchSignificanceMemoization) {
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "Significance";
 	parameters["Extend and Partition Iterations"] = "2";

@@ -166,6 +166,7 @@ graph_sets = {
 	'overlap': None
 }
 
+
 class PlotGraphSetConfig:
 	@staticmethod
 	def get_sets(graph_set_names):
@@ -270,6 +271,7 @@ timings = [
 	'   Partition EgoNet',
 	'   Extend EgoNet',
 	'   Extend and Partition EgoNet',
+	'  create EgoNets',
 	'  Persona Clustering'
 ]
 

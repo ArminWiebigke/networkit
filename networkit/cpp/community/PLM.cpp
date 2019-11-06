@@ -66,9 +66,9 @@ void PLM::run() {
 	// stores the list of neighboring communities, one vector per thread
 	std::vector<std::vector<index> > neigh_comm;
 
-
+	bool parallel = parallelism != "none" && parallelism != "none randomized";
 	if (turbo) {
-		if (this->parallelism != "none" && this->parallelism != "none randomized") { // initialize arrays for all threads only when actually needed
+		if (parallel) { // initialize arrays for all threads only when actually needed
 			turboAffinity.resize(omp_get_max_threads());
 			neigh_comm.resize(omp_get_max_threads());
 			for (auto &it : turboAffinity) {
@@ -84,7 +84,9 @@ void PLM::run() {
 	// try to improve modularity by moving a node to neighboring clusters
 	auto tryMove = [&](node u) {
 		// TRACE("trying to move node " , u);
-		index tid = omp_get_thread_num();
+		index tid = 0;
+		if (parallel)
+			tid = omp_get_thread_num();
 
 		// collect edge weight to neighbor clusters
 		std::map<index, edgeweight> affinity;
@@ -341,6 +343,17 @@ Partition PLM::prolong(const Graph& Gcoarse, const Partition& zetaCoarse, const 
 
 std::map<std::string, std::vector<count> > PLM::getTiming() {
 	return timing;
+}
+
+PLMWrapper::PLMWrapper(bool refine) : refine(refine) {
+
+}
+
+Partition PLMWrapper::operator()(const Graph &G) {
+	std::cout << "Run PLM" << std::endl;
+	PLM plm(G, refine, 1.0, "none");
+	plm.run();
+	return plm.getPartition();
 }
 
 } /* namespace NetworKit */

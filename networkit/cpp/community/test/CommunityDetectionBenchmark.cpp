@@ -152,7 +152,7 @@ TEST_F(CommunityDetectionBenchmark, benchEgoSplitting) {
 		return clustAlgo.getPartition();
 	};
 
-	EgoSplitting algo(G, clusterAlgo);
+	EgoSplitting algo(G, true, clusterAlgo);
 	algo.run();
 
 	auto timings = algo.getTimings();

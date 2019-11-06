@@ -1252,8 +1252,6 @@ template <typename L> void Graph::forNodes(L handle) const {
 }
 
 template <typename L> void Graph::parallelForNodes(L handle, bool parallel) const {
-	if (parallel)
-		std::cout << "parallelForNodes" << std::endl;
 #pragma omp parallel for if (parallel)
 	for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
 		if (exists[v]) {

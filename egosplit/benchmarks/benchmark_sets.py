@@ -9,9 +9,9 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 
 def get_benchmark_configs():
 	benchmark_sets = [
-		# Scratchpad(),
+		Scratchpad(),
 		# EdgesScore(),
-		EdgesScoreSignificance(),
+		# EdgesScoreSignificance(),
 		# EdgesFactor(),
 		# SigMerge(),
 		# SigExtIter(),
@@ -44,10 +44,10 @@ class Scratchpad(BenchmarkSet):
 		'plot_dir':
 			'test/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'best',
+			'test',
 		EgoSplitParameterConfig:
-			['test'],
-		CleanUpConfig: 'test',
+			['edges'],
+		CleanUpConfig: 'No Cleanup',
 		# 'stream_to_gephi':
 		# 	True,
 		# 'store_ego_nets':
@@ -65,15 +65,17 @@ class Scratchpad(BenchmarkSet):
 		],
 		PlotSetConfig: [
 			'metrics',
-			# 'timings',
-			# 'ego_net_extend',
+			'timings',
+			# 'ego_net_cluster',
 			# 'comm_sizes',
 			# 'comm_f1',
 		],
 		PlotAlgoSetConfig: [
-			'Info-local',
-			'Leiden-local'
+			'all'
 		],
+		'remove_algo_parts':
+			['Ego', ' + Infomap', ' | ', 'No Clean Up', 'No Extension',
+			 'EdgesScore', 'Significance'],
 	}
 
 

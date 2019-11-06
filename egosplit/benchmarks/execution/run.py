@@ -31,7 +31,7 @@ class Evaluation(Enum):
 	CLEANUP = 6
 
 
-def run_benchmark(benchmark_config: BenchmarkSet, iteration):
+def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	""" Run benchmarks given by a config """
 	# setLogLevel('INFO')
 	append_results = False
@@ -50,7 +50,7 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration):
 	if store_ego_nets:
 		evaluations.append(Evaluation.EGO_NETS)
 
-	result_subfolder = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+	result_subfolder = time_stamp
 	result_dir = '{}/{}-{}/{}/'.format(get_result_dir(), result_subfolder,
 	                                   benchmark_config.result_dir, iteration)
 	os.makedirs(result_dir)

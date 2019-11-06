@@ -17,7 +17,7 @@
 
 namespace NetworKit {
 
-class ExtendEgoNetStrategy : public Algorithm, public Timings {
+class ExtendEgoNetStrategy : public Algorithm, public ParallelTimings {
 public:
 	ExtendEgoNetStrategy(const EgoNetData &egoNetData, count maxExtendedNodes,
 	                     const Graph &egoGraph, node egoNode);
