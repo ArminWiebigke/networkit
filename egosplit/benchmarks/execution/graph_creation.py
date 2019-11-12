@@ -22,6 +22,7 @@ class GraphSetsConfig:
 			elif graph_set == "test":
 				graphs = create_om_graphs(3, 3)
 				# graphs = [ReadGraph(lambda: getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71')]
+				# graphs = [ReadGraph(lambda: getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31')]
 			elif graph_set == 'facebook':
 				graphs = facebook_graphs()
 

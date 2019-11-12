@@ -44,7 +44,7 @@ class Scratchpad(BenchmarkSet):
 		'plot_dir':
 			'test/',
 		EgoSplitClusteringAlgorithmsConfig:
-			'test',
+			'local',
 		EgoSplitParameterConfig:
 			['edges'],
 		CleanUpConfig: 'No Cleanup',
@@ -62,6 +62,7 @@ class Scratchpad(BenchmarkSet):
 		],
 		PlotGraphSetConfig: [
 			'om',
+			# 'facebook_bar',
 		],
 		PlotSetConfig: [
 			'metrics',

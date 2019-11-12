@@ -9,6 +9,7 @@
 #define PLM_H_
 
 #include "CommunityDetectionAlgorithm.h"
+#include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
 
@@ -72,15 +73,16 @@ private:
 	std::map<std::string, std::vector<count> > timing;     // fine-grained running time measurement
 };
 
-class PLMWrapper {
+class PLMFactory : public ClusteringFunctionFactory {
 public:
+	explicit PLMFactory(bool refine = false, double gamma = 1.0, std::string par = "balanced");
 
-	explicit PLMWrapper(bool refine = false);
-
-	Partition operator()(const Graph &G);
+	ClusteringFunction getFunction() const override;
 
 private:
 	bool refine;
+	double gamma;
+	std::string par;
 };
 
 } /* namespace NetworKit */

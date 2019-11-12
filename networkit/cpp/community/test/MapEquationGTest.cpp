@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../LocalMoveMapEquation.h"
+#include "../LouvainMapEquation.h"
 #include "../../io/METISGraphReader.h"
 #include "../../generators/ClusteredRandomGraphGenerator.h"
 #include "../egosplitting/EgoSplitting.h"
@@ -47,7 +47,7 @@ TEST_F(MapEquationGTest, testLocalMoveSmall) {
 	G.addEdge(1, 8);
 	G.addEdge(2, 7);
 
-	LocalMoveMapEquation mapequation(G, false);
+	LouvainMapEquation mapequation(G, false);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 
@@ -60,7 +60,7 @@ TEST_F(MapEquationGTest, testLocalMove) {
 	Graph G = generator.generate();
 	Partition groundTruth = generator.getCommunities();
 
-	LocalMoveMapEquation mapequation(G, false);
+	LouvainMapEquation mapequation(G, false);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 
@@ -73,7 +73,7 @@ TEST_F(MapEquationGTest, testLocalMoveLargeHierarchical) {
 	Graph G = generator.generate();
 	Partition groundTruth = generator.getCommunities();
 
-	LocalMoveMapEquation mapequation(G, true);
+	LouvainMapEquation mapequation(G, true);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 

@@ -141,4 +141,17 @@ std::vector<count> PLP::getTiming() {
 	return this->timing;
 }
 
+PLPFactory::PLPFactory(count theta, count maxIterations) : theta(theta), maxIterations(maxIterations) {
+}
+
+ClusteringFunction PLPFactory::getFunction() const {
+	count thetaCopy = theta;
+	count maxIterationsCopy = maxIterations;
+	return [thetaCopy, maxIterationsCopy](const Graph &graph) {
+		PLP algo(graph, thetaCopy, maxIterationsCopy);
+		algo.run();
+		return algo.getPartition();
+	};
+}
+
 } /* namespace NetworKit */

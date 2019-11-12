@@ -1,5 +1,5 @@
 /*
- * LocalMoveMapEquation.h
+ * LouvainMapEquation.h
  *
  * Created on: 2019-01-28
  * Author: Armin Wiebigke
@@ -17,12 +17,13 @@
 #include "../base/Algorithm.h"
 #include "../structures/Partition.h"
 #include "../structures/SparseVector.h"
+#include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
 
-class LocalMoveMapEquation : public Algorithm {
+class LouvainMapEquation : public Algorithm {
 public:
-	explicit LocalMoveMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256);
+	explicit LouvainMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256);
 
 	void run() override;
 
@@ -66,6 +67,17 @@ private:
 	void calculateClusterCutAndVolume();
 
 	void runHierarchical();
+};
+
+class LouvainMapEquationFactory : public ClusteringFunctionFactory {
+public:
+	explicit LouvainMapEquationFactory(bool hierarchical = false, count maxIterations = 256);
+
+	ClusteringFunction getFunction() const override;
+
+private:
+	bool hierarchical;
+	count maxIterations;
 };
 
 }

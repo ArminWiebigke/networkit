@@ -24,43 +24,9 @@
 #include "../cleanup/StochasticSignificance.h"
 #include "../../structures/SparseVector.h"
 #include "../../auxiliary/ParallelTimings.h"
+#include "../ClusteringFunctionFactory.h"
 
 namespace NetworKit {
-
-class ClusteringFunction {
-	std::function<Partition(const Graph &G)> func;
-public:
-	ClusteringFunction() = default;
-
-	explicit ClusteringFunction(std::function<Partition(const Graph &G)> func);
-
-	Partition operator()(const Graph &G);
-};
-
-class ClusteringFunctionFactory {
-public:
-	ClusteringFunctionFactory() = default;
-
-	virtual std::function<Partition(const Graph &)> getFunction() const;
-
-	virtual ClusteringFunction getFunctionObj() const;
-
-private:
-};
-
-class PLMFactory : public ClusteringFunctionFactory {
-public:
-	explicit PLMFactory(bool refine = false, double gamma = 1.0, std::string par = "balanced");
-
-	std::function<Partition(const Graph &)> getFunction() const override;
-
-	ClusteringFunction getFunctionObj() const override;
-
-private:
-	bool refine;
-	double gamma;
-	std::string par;
-};
 
 /**
  * @ingroup community
@@ -76,8 +42,6 @@ private:
  * https://dl.acm.org/citation.cfm?id=3098054
  */
 class EgoSplitting : public Algorithm, public ParallelTimings {
-	using PartitionFunction = std::function<Partition(const Graph &)>;
-
 public:
 	/**
 	 * Construct an instance of this algorithm, using the default clustering algorithms.
@@ -93,7 +57,7 @@ public:
 	 * @param[in]	G   input graph
 	 * @param[in]   clusterAlgo    algorithm to cluster the ego-net and the persona graph
 	 */
-	EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction clusterAlgo);
+	EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction clusterAlgo);
 
 	/**
 	 * Construct an instance of this algorithm, using the given clustering algorithms for the
@@ -103,8 +67,8 @@ public:
 	 * @param[in]   localClusterAlgo    algorithm to cluster the ego-net
 	 * @param[in]   globalClusterAlgo   algorithm to cluster the persona graph
 	 */
-	EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction localClusterAlgo,
-	             PartitionFunction globalClusterAlgo);
+	EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction localClusterAlgo,
+	             ClusteringFunction globalClusterAlgo);
 
 	void run() override;
 
@@ -148,7 +112,7 @@ public:
 private:
 	const Graph &G;
 	bool parallelEgoNetEvaluation;
-	PartitionFunction localClusteringAlgo, globalClusteringAlgo;
+	ClusteringFunction localClusteringAlgo, globalClusteringAlgo;
 	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
 	// for each node: (global node ID, set ID in ego-net).
 	// Includes nodes of the extended ego-net. These partitions are not by the algorithm itself,

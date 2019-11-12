@@ -63,7 +63,7 @@ class GroundTruth(CoverAlgorithm):
 
 
 class EgoSplitAlgorithm(CoverAlgorithm):
-	def __init__(self, name, parameters, local_partition_algorithm,
+	def __init__(self, name, parameters, local_partition_algorithm=None,
 	             global_partition_algorithm=None):
 		super().__init__(name)
 		# self.output_parameter['Local Clustering Algorithm'], self.local_partition_algorithm = \

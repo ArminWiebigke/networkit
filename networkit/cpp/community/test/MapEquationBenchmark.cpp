@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../LocalMoveMapEquation.h"
+#include "../LouvainMapEquation.h"
 #include "../../io/METISGraphReader.h"
 #include "../../generators/ClusteredRandomGraphGenerator.h"
 #include "../egosplitting/EgoSplitting.h"
@@ -27,7 +27,7 @@ TEST_F(MapEquationBenchmark, benchLarge) {
 	Aux::Timer timer{};
 	timer.start();
 
-	LocalMoveMapEquation mapequation(G, false);
+	LouvainMapEquation mapequation(G, false);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 
@@ -47,7 +47,7 @@ TEST_F(MapEquationBenchmark, benchLargeHierachical) {
 	Aux::Timer timer{};
 	timer.start();
 
-	LocalMoveMapEquation mapequation(G, true);
+	LouvainMapEquation mapequation(G, true);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 

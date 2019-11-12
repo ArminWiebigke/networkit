@@ -1,5 +1,5 @@
 /*
- * LocalMoveMapEquation.cpp
+ * LouvainMapEquation.cpp
  *
  * Created on: 2019-01-28
  * Author: Armin Wiebigke
@@ -12,24 +12,29 @@
 #include <cmath>
 #include <random>
 
-#include "LocalMoveMapEquation.h"
+#include "LouvainMapEquation.h"
 #include "../graph/Graph.h"
 #include "../structures/Partition.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
 
 namespace NetworKit {
 
-LocalMoveMapEquation::LocalMoveMapEquation(const Graph &graph, bool hierarchical, count maxIterations)
+LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, count maxIterations)
 		: graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
 		  clusterVolume(graph.upperNodeIdBound()),
 		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()),
-		  neighborClusterWeights(graph.upperNodeIdBound(), none){
+		  neighborClusterWeights(graph.upperNodeIdBound(), none) {
 }
 
-void LocalMoveMapEquation::run() {
+void LouvainMapEquation::run() {
 	if (hasRun)
 		throw std::runtime_error("Algorithm was already run!");
 	partition.allToSingletons();
+	for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
+		if (!graph.hasNode(u)) {
+			partition.remove(u);
+		}
+	}
 
 	calculateClusterCutAndVolume();
 
@@ -74,7 +79,7 @@ void LocalMoveMapEquation::run() {
 	hasRun = true;
 }
 
-void LocalMoveMapEquation::calculateClusterCutAndVolume() {
+void LouvainMapEquation::calculateClusterCutAndVolume() {
 	graph.forNodes([&](node u) {
 		graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
 			if (u != v) {
@@ -89,7 +94,7 @@ void LocalMoveMapEquation::calculateClusterCutAndVolume() {
 	});
 }
 
-bool LocalMoveMapEquation::tryLocalMove(node u) {
+bool LouvainMapEquation::tryLocalMove(node u) {
 	// Find neighbor clusters
 	count degree = 0;
 	count loop = 0;
@@ -139,7 +144,8 @@ bool LocalMoveMapEquation::tryLocalMove(node u) {
 	return moved;
 }
 
-void LocalMoveMapEquation::runHierarchical() {
+void LouvainMapEquation::runHierarchical() {
+	assert(partition.numberOfSubsets() < partition.numberOfElements());
 	INFO("Run hierarchical with ", partition.numberOfSubsets(), " nodes (", graph.numberOfNodes());
 	// free some memory
 	clusterVolume.clear();
@@ -153,7 +159,7 @@ void LocalMoveMapEquation::runHierarchical() {
 	Graph metaGraph = coarsening.getCoarseGraph();
 	auto fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
 
-	LocalMoveMapEquation recursion(metaGraph, true, maxIterations);
+	LouvainMapEquation recursion(metaGraph, true, maxIterations);
 	recursion.run();
 	Partition metaPartition = recursion.getPartition();
 
@@ -162,7 +168,7 @@ void LocalMoveMapEquation::runHierarchical() {
 	});
 }
 
-Partition LocalMoveMapEquation::getPartition() {
+Partition LouvainMapEquation::getPartition() {
 	return partition;
 }
 
@@ -179,8 +185,8 @@ Partition LocalMoveMapEquation::getPartition() {
  * @return
  */
 double
-LocalMoveMapEquation::fitnessChange(node, count degree, count loopWeight, node currentCluster, node targetCluster,
-                                    count weightToTarget, count weightToCurrent) {
+LouvainMapEquation::fitnessChange(node, count degree, count loopWeight, node currentCluster, node targetCluster,
+                                  count weightToTarget, count weightToCurrent) {
 	count cutDifferenceCurrent = 2 * weightToCurrent - degree + 2 * loopWeight;
 	double totalCutNew, targetClusterCutCurrent, targetClusterCutNew, targetCutPlusVolumeNew, targetCutPlusVolumeCurrent;
 	if (currentCluster != targetCluster) {
@@ -218,16 +224,16 @@ LocalMoveMapEquation::fitnessChange(node, count degree, count loopWeight, node c
 	                      - (2 * (targetClusterCutNew - targetClusterCutCurrent)));
 }
 
-void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node currentCluster,
-                                    node targetCluster, count weightToTarget,
-                                    count weightToCurrent) {
+void LouvainMapEquation::moveNode(node u, count degree, count loopWeight, node currentCluster,
+                                  node targetCluster, count weightToTarget,
+                                  count weightToCurrent) {
 #ifndef NDEBUG
 	long double oldVal = mapEquation();
 	assert(oldVal > 0);
 	double moveFitness = fitnessChange(u, degree, loopWeight, currentCluster, targetCluster, weightToTarget,
-									   weightToCurrent);
+	                                   weightToCurrent);
 	double stayFitness = fitnessChange(u, degree, loopWeight, currentCluster, currentCluster, weightToCurrent,
-									   weightToCurrent);
+	                                   weightToCurrent);
 	double fitnessDiff = moveFitness - stayFitness;
 #endif
 
@@ -256,13 +262,13 @@ void LocalMoveMapEquation::moveNode(node u, count degree, count loopWeight, node
 #endif
 }
 
-std::string LocalMoveMapEquation::toString() const {
-	return "LocalMoveMapEquation";
+std::string LouvainMapEquation::toString() const {
+	return "LouvainMapEquation";
 }
 
 #ifndef NDEBUG
 
-double LocalMoveMapEquation::plogpRel(count w) {
+double LouvainMapEquation::plogpRel(count w) {
 	if (w > 0) {
 		double p = static_cast<double>(w) / totalVolume;
 		return p * log(p);
@@ -270,7 +276,7 @@ double LocalMoveMapEquation::plogpRel(count w) {
 	return 0;
 }
 
-void LocalMoveMapEquation::updatePLogPSums() {
+void LouvainMapEquation::updatePLogPSums() {
 	sumPLogPClusterCut = std::accumulate<decltype(clusterCut.begin()), long double>(
 			clusterCut.begin(), clusterCut.end(), .0, [&](long double sum, count cut) {
 				return sum + plogpRel(cut);
@@ -282,12 +288,26 @@ void LocalMoveMapEquation::updatePLogPSums() {
 	}
 }
 
-double LocalMoveMapEquation::mapEquation() {
+double LouvainMapEquation::mapEquation() {
 	return plogpRel(totalCut) - 2 * sumPLogPClusterCut + sumPLogPClusterCutPlusVol -
 	       sumPLogPwAlpha;
 }
 
 #endif
+
+LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations)
+		: hierarchical(hierarchical), maxIterations(maxIterations) {
+}
+
+ClusteringFunction LouvainMapEquationFactory::getFunction() const {
+	bool hiearchicalCopy = hierarchical;
+	count maxIterationsCopy = maxIterations;
+	return [hiearchicalCopy, maxIterationsCopy](const Graph &graph) {
+		LouvainMapEquation algo(graph, hiearchicalCopy, maxIterationsCopy);
+		algo.run();
+		return algo.getPartition();
+	};
+}
 
 }
 

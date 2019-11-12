@@ -19,34 +19,24 @@
 #include "../../graph/RandomMaximumSpanningForest.h"
 #include "../PLM.h"
 #include "EgoNetExtensionAndPartition.h"
-#include "../LocalMoveMapEquation.h"
+#include "../LouvainMapEquation.h"
 
 namespace NetworKit {
 
 EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
 		: EgoSplitting(G, parallelEgoNetEvaluation,
-//		               [](const Graph &G) {
-//			               PLM algo(G, true, 1.0, "none");
-//			               algo.run();
-//			               return algo.getPartition();
-//		               },
-//		               [](const Graph &G) {
-////			               LocalMoveMapEquation algo(G); //TODO: Sometimes crashes/takes all RAM
-//			               PLM algo(G, true, 1.0, "none");
-//			               algo.run();
-//			               return algo.getPartition();
-//		               }
-                       PLMWrapper(), PLMWrapper()
+		               PLMFactory(true, 1.0, "none").getFunction(),
+		               LouvainMapEquationFactory(true).getFunction()
 ) {
 	std::cout << "Default EgoSplitting" << std::endl;
 }
 
-EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction clusterAlgo)
+EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction clusterAlgo)
 		: EgoSplitting(G, parallelEgoNetEvaluation, clusterAlgo, std::move(clusterAlgo)) {
 }
 
-EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, PartitionFunction localClusterAlgo,
-                           PartitionFunction globalClusterAlgo)
+EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction localClusterAlgo,
+                           ClusteringFunction globalClusterAlgo)
 		: Algorithm(), G(G),
 		  parallelEgoNetEvaluation(parallelEgoNetEvaluation),
 		  localClusteringAlgo(std::move(localClusterAlgo)),
@@ -444,40 +434,6 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
-}
-
-PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refine), gamma(gamma), par(par) {
-}
-
-std::function<Partition(const Graph &)> PLMFactory::getFunction() const {
-	const bool &refine_cpy = refine;
-	const double &gamma_cpy = gamma;
-	const std::string &par_cpy = par;
-	return [refine_cpy, gamma_cpy, par_cpy](const Graph &G) {
-		PLM plm(G, refine_cpy, gamma_cpy, par_cpy);
-		plm.run();
-		return plm.getPartition();
-	};
-}
-
-ClusteringFunction PLMFactory::getFunctionObj() const {
-	return ClusteringFunction(getFunction());
-}
-
-std::function<Partition(const Graph &)> ClusteringFunctionFactory::getFunction() const {
-	throw std::runtime_error("Don't use this class directly!");
-}
-
-ClusteringFunction ClusteringFunctionFactory::getFunctionObj() const {
-	throw std::runtime_error("Don't use this class directly!");
-}
-
-Partition ClusteringFunction::operator()(const Graph &G) {
-	return func(G);
-}
-
-ClusteringFunction::ClusteringFunction(std::function<Partition(const Graph &G)> func) : func(std::move(func)) {
-
 }
 
 } /* namespace NetworKit */

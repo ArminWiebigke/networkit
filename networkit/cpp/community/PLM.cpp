@@ -339,21 +339,22 @@ Partition PLM::prolong(const Graph& Gcoarse, const Partition& zetaCoarse, const 
 	return zetaFine;
 }
 
-
-
 std::map<std::string, std::vector<count> > PLM::getTiming() {
 	return timing;
 }
 
-PLMWrapper::PLMWrapper(bool refine) : refine(refine) {
-
+PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refine), gamma(gamma), par(par) {
 }
 
-Partition PLMWrapper::operator()(const Graph &G) {
-	std::cout << "Run PLM" << std::endl;
-	PLM plm(G, refine, 1.0, "none");
-	plm.run();
-	return plm.getPartition();
+ClusteringFunction PLMFactory::getFunction() const {
+	const bool &refine_cpy = refine;
+	const double &gamma_cpy = gamma;
+	const std::string &par_cpy = par;
+	return [refine_cpy, gamma_cpy, par_cpy](const Graph &G) {
+		PLM plm(G, refine_cpy, gamma_cpy, par_cpy);
+		plm.run();
+		return plm.getPartition();
+	};
 }
 
 } /* namespace NetworKit */

@@ -10,6 +10,7 @@
 
 #include "CommunityDetectionAlgorithm.h"
 #include "../structures/Partition.h"
+#include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
 
@@ -91,6 +92,17 @@ public:
 	virtual std::vector<count> getTiming();
 
 
+};
+
+class PLPFactory : public ClusteringFunctionFactory {
+public:
+	explicit PLPFactory(count theta = none, count maxIterations=none);
+
+	ClusteringFunction getFunction() const override;
+
+private:
+	count theta;
+	count maxIterations;
 };
 
 } /* namespace NetworKit */

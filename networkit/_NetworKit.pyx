@@ -4850,10 +4850,12 @@ cdef class CutClustering(CommunityDetector):
 			pyResult[res.first] = Partition().setThis(res.second)
 		return pyResult
 
+
 cdef extern from "cpp/community/LPPotts.h":
 	cdef cppclass _LPPotts "NetworKit::LPPotts"(_CommunityDetectionAlgorithm):
 		_LPPotts(_Graph G, double alpha, count theta, count maxIterations, bool_t para) except +
 		_LPPotts(_Graph G, _Partition baseClustering, double alpha, count theta, count maxIterations, bool_t para) except +
+
 
 cdef class LPPotts(CommunityDetector):
 	"""
@@ -4872,6 +4874,7 @@ cdef extern from "cpp/community/OLP.h":
 		_OLP(_Graph G, count k, count theta, count maxIterations) except +
 		_Cover getCover() except +
 
+
 cdef class OLP(Algorithm):
 	"""
 	"""
@@ -4888,67 +4891,76 @@ cdef class OLP(Algorithm):
 	def getCover(self):
 		return Cover().setThis((<_OLP*>(self._this)).getCover())
 
+
 cdef extern from "cpp/graph/Graph.h":
 	cdef struct _WeightedEdge "NetworKit::WeightedEdge":
 		node u
 		node v
 		edgeweight weight
 
-"""
-cdef extern from "cpp/community/PLM.h":
-	cdef cppclass _PLMWrapper "NetworKit::PLMWrapper":
-		_PLMWrapper() except +
-		_PLMWrapper(refine) except +
-		_Partition cython_call_operator(_Graph G)
 
-cdef cppclass ClusteringFunction:
-	_Partition cython_call_operator(const _Graph& G):
+cdef extern from "cpp/community/ClusteringFunctionFactory.h":
+	cdef cppclass _ClusteringFunction "NetworKit::ClusteringFunction":
 		pass
 
-#cdef class ClusteringFunctionWrapperPython:
-#	cdef ClusteringFunctionWrapperCpp* _this
-
-cdef class PLMWrapper:
-	cdef ClusteringFunction *_this
-	def __cinit__(self, refine):
-		self._this = <ClusteringFunction*>(new _PLMWrapper(refine))
-
-	cdef _Partition cython_call_operator(const _Graph& G) nogil:
-		return (*_this)(G) # Geht niemals
-"""
-
-
-cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
-	cdef cppclass _ClusteringFunction "NetworKit::ClusteringFunction":
-		_ClusteringFunction()
-		_ClusteringFunction(_ClusteringFunction other)
-
 	cdef cppclass _ClusteringFunctionFactory "NetworKit::ClusteringFunctionFactory":
-		_ClusteringFunctionFactory()
-		_ClusteringFunction getFunctionObj() except +
+		_ClusteringFunction getFunction() except +
 
-	cdef cppclass _PLMFactory "NetworKit::PLMFactory"(_ClusteringFunctionFactory):
-		_PLMFactory(bool_t refine, double gamma, string par)
 
 cdef class ClusteringFunctionFactory:
 	cdef _ClusteringFunctionFactory *_this
 
-	cdef _ClusteringFunction getCppFunction(self):
-		return self._this.getFunctionObj()
+	def __cinit__(self):
+		self._this = NULL
+
+	def __dealloc__(self):
+		if self._this != NULL:
+			del self._this
+		self._this = NULL
+
+	cdef _ClusteringFunction getFunction(self):
+		return self._this.getFunction()
 
 	def canBeCalledInParallel(self):
 		return True
 
+
+cdef extern from "cpp/community/PLM.h":
+	cdef cppclass _PLMFactory "NetworKit::PLMFactory"(_ClusteringFunctionFactory):
+		_PLMFactory(bool_t refine, double gamma, string par)
+
+
 cdef class PLMFactory(ClusteringFunctionFactory):
-	def __cinit__(self, refine, gamma, par):
+	def __cinit__(self, bool_t refine, double gamma, par):
 		self._this = new _PLMFactory(refine, gamma, stdstring(par))
 
-cdef cppclass ClusteringFunctionWrapper:
-	void* callback
-	ClusteringFunctionWrapper():
-		pass
+
+cdef extern from "cpp/community/PLP.h":
+	cdef cppclass _PLPFactory "NetworKit::PLPFactory"(_ClusteringFunctionFactory):
+		_PLPFactory(count theta, count maxIterations)
+
+
+cdef class PLPFactory(ClusteringFunctionFactory):
+	def __cinit__(self, count theta = none, count maxIterations = none):
+		self._this = new _PLPFactory(theta, maxIterations)
+
+
+cdef extern from "cpp/community/LouvainMapEquation.h":
+	cdef cppclass _LouvainMapEquationFactory "NetworKit::LouvainMapEquationFactory"(_ClusteringFunctionFactory):
+		_LouvainMapEquationFactory(bool_t hierarchical, count maxIterations)
+
+
+cdef class LouvainMapEquationFactory(ClusteringFunctionFactory):
+	def __cinit__(self, bool_t hierarchical = False, count maxIterations = 256):
+		self._this = new _LouvainMapEquationFactory(hierarchical, maxIterations)
+
+
+cdef cppclass _PythonClusteringFunction(_ClusteringFunction):
+	object callback
+
 	void setCallback(object callback):
-		this.callback = <void*>callback
+		this.callback = callback
+
 	_Partition cython_call_operator(const _Graph& G) nogil:
 		cdef bool_t error = False
 		cdef string message
@@ -4957,7 +4969,7 @@ cdef cppclass ClusteringFunctionWrapper:
 			pyG.setThis(_Graph(G))
 
 			try:
-				pyP = (<object>callback)(pyG)
+				pyP = callback(pyG)
 			except Exception as e:
 				error = True
 				message = stdstring("An Exception occurred in the clustering callback: {0}".format(e))
@@ -4966,20 +4978,19 @@ cdef cppclass ClusteringFunctionWrapper:
 
 			return move((<Partition>(pyP))._this)
 
+
 cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
 		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation) except +
-		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper) except +
-		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper, ClusteringFunctionWrapper) except +
+		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction) except +
 		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction, _ClusteringFunction) except +
-		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, ClusteringFunctionWrapper, _ClusteringFunction) except +
-		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction, ClusteringFunctionWrapper) except +
 		_Cover getCover() except +
 		unordered_map[string, double] getTimings() except +
 		vector[unordered_map[node, index]] getEgoNetPartitions() except +
 		unordered_map[node, vector[_WeightedEdge]] getEgoNets() except +
 		void setParameters(map[string, string]) except +
 		void setGroundTruth(_Cover) except +
+
 
 cdef class EgoSplitting(Algorithm):
 	"""
@@ -5005,12 +5016,10 @@ cdef class EgoSplitting(Algorithm):
 	def __cinit__(self, Graph G not None, object localClusteringCallback = None,
 			object globalClusteringCallback = None):
 		self._G = G
-		cdef ClusteringFunctionFactory localFactory
-		cdef ClusteringFunctionFactory globalFactory
-		cdef _ClusteringFunction localCallback
-		cdef _ClusteringFunction globalCallback
-		cdef ClusteringFunctionWrapper localWrapper
-		cdef ClusteringFunctionWrapper globalWrapper
+		cdef _PythonClusteringFunction localWrapper
+		cdef _PythonClusteringFunction globalWrapper
+		cdef _ClusteringFunction localFunction
+		cdef _ClusteringFunction globalFunction
 		cdef bool_t egoNetsParallel = False
 
 		if localClusteringCallback is None:
@@ -5018,33 +5027,22 @@ cdef class EgoSplitting(Algorithm):
 		else:
 			if isinstance(localClusteringCallback, ClusteringFunctionFactory):
 				egoNetsParallel = localClusteringCallback.canBeCalledInParallel()
-				localFactory = localClusteringCallback
-				localCallback = localFactory.getCppFunction()
+				localFunction = (<ClusteringFunctionFactory>(localClusteringCallback)).getFunction()
 			else:
 				self._localClusteringCallback = localClusteringCallback
 				localWrapper.setCallback(localClusteringCallback)
+				localFunction = localWrapper
 
 			if globalClusteringCallback is None:
-				if isinstance(localClusteringCallback, ClusteringFunctionFactory):
-					self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, localCallback)
-				else:
-					self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, localWrapper)
+				globalFunction = localFunction
 			else:
 				if isinstance(globalClusteringCallback, ClusteringFunctionFactory):
-					globalFactory = globalClusteringCallback
-					globalCallback = globalFactory.getCppFunction()
-					if isinstance(localClusteringCallback, ClusteringFunctionFactory):
-						self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, globalCallback)
-					else:
-						self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, globalCallback)
-
+					globalFunction = (<ClusteringFunctionFactory>(globalClusteringCallback)).getFunction()
 				else:
 					self._globalClusteringCallback = globalClusteringCallback
 					globalWrapper.setCallback(globalClusteringCallback)
-					if isinstance(localClusteringCallback, ClusteringFunctionFactory):
-						self._this = new _EgoSplitting(G._this, egoNetsParallel, localCallback, globalWrapper)
-					else:
-						self._this = new _EgoSplitting(G._this, egoNetsParallel, localWrapper, globalWrapper)
+					globalFunction = globalWrapper
+			self._this = new _EgoSplitting(G._this, egoNetsParallel, localFunction, globalFunction)
 
 
 
@@ -5085,11 +5083,13 @@ cdef class EgoSplitting(Algorithm):
 		self._groundTruth = groundTruth
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
 
+
 cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
 	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
 		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
 			double scoreThreshold, double minOverlapRatio) except +
 		_Cover getCover() except +
+
 
 cdef class SignificanceCommunityCleanUp(Algorithm):
 	"""
@@ -5206,12 +5206,12 @@ cdef class SLPA(Algorithm):
 		return Partition().setThis((<_SLPA*>(self._this)).getPartition())
 
 
-cdef extern from "cpp/community/LocalMoveMapEquation.h":
-	cdef cppclass _LocalMoveMapEquation "NetworKit::LocalMoveMapEquation"(_Algorithm):
-		_LocalMoveMapEquation(_Graph, bool, count) except +
+cdef extern from "cpp/community/LouvainMapEquation.h":
+	cdef cppclass _LouvainMapEquation "NetworKit::LouvainMapEquation"(_Algorithm):
+		_LouvainMapEquation(_Graph, bool, count) except +
 		_Partition getPartition() except +
 
-cdef class LocalMoveMapEquation(Algorithm):
+cdef class LouvainMapEquation(Algorithm):
 	"""
     Constructor
 
@@ -5229,13 +5229,13 @@ cdef class LocalMoveMapEquation(Algorithm):
 
 	def __cinit__(self, Graph G not None, hierarchical = False, maxIterations = 256):
 		self._G = G
-		self._this = new _LocalMoveMapEquation(G._this, hierarchical, maxIterations)
+		self._this = new _LouvainMapEquation(G._this, hierarchical, maxIterations)
 
 	"""
 	Get the result of the algorithm.
 	"""
 	def getPartition(self):
-		return Partition().setThis((<_LocalMoveMapEquation*>(self._this)).getPartition())
+		return Partition().setThis((<_LouvainMapEquation*>(self._this)).getPartition())
 
 
 cdef class DissimilarityMeasure:

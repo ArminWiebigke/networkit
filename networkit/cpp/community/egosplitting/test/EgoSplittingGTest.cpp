@@ -30,9 +30,9 @@ void testEgoSplitting(const std::map<std::string, std::string>& parameters) {
 //		return plm.getPartition();
 //	};
 //	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
-//	EgoSplitting algo(G);
-	PLMFactory clusterFactory{};
-	EgoSplitting algo(G, true, clusterFactory.getFunctionObj(), clusterFactory.getFunctionObj());
+	EgoSplitting algo(G);
+//	PLMFactory clusterFactory{true, 1.0, "none"};
+//	EgoSplitting algo(G, true, clusterFactory.getFunction(), clusterFactory.getFunction());
 	algo.setParameters(parameters);
 	algo.run();
 	Cover cover = algo.getCover();
