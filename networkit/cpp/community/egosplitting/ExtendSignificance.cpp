@@ -19,7 +19,7 @@
 
 namespace NetworKit {
 
-ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
+ExtendSignificance::ExtendSignificance(EgoNetData &egoNetData,
                                        const Partition &basePartition, count maxCandidates,
                                        const Graph &egoGraph, node egoNode)
 		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
@@ -37,6 +37,10 @@ ExtendSignificance::ExtendSignificance(const EgoNetData &egoNetData,
 		  onlyCheckMaxCandidates(parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
 	if (basePartition.numberOfSubsets() == 0)
 		throw std::runtime_error("Missing Base Partition for Significance!");
+	if (significantGroup.upperBound() < G.upperNodeIdBound())
+		significantGroup.setUpperBound(G.upperNodeIdBound());
+	if (edgesToGroups.upperBound() < G.upperNodeIdBound())
+		edgesToGroups.setUpperBound(G.upperNodeIdBound());
 	setMemoizationFunction();
 }
 

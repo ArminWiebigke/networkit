@@ -17,7 +17,7 @@ namespace NetworKit {
 
 class ExtendByScore : public ExtendEgoNetStrategy {
 public:
-	explicit ExtendByScore(const EgoNetData &egoNetData, count maxCandidates,
+	explicit ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
 	                       const Graph &egoGraph, node egoNode);
 
 	void run() override;
@@ -30,7 +30,7 @@ private:
 	using NodeAndScore = std::pair<node, double>;
 	SparseVector<double> &nodeScores;
 	std::string scoreStrategy;
-	StochasticSignificance significance;
+	StochasticSignificance &significance;
 	count outgoingStubs;
 	count externalStubs;
 

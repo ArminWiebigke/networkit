@@ -33,7 +33,7 @@ struct GroupProperties {
 class ExtendSignificance : public ExtendEgoNetStrategy {
 
 public:
-	ExtendSignificance(const EgoNetData &egoNetData,
+	ExtendSignificance(EgoNetData &egoNetData,
 	                   const Partition &basePartition, count maxCandidates,
 	                   const Graph &egoGraph, node egoNode);
 
@@ -46,7 +46,7 @@ public:
 private:
 	const Partition &basePartition;
 	MemoizationTable<double> &sigTable;
-	const StochasticSignificance &stochasticSignificance;
+	StochasticSignificance &stochasticSignificance;
 	Graph coarseGraph;
 	SparseVector<std::vector<count>> &edgesToGroups; // For each candidate: number of edges to the groups
 	std::map<node, std::vector<node> > coarseToEgo;

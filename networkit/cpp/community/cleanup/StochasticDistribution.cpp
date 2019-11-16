@@ -16,8 +16,10 @@ StochasticDistribution::StochasticDistribution(index maxValue) {
 }
 
 void StochasticDistribution::setMaxValue(count maxValue) {
-	if (maxValue < logSum.size())
+	if (maxValue <= logSum.size()) {
+		logSum.resize(maxValue + 1);
 		return;
+	}
 	logSum.reserve(maxValue + 1);
 	if (logSum.empty())
 		logSum.push_back(0.0);
@@ -27,6 +29,7 @@ void StochasticDistribution::setMaxValue(count maxValue) {
 		currentValue += std::log(i);
 		logSum.push_back(currentValue);
 	}
+	assert(logSum.size() == maxValue + 1);
 }
 
 double StochasticDistribution::binomCoeff(count n, count k) const {
@@ -170,7 +173,8 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	assert(K <= N && "Error: K > N");
 	assert(n >= 0 && "Error: n < 0");
 	assert(k >= 0 && "Error: k < 0");
-	assert(logSum.size() > N);
+	count maxValue = this->maxValue();
+	assert(maxValue >= N);
 	if (k == 0)
 		return 1;
 	if (k > n || k > K)
@@ -324,6 +328,10 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 	assert(normalizedKInProbability < 1.001);
 	assert(normalizedRightCumulative < 1.001);
 	return {normalizedKInProbability, normalizedRightCumulative};
+}
+
+count StochasticDistribution::maxValue() const {
+	return logSum.size() - 1;
 }
 
 } /* namespace NetworKit */

@@ -19,6 +19,10 @@ namespace NetworKit {
 class StochasticSignificance {
 public:
 
+	/**
+	 * Constructor
+	 * @param maxValue maximum value that can be used as an argument for the calculations
+	 */
 	explicit StochasticSignificance(count maxValue);
 
 	/**
@@ -42,6 +46,8 @@ public:
 
 private:
 	mutable StochasticDistribution dist;
+
+	void ensureMaxValue(count maxValue) const;
 };
 
 } /* namespace NetworKit */

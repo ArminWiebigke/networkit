@@ -18,7 +18,7 @@
 
 namespace NetworKit {
 
-EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(const EgoNetData &egoNetData, node egoNode, Graph egoGraph,
+EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(EgoNetData &egoNetData, node egoNode, Graph egoGraph,
                                                          PartitionFunction partitionFunction)
 		: CommunityDetectionAlgorithm(egoNetData.G),
 		  directedG(egoNetData.directedG),

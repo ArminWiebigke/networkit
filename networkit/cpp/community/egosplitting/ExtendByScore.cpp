@@ -9,12 +9,13 @@
 
 namespace NetworKit {
 
-ExtendByScore::ExtendByScore(const EgoNetData &egoNetData, count maxCandidates,
+ExtendByScore::ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
                              const Graph &egoGraph, node egoNode)
 		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
 		  nodeScores(egoNetData.nodeScores), scoreStrategy(parameters.at("Edges Score Strategy")),
 		  significance(egoNetData.stochasticSignificance) {
-
+	if (nodeScores.upperBound() < G.upperNodeIdBound())
+		nodeScores.setUpperBound(G.upperNodeIdBound());
 }
 
 void ExtendByScore::run() {

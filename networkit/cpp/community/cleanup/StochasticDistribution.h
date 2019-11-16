@@ -32,6 +32,11 @@ public:
 	void setMaxValue(count maxValue);
 
 	/**
+	 * Returns the maximal value that can be used as an input value.
+	 */
+	count maxValue() const;
+
+	/**
 	 * Calculate the binomial coefficient "n choose k". Returns a floating point number that may
 	 * slightly differ from the exact integer result.
 	 * @return binomial coefficient

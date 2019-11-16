@@ -134,11 +134,11 @@ void EgoSplitting::createEgoNets() {
 		timer.start();
 		totalTimer.start();
 		NodeMapping egoMapping(G); // Assign local IDs to the neighbors
-		MemoizationTable<double> sigTable(-1.0, G.upperNodeIdBound());
-		SparseVector<double> nodeScores(G.upperNodeIdBound());
-		SparseVector<node> significantGroup(G.upperNodeIdBound(), none);
-		SparseVector<std::vector<count>> edgesToGroups(G.upperNodeIdBound());
-		StochasticSignificance stochasticSignificance(2 * G.numberOfEdges());
+		MemoizationTable<double> sigTable(-1.0, 0);
+		SparseVector<double> nodeScores(0);
+		SparseVector<node> significantGroup(0, none);
+		SparseVector<std::vector<count>> edgesToGroups(0);
+		StochasticSignificance stochasticSignificance(0);
 		EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
 		                      significantGroup, edgesToGroups, stochasticSignificance};
 		addTime(timer, "11    Data Setup");
