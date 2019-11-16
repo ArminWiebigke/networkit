@@ -29,6 +29,7 @@ EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(EgoNetData &egoNetData,
 		  parameters(egoNetData.parameters),
 		  groundTruth(egoNetData.groundTruth),
 		  egoNetData(egoNetData) {
+	assert(egoGraph.numberOfNodes() > 0);
 }
 
 void EgoNetExtensionAndPartition::run() {

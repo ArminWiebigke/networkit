@@ -10,5 +10,3 @@ class BenchmarkMetric:
 	@staticmethod
 	def get_name():
 		raise NotImplementedError
-
-# Calculate the F1 score

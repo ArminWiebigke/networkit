@@ -89,14 +89,14 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 	avg_metrics = defaultdict(lambda: 0)
 	gt_comm_sizes = ground_truth.subsetSizeMap()
 	for u in graph.nodes():
+		ego_net = benchmark.algo.ego_net_of(u)
+		if ego_net.numberOfNodes() == 0:
+			continue
+
+		# print("Evaluate ego-net of node {}".format(u))
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
 		ego_sums = defaultdict(lambda: 0)
-		ego_net = benchmark.algo.ego_net_of(u)
-		if ego_net.numberOfNodes() == 0:
-			del ego_net
-			continue
-
 		# Count nodes
 		node_partition_map = copy(benchmark.algo.ego_net_partition_of(u))
 		nodes = list(node_partition_map.keys())

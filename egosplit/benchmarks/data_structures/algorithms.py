@@ -20,7 +20,7 @@ class CoverAlgorithm:
 	"""
 
 	def __init__(self, name):
-		print('Algorithm', name)
+		# print('Algorithm', name)
 		self.name = name
 		self.timer = ContextTimer()
 		self.graph = None
@@ -30,7 +30,7 @@ class CoverAlgorithm:
 
 	def __copy__(self):
 		""" Override this method in subclass if __init__ takes arguments """
-		print(self.__class__)
+		# print(self.__class__)
 		return self.__class__(self.name)
 
 	def get_time(self):
@@ -132,11 +132,11 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		return copy(self.egoNetPartitions[u])
 
 	def ego_net_of(self, u):
-		graph = Graph(self.graph.upperNodeIdBound())
 		try:
 			edges = self.egoNets[u]
 		except KeyError:
-			return graph
+			return Graph()
+		graph = Graph(self.graph.upperNodeIdBound())
 		for edge in edges:
 			graph.addEdge(edge['u'], edge['v'], edge['weight'])
 		for v in graph.nodes():

@@ -4,8 +4,8 @@ from collections import OrderedDict, defaultdict
 from copy import copy
 from enum import Enum
 
-import egosplit.benchmarks.evaluation.benchmark_metric as bm
-import egosplit.benchmarks.evaluation.config
+from networkit import setLogLevel
+import egosplit.benchmarks.evaluation.config as bm
 from networkit.stopwatch import clockit
 from egosplit.benchmarks.evaluation.metrics import write_results_to_file, add_compact_results, \
 	print_compact_results
@@ -64,7 +64,7 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	                          benchmark_config[CleanUpConfig],
 	                          store_ego_nets)
 	other_algos = get_other_algos(benchmark_config.other_algos)
-	algos = ego_algos + other_algos
+	algos = other_algos + ego_algos
 
 	if stream_to_gephi and len(graphs) * len(algos) > 8:
 		raise RuntimeError('Too many runs to stream!')
@@ -95,8 +95,8 @@ def print_result_summary(summary, result_dir):
 	if not summary:
 		return
 	compact_metrics = [
-		egosplit.benchmarks.evaluation.config.Time,
-		egosplit.benchmarks.evaluation.config.NMI,
+		bm.Time,
+		bm.NMI,
 		# bm.F1,
 		# bm.F1_rev,
 	]
@@ -110,10 +110,10 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary, result_dir
 	if Evaluation.METRICS in evaluations:
 		# Write results
 		metrics = [
-			egosplit.benchmarks.evaluation.config.Time,
-			egosplit.benchmarks.evaluation.config.NMI,
-			egosplit.benchmarks.evaluation.config.F1,
-			egosplit.benchmarks.evaluation.config.F1_rev,
+			bm.Time,
+			bm.NMI,
+			bm.F1,
+			bm.F1_rev,
 		]
 		metric_names = [m.get_name() for m in metrics]
 		metric_results = defaultdict(lambda: dict())

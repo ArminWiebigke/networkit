@@ -47,6 +47,9 @@ class PlotAlgoSetConfig:
 			'Info-Surprise-noOSLOM': ['Infomap + Surprise', '!OSLOM-full', '!Remove Overlapping'],
 			'Leiden-Info': ['Leiden + Infomap', '!Remove Overlapping'],
 			'Leiden-Info-noOSLOM': ['Leiden + Infomap', '!OSLOM-full', '!Remove Overlapping'],
+			'PLP': ['PLP'],
+			'PLM': ['PLM'],
+			'Potts': ['Potts'],
 		}
 		algo_sets = []
 		for algo_set_name in algo_set_names:
@@ -248,9 +251,9 @@ class PlotGraphSetConfig:
 				'set_ylim': False,
 				'show_deviation': True,
 			},
-			'large': {
-				'name': 'large',
-				'graph_filter': ['Amazon', 'DBLP'],
+			'snap': {
+				'name': 'snap',
+				'graph_filter': ['Amazon', 'DBLP', 'LiveJournal', 'Orkut'],
 				'x': 'Graph Name',
 				'x_filter': None,
 				'plot_args': {
@@ -272,7 +275,8 @@ timings = [
 	'   Extend EgoNet',
 	'   Extend and Partition EgoNet',
 	'  create EgoNets',
-	'  Persona Clustering'
+	'  Persona Clustering',
+	' Connect Personas',
 ]
 
 metrics = [

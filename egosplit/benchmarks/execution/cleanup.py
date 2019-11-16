@@ -54,6 +54,11 @@ class CleanUpConfig:
 				'Clean-merge',
 				'Clean-new',
 			]
+		elif clean_up_set == 'with-without':
+			clean_ups = [
+				'No Clean Up',
+				'Clean-new',
+			]
 		elif clean_up_set == 'test':
 			clean_ups = [
 				'No Clean Up',

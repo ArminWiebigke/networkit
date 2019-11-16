@@ -54,7 +54,7 @@ void EgoSplitting::init() {
 
 	parameters["storeEgoNet"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
-	parameters["maxEgoNetsStored"] = "2000";
+	parameters["numEgoNetsStored"] = "2000";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -100,17 +100,17 @@ void EgoSplitting::run() {
 
 	INFO("create EgoNets");
 	createEgoNets();
-	addTime(timer, "1  create EgoNets");
+	addTime(timer, "1  Create EgoNets");
 	handler.assureRunning();
 
 	INFO("split into Personas");
 	splitIntoPersonas();
-	addTime(timer, "2  split Personas");
+	addTime(timer, "2  Split Personas");
 	handler.assureRunning();
 
 	INFO("connect Personas");
 	connectPersonas();
-	addTime(timer, "3  connect Personas");
+	addTime(timer, "3  Connect Personas");
 	handler.assureRunning();
 
 	INFO("create Persona Clustering");
@@ -120,7 +120,7 @@ void EgoSplitting::run() {
 
 	INFO("create Cover");
 	createCover();
-	addTime(timer, "5  create Cover");
+	addTime(timer, "5  Create Cover");
 
 	hasRun = true;
 }
@@ -145,7 +145,8 @@ void EgoSplitting::createEgoNets() {
 
 #pragma omp for
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
-			if (!G.hasNode(egoNode)) continue;
+			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
+				continue;
 //		G.parallelForNodes([&](node egoNode) {
 //			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 			signalHandler.assureRunning();
@@ -201,7 +202,7 @@ void EgoSplitting::createEgoNets() {
 
 			if (parameters.at("connectPersonas") == "Yes")
 				personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
-			addTime(timer, "15    Connect Personas");
+			addTime(timer, "16    Connect Ego-Personas");
 
 			egoMapping.reset();
 			addTime(timer, "1x    Clean up");
@@ -212,11 +213,12 @@ void EgoSplitting::createEgoNets() {
 
 void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode) {
 	// Only store a given maximum of ego-nets (expected)
-	count maxEgoNets = std::stoi(parameters.at("maxEgoNetsStored"));
-	double storeChance = maxEgoNets * 1.0 / G.numberOfNodes();
+	count maxEgoNets = std::stoi(parameters.at("numEgoNetsStored"));
+	double storeChance = (double) maxEgoNets / G.numberOfNodes();
 	if (Aux::Random::real() > storeChance)
 		return;
 
+	INFO("Store ego-net of node ", egoNode);
 	// Get EgoNet with global node ids
 	std::vector<WeightedEdge> edges;
 	edges.reserve(egoGraph.numberOfEdges());

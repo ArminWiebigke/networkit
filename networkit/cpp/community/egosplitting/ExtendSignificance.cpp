@@ -35,7 +35,7 @@ ExtendSignificance::ExtendSignificance(EgoNetData &egoNetData,
 		  significantGroup(egoNetData.significantGroup),
 		  edgesToGroups(egoNetData.edgesToGroups),
 		  onlyCheckMaxCandidates(parameters.at("onlyCheckSignOfMaxCandidates") == "Yes") {
-	if (basePartition.numberOfSubsets() == 0)
+	if (basePartition.numberOfSubsets() == 0 && egoGraph.numberOfNodes() > 0)
 		throw std::runtime_error("Missing Base Partition for Significance!");
 	if (significantGroup.upperBound() < G.upperNodeIdBound())
 		significantGroup.setUpperBound(G.upperNodeIdBound());
@@ -144,24 +144,18 @@ void ExtendSignificance::updateCandidates() {
 		// Update group stubs
 		GroupProperties &properties = groupProperties[group];
 		properties.groupTotal += G.degree(w);
+		int oldOutgoing = properties.groupOutgoing;
+		assert(oldOutgoing + (int) G.degree(w) - 2 * (int) edgesToGroups[w][group] >= 0);
 		properties.groupOutgoing += G.degree(w) - 2 * edgesToGroups[w][group];
+		assert(properties.groupOutgoing < 2 * G.numberOfEdges());
 		properties.externalNodes -= 1;
 		properties.externalStubs -= G.degree(w);
 		G.forNeighborsOf(w, [&](node v) {
 			// Update other candidates
 			if (!edgesToGroups[v].empty()) {
-				// v is a neighbor of neighbor
+				// v is a candidate
 				edgesToGroups[v][group] += 1;
 				updatedCandidates.insert(v);
-			}
-			if (significantGroup[v] == group) {
-				// v is in the same group
-				count newInternalStubs = 2;
-				if (addedCandidates.count(v)) {
-					// Don't count this edge twice if we add both candidates at the same time
-					newInternalStubs = 1;
-				}
-				properties.groupOutgoing -= newInternalStubs;
 			}
 		});
 		edgesToGroups[w].clear();
@@ -337,6 +331,7 @@ std::vector<GroupProperties> ExtendSignificance::calculateGroupProperties() cons
 		GroupProperties &properties = newGroupProperties[group];
 		properties.groupTotal = groupDegree;
 		properties.groupOutgoing = groupDegree - 2 * (count) coarseGraph.weight(group, group);
+		assert(properties.groupOutgoing < 2 * G.numberOfEdges());
 		properties.externalStubs = 2 * G.numberOfEdges() - groupDegree;
 		properties.externalNodes = G.numberOfNodes() - coarseSizes[group];
 	}

@@ -6,6 +6,7 @@ class BenchGraph:
 	"""This class represents an input graph for a benchmark. In addition to the graph
 	object, the name of the graph, its creation parameters and the created ground truth
 	cover are stored.
+	The actual graph is only created (or read) when it is accessed.
 	"""
 	global_id = 0
 
@@ -19,7 +20,7 @@ class BenchGraph:
 		# print("Graph '{}' with {} nodes and {} edges".format(name, self.graph.numberOfNodes(),
 		#                                                      self.graph.numberOfEdges()))
 
-	def create_graph(self):
+	def create_graph_and_ground_truth(self):
 		"""
 		Returns graph, ground_truth
 		"""
@@ -27,7 +28,8 @@ class BenchGraph:
 
 	def set_graph_and_gt(self):
 		if not self._graph:
-			self._graph, self._ground_truth = self.create_graph()
+			print("Creating graph {}".format(self.name))
+			self._graph, self._ground_truth = self.create_graph_and_ground_truth()
 
 	@property
 	def graph(self):
@@ -45,7 +47,7 @@ class ReadGraph(BenchGraph):
 		self.create_func = create_func
 		super().__init__(name, parameters)
 
-	def create_graph(self):
+	def create_graph_and_ground_truth(self):
 		return self.create_func()
 
 
@@ -56,7 +58,7 @@ class LFRGraph(BenchGraph):
 		self.lfr_parameters = parameter_dict or {}
 		super().__init__(name, parameter_dict)
 
-	def create_graph(self):
+	def create_graph_and_ground_truth(self):
 		return genLFR(**self.lfr_parameters)
 
 	@staticmethod

@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from egosplit.external import getFacebookGraph, getAmazonGraph, getDBLPGraph
+from egosplit.external import getFacebookGraph, getAmazonGraph, getDBLPGraph, getLiveJournalGraph, getOrkutGraph, \
+	getAmazonGraphAll
 from egosplit.benchmarks.data_structures.graph import LFRGraph, ReadGraph, BenchGraph
 
 
@@ -25,25 +26,11 @@ class GraphSetsConfig:
 				# graphs = [ReadGraph(lambda: getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31')]
 			elif graph_set == 'facebook':
 				graphs = facebook_graphs()
+			elif graph_set == 'snap':
+				graphs = snap_graphs()
 
 			all_graphs.extend(graphs)
 		return all_graphs
-
-
-def om_graphs():
-	return create_om_graphs(2, 5)
-
-
-def mu_graphs():
-	return create_mu_graphs(20, 40, 5)
-
-
-def overlap_graphs():
-	return create_overlap_graphs()
-
-
-def test_graphs():
-	return create_om_graphs(3, 3)
 
 
 def facebook_graphs():
@@ -60,7 +47,7 @@ def facebook_graphs():
 	return graphs
 
 
-def large_graphs():
+def snap_graphs():
 	graphs = []
 	graphs.append(ReadGraph(lambda: getAmazonGraph(), 'Amazon'))
 	graphs.append(ReadGraph(lambda: getDBLPGraph(), 'DBLP'))
@@ -137,7 +124,7 @@ def create_lfr_graphs(graphArgs):
 	for argsName in graphArgs.keys():
 		args = graphArgs[argsName]
 		graph_name = 'LFR_' + argsName
-		print(args)
+		# print(args)
 		graph_wrapper = LFRGraph(graph_name, args)
 		graphs.append(graph_wrapper)
 	return graphs
