@@ -51,10 +51,10 @@ public:
 
 	/**
 	 * Check if a global node is mapped.
-	 * @param u The global node.
+	 * @param globalNode The global node.
 	 * @return True iff the node is mapped.
 	 */
-	bool isMapped(node u) const;
+	bool isMapped(node globalNode) const;
 
 	/**
 	 * Get the number of mapped nodes.

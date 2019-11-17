@@ -33,7 +33,7 @@ class Evaluation(Enum):
 
 def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	""" Run benchmarks given by a config """
-	# setLogLevel('INFO')
+	setLogLevel('INFO')
 	append_results = False
 	evaluations = [
 		Evaluation.METRICS,

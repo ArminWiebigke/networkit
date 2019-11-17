@@ -104,9 +104,12 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		with self.timer:
 			algo.run()
 			self.cover = algo.getCover()
+		print("Got cover")
 
 		self.egoNetPartitions = algo.getEgoNetPartitions()
+		print("Got ego-net partitions")
 		self.egoNets = algo.getEgoNets()
+		print("Got ego-nets")
 
 		# Output timings
 		timings = algo.getTimings()
@@ -140,10 +143,10 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		graph = Graph(self.graph.upperNodeIdBound())
 		for edge in edges:
 			graph.addEdge(edge['u'], edge['v'], edge['weight'])
+		graph.removeSelfLoops()
 		for v in graph.nodes():
 			if graph.isIsolated(v):
 				graph.removeNode(v)
-		graph.removeSelfLoops()
 		return graph
 
 

@@ -32,15 +32,17 @@ void NodeMapping::addMapping(node global, node local) {
 }
 
 node NodeMapping::toLocal(NetworKit::node globalNode) const {
+	assert(globalToLocal[globalNode] != none);
 	return globalToLocal[globalNode];
 }
 
 node NodeMapping::toGlobal(NetworKit::node localNode) const {
+	assert(localToGlobal[localNode] != none);
 	return localToGlobal[localNode];
 }
 
-bool NodeMapping::isMapped(NetworKit::node u) const {
-	return toLocal(u) != none;
+bool NodeMapping::isMapped(NetworKit::node globalNode) const {
+	return globalToLocal[globalNode] != none;
 }
 
 count NodeMapping::nodeCount() const {
