@@ -66,13 +66,13 @@ class CleanUpConfig:
 				'Clean-new',
 			]
 		else:
-			raise RuntimeError("No clean-up set provided!")
-		clean_ups = ["({:03.0f}){}".format(i, c) for i, c in enumerate(clean_ups)]
+			raise RuntimeError('No clean-up set provided!')
+		clean_ups = ['({:03.0f}){}'.format(i, c) for i, c in enumerate(clean_ups)]
 		return clean_ups
 
 
 def clean_up_cover(graph, cover, ground_truth, clean_up):
-	if len(clean_up) > 4 and clean_up[0] == "(" and clean_up[4] == ")":
+	if len(clean_up) > 4 and clean_up[0] == '(' and clean_up[4] == ')':
 		clean_up = clean_up[5:]
 	if clean_up == '' or clean_up == 'No Clean Up' or clean_up == '*':
 		return cover
@@ -155,10 +155,10 @@ def clean_up_oslom(G, cover, threshold=0.1, simple_cleanup=True,
 	if discard_max_extend_groups:
 		args.append('-discard_max_extend_groups')
 	# print(args)
-	# args = ["-simple_cleanup",
-	#         "-merge_discarded", "-discard_max_extend_groups",
-	#         "-max_extend", "2",
-	#         "-cup_runs", "1"]
+	# args = ['-simple_cleanup',
+	#         '-merge_discarded', '-discard_max_extend_groups',
+	#         '-max_extend', '2',
+	#         '-cup_runs', '1']
 	# print(args)
 	args = [arg.encode('utf-8') for arg in args]
 	# print(args)

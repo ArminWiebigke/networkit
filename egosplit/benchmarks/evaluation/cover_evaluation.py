@@ -1,11 +1,11 @@
 from math import log2
 
 from egosplit.benchmarks.data_structures.cover_benchmark import *
-from egosplit.benchmarks.evaluation.output import create_line
+from egosplit.benchmarks.evaluation.utility import create_line
 
 
 # Analyse the result cover of a benchmark run
-def analyse_cover(benchmarks, result_dir, append):
+def analyze_cover(benchmarks, result_dir, append):
 	if not append:
 		print_headers(result_dir)
 

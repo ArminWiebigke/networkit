@@ -1,90 +1,74 @@
-from collections import OrderedDict
-
-from egosplit.benchmarks.evaluation.cover_analysis import *
-from egosplit.benchmarks.evaluation.output import create_line
-from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
+from egosplit.external import calc_NMI
+from networkit.community import CoverF1Similarity
 
 
-# Write the metric results to the output file, one line per benchmark run
-def write_results_to_file(benchmark_results, result_dir, metric_names, append):
-	if not append:
-		print_headers(result_dir, metric_names)
-	result_file = open(result_dir + 'metrics.result', 'a')
-	for benchmark, metric_results in benchmark_results.items():
-		metric_values = [metric_results[metric] for metric in metric_names]
-		line = create_line(*benchmark.output_line(), *metric_values)
-		result_file.write(line)
+class BenchmarkMetric:
+	"""
+	This abstract class represents a metric of a benchmark run. The main method get_value
+	takes a benchmark result and returns the metric value.
+	"""
+
+	@staticmethod
+	def get_value(benchmark):
+		raise NotImplementedError
+
+	@staticmethod
+	def get_name():
+		raise NotImplementedError
 
 
-# Print output file headers
-def print_headers(result_dir, metric_names):
-	with open(result_dir + 'metrics.result', 'w') as f:
-		f.write(create_line(*CoverBenchmark.output_header(), *metric_names))
+class Time(BenchmarkMetric):
+	@staticmethod
+	def get_value(benchmark):
+		return benchmark.get_time()
+
+	@staticmethod
+	def get_name():
+		return 'Running Time'
 
 
-# Print a summary of the metric results in a compact form (table)
-def print_compact_results(results, metric_names, result_dir):
-	output_file = open(result_dir + "compact.result", "a")
-	print_results_compact(results, metric_names, output_file)
+class NMI(BenchmarkMetric):
+	"""
+	Normalized mutual information
+	"""
+	@staticmethod
+	def get_value(benchmark):
+		return calc_NMI(benchmark.get_graph(), benchmark.get_cover(),
+		                benchmark.get_ground_truth())
+
+	@staticmethod
+	def get_name():
+		return 'NMI'
 
 
-# Add benchmark results to the compact results
-def add_compact_results(summary, benchmark_results, metric_names):
-	for benchmark, metric_results in benchmark_results.items():
-		algo_name = benchmark.get_algo_name()
-		if algo_name not in summary:
-			summary[algo_name] = OrderedDict()
-		graph_name = benchmark.get_graph_name()
-		if graph_name not in summary[algo_name]:
-			d = OrderedDict()
-			for m in metric_names:
-				d[m] = []
-			summary[algo_name][graph_name] = d
-		for metric in metric_names:
-			summary[algo_name][graph_name][metric].append(metric_results[metric])
+class F1(BenchmarkMetric):
+	"""
+	F1-Score of cover compared to ground-truth. Average of the F1-Score of each detected community.
+	"""
+	@staticmethod
+	def get_value(benchmark):
+		return calc_F1(benchmark.get_graph(), benchmark.get_cover(),
+		               benchmark.get_ground_truth())
+
+	@staticmethod
+	def get_name():
+		return 'F1-Score'
 
 
-# Print the compact results to the standard output and the output file
-def print_results_compact(results, metrics, output_file):
-	algos = list(results.keys())
-	graphs = list(results[algos[0]].keys())
-	result_decimals = 4
-	pre_dot = 6
-	str_width = max(pre_dot + 1 + result_decimals,
-	                *[len(metric) for metric in metrics]) + 1
-	str_width_first = max([len(algo) for algo in algos]) + 1
+class F1_rev(BenchmarkMetric):
+	"""
+	F1-Score of ground-truth compared to cover. Average of the F1-Score of each ground-truth community.
+	"""
+	@staticmethod
+	def get_value(benchmark):
+		return calc_F1(benchmark.get_graph(), benchmark.get_ground_truth(),
+		               benchmark.get_cover())
 
-	# Graph header
-	graph_header = "\n" + "Graph ".rjust(str_width_first)
-	for graph in graphs:
-		graph_header += "| " + graph.rjust(len(metrics) * str_width - 1) + ' '
-	graph_header += '\n' + str().ljust(
-		str_width_first + (2 + len(metrics) * str_width) * len(graphs), '-')
-	# Metrics header
-	graph_header += '\n' + "Algo".ljust(str_width_first)
-	for _ in graphs:
-		graph_header += "| "
-		for metric in metrics:
-			graph_header += metric.rjust(str_width - 1) + ' '
-	graph_header += '\n' + str().ljust(
-		str_width_first + (2 + len(metrics) * str_width) * len(graphs), '-')
-	output_str = graph_header
-
-	# Results
-	for algo in algos:
-		algo_results = (algo + " ").ljust(str_width_first)
-		for graph in graphs:
-			algo_results += "| "
-			for metric in metrics:
-				r = results[algo][graph][metric]
-				val = sum(r) / len(r)
-				algo_results += "{:{f}.{d}f} ".format(val, d=result_decimals, f=str_width - 1)
-		output_str += "\n" + algo_results
-	output_str += "\n"
-	print(output_str)
-	output_file.write(output_str)
+	@staticmethod
+	def get_name():
+		return 'F1-Score (reversed)'
 
 
-# Convert a float to a string with a fixed number of decimals
-def fixed_decimals(val, decimals=3):
-	return "{:.{decimals}f}".format(val, decimals=decimals)
+def calc_F1(graph, cover, refCover):
+	similarity = CoverF1Similarity(graph, cover, refCover).run()
+	return similarity.getUnweightedAverage()

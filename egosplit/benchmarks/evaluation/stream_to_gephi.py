@@ -64,7 +64,7 @@ def stream_partition(graphs, benchmarks):
 			continue
 		egonet = benchmark.algo.ego_net_of(0)
 		if len(egonet.nodes()) == 0:
-			print("No egonet stored")
+			print('No egonet stored')
 			continue
 		print(workspace_id)
 		client = gephi.streaming.GephiStreamingClient(
@@ -100,25 +100,25 @@ def stream_partition(graphs, benchmarks):
 					edge_weights[edge_id] = weight
 
 				egonet.forEdges(lambda u, v, weight, edge_id: set_weight(edge_id, weight))
-				client.exportEdgeValues(egonet, edge_weights, "weight")
+				client.exportEdgeValues(egonet, edge_weights, 'weight')
 
 				gt_partition = create_ground_truth_partition(node_id, egonet,
 				                                             graph.ground_truth)
-				client.exportNodeValues(egonet, gt_partition, "ground_truth")
+				client.exportNodeValues(egonet, gt_partition, 'ground_truth')
 
 				gt_colors = create_ground_truth_coloring(node_id, egonet, graph.ground_truth,
 				                                         color_dict)
-				client.exportNodeValues(egonet, gt_colors, "color")
-				client.exportNodeValues(egonet, gt_colors, "color2")
+				client.exportNodeValues(egonet, gt_colors, 'color')
+				client.exportNodeValues(egonet, gt_colors, 'color2')
 
 				neighbors = mark_direct_neighbors(graph.graph, egonet, node_id)
-				client.exportNodeValues(egonet, neighbors, "neighbors")
-				client.exportNodeValues(egonet, neighbors, "size")
+				client.exportNodeValues(egonet, neighbors, 'neighbors')
+				client.exportNodeValues(egonet, neighbors, 'size')
 
 				partition = benchmark.algo.ego_net_partition_of(node_id)
 				client.exportNodeValues(egonet, partition, benchmark.get_algo_name())
 
-			command = input("Press Enter to proceed, or q + Enter to quit")
-			if command == "q":
+			command = input('Press Enter to proceed, or q + Enter to quit')
+			if command == 'q':
 				keep_streaming = False
 				break

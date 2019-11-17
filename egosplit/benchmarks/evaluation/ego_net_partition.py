@@ -5,7 +5,7 @@ from copy import copy
 from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
 from networkit import none
 from networkit.components import ConnectedComponents
-from egosplit.benchmarks.evaluation.output import *
+from egosplit.benchmarks.evaluation.utility import create_line
 
 
 # Evaluate the partition of the ego-nets
@@ -36,43 +36,43 @@ def print_headers(out_file_comm, out_file_part, out_file_ego_metrics, out_file_m
                   out_file_conduct):
 	out_file_comm.write(create_line(
 		*CoverBenchmark.output_header(),
-		"comm_size",
-		"wrong_nodes",
-		"wrong_percentage",
-		"num_partitions",
+		'comm_size',
+		'wrong_nodes',
+		'wrong_percentage',
+		'num_partitions',
 	))
 	out_file_part.write(create_line(
 		*CoverBenchmark.output_header(),
-		"Ego-Node",
-		"partition_size",
-		"wrong_nodes",
-		"wrong_nodes_gt",
-		"wrong_nodes_other",
-		"wrong_percentage",
-		"wrong_percentage_gt",
-		"wrong_percentage_other",
-		"num_communities",
+		'Ego-Node',
+		'partition_size',
+		'wrong_nodes',
+		'wrong_nodes_gt',
+		'wrong_nodes_other',
+		'wrong_percentage',
+		'wrong_percentage_gt',
+		'wrong_percentage_other',
+		'num_communities',
 	))
 	out_file_ego_metrics.write(create_line(
 		*CoverBenchmark.output_header(),
-		"Ego-Node",
-		"Ego-Net Size",
-		"Number of GT Communities",
-		"Metric",
-		"Value",
+		'Ego-Node',
+		'Ego-Net Size',
+		'Number of GT Communities',
+		'Metric',
+		'Value',
 	))
 	out_file_metrics.write(create_line(
 		*CoverBenchmark.output_header(),
-		"Metric",
-		"Value",
+		'Metric',
+		'Value',
 	))
 	out_file_conduct.write(create_line(
 		*CoverBenchmark.output_header(),
-		"Ego-Node",
-		"Community Size",
-		"Cut",
-		"Volume",
-		"Conductance"
+		'Ego-Node',
+		'Community Size',
+		'Cut',
+		'Volume',
+		'Conductance'
 	))
 
 
@@ -93,59 +93,56 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 		if ego_net.numberOfNodes() == 0:
 			continue
 
-		# print("Evaluate ego-net of node {}".format(u))
 		truth_communities = set(ground_truth.subsetsOf(u))
 		ego_net_size = graph.degree(u)
 		ego_sums = defaultdict(lambda: 0)
 		# Count nodes
 		node_partition_map = copy(benchmark.algo.ego_net_partition_of(u))
 		nodes = list(node_partition_map.keys())
-		ego_sums["extended_ego_net_size"] = len(nodes)
-		ego_sums["external_nodes_extended"] = count_external_nodes(
+		ego_sums['extended_ego_net_size'] = len(nodes)
+		ego_sums['external_nodes_extended'] = count_external_nodes(
 			ground_truth, truth_communities, nodes)
 
 		# Evaluate structure of extended ego-net
 		result_egonet_struct = eval_egonet_structure(
 			ground_truth, truth_communities, ego_net)
-		ego_sums["ext_intra_edges"] = result_egonet_struct["intra_edges"]
-		ego_sums["ext_inter_edges"] = result_egonet_struct["inter_edges"]
-		ego_sums["ext_egonet_edges"] = result_egonet_struct["egonet_edges"]
+		ego_sums['ext_intra_edges'] = result_egonet_struct['intra_edges']
+		ego_sums['ext_inter_edges'] = result_egonet_struct['inter_edges']
+		ego_sums['ext_egonet_edges'] = result_egonet_struct['egonet_edges']
 		# Per community
 		result_list_comms_struct = eval_comms_structure(
 			ground_truth, truth_communities, ego_net)
-		ego_sums["ext_num_gt_comms"] = len(result_list_comms_struct)
+		ego_sums['ext_num_gt_comms'] = len(result_list_comms_struct)
 		for result in result_list_comms_struct:
-			ego_sums["ext_conductance"] += result["conductance"]
-			ego_sums["ext_comm_fitness_0.5"] += result["comm_fitness_0.5"]
-			ego_sums["ext_comm_fitness_0.6"] += result["comm_fitness_0.6"]
-			ego_sums["ext_comm_fitness_0.7"] += result["comm_fitness_0.7"]
-			ego_sums["ext_comm_fitness_0.8"] += result["comm_fitness_0.8"]
-			ego_sums["ext_cut"] += result["cut"]
-			ego_sums["ext_cut_comm"] += result["cut_comm"]
-			ego_sums["ext_volume"] += result["volume"]
+			ego_sums['ext_conductance'] += result['conductance']
+			ego_sums['ext_comm_fitness_0.5'] += result['comm_fitness_0.5']
+			ego_sums['ext_comm_fitness_0.6'] += result['comm_fitness_0.6']
+			ego_sums['ext_comm_fitness_0.7'] += result['comm_fitness_0.7']
+			ego_sums['ext_comm_fitness_0.8'] += result['comm_fitness_0.8']
+			ego_sums['ext_cut'] += result['cut']
+			ego_sums['ext_cut_comm'] += result['cut_comm']
+			ego_sums['ext_volume'] += result['volume']
 		# out_conduct.write(create_line(
 		# 	algo_name,
 		# 	graph_name,
 		# 	u,
-		# 	result["comm_size"],
-		# 	result["cut"],
-		# 	result["volume"],
-		# 	result["conductance"],
+		# 	result['comm_size'],
+		# 	result['cut'],
+		# 	result['volume'],
+		# 	result['conductance'],
 		# ))
-
-		# TODO: Modularity für Partition: GT comms, alle externen in einzelner comm
 
 		# Number of connected compontents, nodes not in the largest connected component
 		result_list_comm_comp = comm_components(ground_truth, truth_communities, ego_net)
 		for result in result_list_comm_comp:
-			ego_sums["num_components"] += result["num_components"]
-			ego_sums["separate_nodes"] += result["separate_nodes"]
+			ego_sums['num_components'] += result['num_components']
+			ego_sums['separate_nodes'] += result['separate_nodes']
 
 		# Coverage of the ground-truth communities
 		result_coverage = calc_coverage(ground_truth, truth_communities, ego_net,
 		                                gt_comm_sizes)
 		for result in result_coverage:
-			ego_sums["coverage"] += result["coverage"]
+			ego_sums['coverage'] += result['coverage']
 
 		# ********************************************************************************
 		# *                Get original ego-net (remove extended nodes)                  *
@@ -157,87 +154,85 @@ def analyse_ego_net_partition(benchmark, out_comm, out_part, out_ego_metrics,
 				del node_partition_map[v]
 				ego_net.removeNode(v)
 		nodes = list(node_partition_map.keys())
-		ego_sums["extended_nodes"] = num_extended_nodes
+		ego_sums['extended_nodes'] = num_extended_nodes
 		partitions, best_communities, community_sizes = calculate_partition_properties(
 			ground_truth, truth_communities, node_partition_map)
 		truth_communities = set([c for c in truth_communities if community_sizes[c] > 0])
 		if not truth_communities:
 			continue
 		num_communities = len(truth_communities)
-		ego_sums["num_comms"] = num_communities
-		ego_sums["external_nodes"] = count_external_nodes(
+		ego_sums['num_comms'] = num_communities
+		ego_sums['external_nodes'] = count_external_nodes(
 			ground_truth, truth_communities, nodes)
-		ego_sums["ego_net_size"] = ego_net_size
+		ego_sums['ego_net_size'] = ego_net_size
 
 		# Evaluate structure of original ego-net
 		result_egonet_struct = eval_egonet_structure(
 			ground_truth, truth_communities, ego_net)
-		ego_sums["intra_edges"] = result_egonet_struct["intra_edges"]
-		ego_sums["inter_edges"] = result_egonet_struct["inter_edges"]
-		ego_sums["egonet_edges"] = result_egonet_struct["egonet_edges"]
+		ego_sums['intra_edges'] = result_egonet_struct['intra_edges']
+		ego_sums['inter_edges'] = result_egonet_struct['inter_edges']
+		ego_sums['egonet_edges'] = result_egonet_struct['egonet_edges']
 		# Per community
 		result_list_comms_struct = eval_comms_structure(
 			ground_truth, truth_communities, ego_net)
-		ego_sums["num_gt_comms"] = len(result_list_comms_struct)
+		ego_sums['num_gt_comms'] = len(result_list_comms_struct)
 		for result in result_list_comms_struct:
-			ego_sums["conductance"] += result["conductance"]
-			ego_sums["cut"] += result["cut"]
-			ego_sums["cut_comm"] += result["cut_comm"]
-			ego_sums["volume"] += result["volume"]
+			ego_sums['conductance'] += result['conductance']
+			ego_sums['cut'] += result['cut']
+			ego_sums['cut_comm'] += result['cut_comm']
+			ego_sums['volume'] += result['volume']
 		# out_conduct.write(create_line(
 		# 	algo_name,
 		# 	graph_name,
 		# 	u,
-		# 	result["comm_size"],
-		# 	result["cut"],
-		# 	result["volume"],
-		# 	result["conductance"],
+		# 	result['comm_size'],
+		# 	result['cut'],
+		# 	result['volume'],
+		# 	result['conductance'],
 		# ))
 
 		# Are communities split into multiple partitions?
-		# TODO: Anzahl Communities, die eine Partition dominieren -> sinnvolle Personas
-		# TODO: +1 wenn p beste Part. von Com. c und c dominiert p (Optimalfall)
 		result_list_persona_recall = check_persona_recall(
 			ground_truth, partitions, best_communities, community_sizes, truth_communities)
 		for result in result_list_persona_recall:
-			ego_sums["persona_recall"] += result["persona_recall"]
+			ego_sums['persona_recall'] += result['persona_recall']
 
 		result_list_comm = check_community_partition(
 			ground_truth, partitions, community_sizes, truth_communities)
 		for result in result_list_comm:
-			ego_sums["comm_size"] += result["comm_size"]
-			ego_sums["comm_incorrect"] += result["wrong_nodes"]
-			ego_sums["parts_per_comm"] += result["num_partitions"]
+			ego_sums['comm_size'] += result['comm_size']
+			ego_sums['comm_incorrect'] += result['wrong_nodes']
+			ego_sums['parts_per_comm'] += result['num_partitions']
 		# out_comm.write(create_line(
 		# 	algo_name,
 		# 	graph_name,
-		# 	result["comm_size"],
-		# 	result["wrong_nodes"],
-		# 	result["wrong_percentage"],
-		# 	result["num_partitions"],
+		# 	result['comm_size'],
+		# 	result['wrong_nodes'],
+		# 	result['wrong_percentage'],
+		# 	result['num_partitions'],
 		# ))
 
 		# Do partitions consist of multiple communities?
 		result_list_part = check_partition_composition(
 			ground_truth, partitions, best_communities, truth_communities)
-		ego_sums["num_partitions"] = len(result_list_part)
+		ego_sums['num_partitions'] = len(result_list_part)
 		for result in result_list_part:
-			ego_sums["partition_size"] += result["partition_size"]
-			ego_sums["part_incorrect_gt"] += result["wrong_nodes_gt"]
-			ego_sums["part_incorrect_ext"] += result["wrong_nodes_external"]
-			ego_sums["comms_per_part"] += result["num_communities"]
+			ego_sums['partition_size'] += result['partition_size']
+			ego_sums['part_incorrect_gt'] += result['wrong_nodes_gt']
+			ego_sums['part_incorrect_ext'] += result['wrong_nodes_external']
+			ego_sums['comms_per_part'] += result['num_communities']
 		# out_part.write(create_line(
 		# 	algo_name,
 		# 	graph_name,
 		# 	u,
-		# 	result["partition_size"],
-		# 	result["wrong_nodes"],
-		# 	result["wrong_nodes_gt"],
-		# 	result["wrong_nodes_external"],
-		# 	result["wrong_percentage"],
-		# 	result["wrong_percentage_gt"],
-		# 	result["wrong_percentage_external"],
-		# 	result["num_communities"],
+		# 	result['partition_size'],
+		# 	result['wrong_nodes'],
+		# 	result['wrong_nodes_gt'],
+		# 	result['wrong_nodes_external'],
+		# 	result['wrong_percentage'],
+		# 	result['wrong_percentage_gt'],
+		# 	result['wrong_percentage_external'],
+		# 	result['num_communities'],
 		# ))
 
 		# Count number of partitions
@@ -294,41 +289,41 @@ def calc_metrics(sums):
 		return a / b
 
 	metrics = {
-		"Community Segmentation": sums["comm_incorrect"] / sums["comm_size"],
-		"Cluster per Community": sums["parts_per_comm"] / sums["num_comms"],
-		"Communities per Cluster": safe_div(sums["comms_per_part"], sums["num_partitions"], 1),
-		"Merged External Nodes": safe_div(sums["part_incorrect_ext"],
-		                                  sums["partition_size"]),
-		"Community Merging": safe_div(sums["part_incorrect_gt"],
-		                                  sums["partition_size"]),
-		"Extended Nodes / Ego-Net Size": safe_div(sums["extended_nodes"], sums["ego_net_size"]),
-		"External Nodes Ratio": safe_div(sums["external_nodes_extended"],
-		                           sums["extended_ego_net_size"]),
-		"Added External Nodes Ratio": safe_div(
-			sums["external_nodes_extended"] - sums["external_nodes"],
-			sums["extended_ego_net_size"] - sums["ego_net_size"]),
-		"Conductance": safe_div(sums["ext_conductance"], sums["ext_num_gt_comms"]),
-		# "conductance_ratio": safe_div(
-		# 	(sums["ext_conductance"] / sums["ext_num_gt_comms"]),
-		# 	(sums["conductance"] / sums["num_gt_comms"]), 1),
-		"Community Fitness": safe_div(sums["ext_comm_fitness_0.8"], sums["ext_num_gt_comms"]),
-		"Ratio of Intra-Community Edges": safe_div(sums["ext_intra_edges"], sums["ext_egonet_edges"]),
-		"Change of Intra-Edges": safe_div(
-			safe_div(sums["ext_intra_edges"], sums["ext_egonet_edges"]),
-			safe_div(sums["intra_edges"], sums["egonet_edges"]), 1) - 1,
-		"Components per Community": safe_div(sums["num_components"], sums["ext_num_gt_comms"]),
-		"Ratio of Disconnected Nodes": safe_div(sums["separate_nodes"], sums["ext_num_gt_comms"]),
-		"Persona Recall": safe_div(sums["persona_recall"], sums["num_gt_comms"]),
-		"Community Coverage": safe_div(sums["coverage"], sums["num_gt_comms"]),
-		"Number of Personas": sums["num_partitions"],
-		'Number of Ground-Truth Communities': sums["num_gt_comms"],
+		'Community Segmentation': sums['comm_incorrect'] / sums['comm_size'],
+		'Cluster per Community': sums['parts_per_comm'] / sums['num_comms'],
+		'Communities per Cluster': safe_div(sums['comms_per_part'], sums['num_partitions'], 1),
+		'Merged External Nodes': safe_div(sums['part_incorrect_ext'],
+		                                  sums['partition_size']),
+		'Community Merging': safe_div(sums['part_incorrect_gt'],
+		                                  sums['partition_size']),
+		'Extended Nodes / Ego-Net Size': safe_div(sums['extended_nodes'], sums['ego_net_size']),
+		'External Nodes Ratio': safe_div(sums['external_nodes_extended'],
+		                           sums['extended_ego_net_size']),
+		'Added External Nodes Ratio': safe_div(
+			sums['external_nodes_extended'] - sums['external_nodes'],
+			sums['extended_ego_net_size'] - sums['ego_net_size']),
+		'Conductance': safe_div(sums['ext_conductance'], sums['ext_num_gt_comms']),
+		# 'conductance_ratio': safe_div(
+		# 	(sums['ext_conductance'] / sums['ext_num_gt_comms']),
+		# 	(sums['conductance'] / sums['num_gt_comms']), 1),
+		'Community Fitness': safe_div(sums['ext_comm_fitness_0.8'], sums['ext_num_gt_comms']),
+		'Ratio of Intra-Community Edges': safe_div(sums['ext_intra_edges'], sums['ext_egonet_edges']),
+		'Change of Intra-Edges': safe_div(
+			safe_div(sums['ext_intra_edges'], sums['ext_egonet_edges']),
+			safe_div(sums['intra_edges'], sums['egonet_edges']), 1) - 1,
+		'Components per Community': safe_div(sums['num_components'], sums['ext_num_gt_comms']),
+		'Ratio of Disconnected Nodes': safe_div(sums['separate_nodes'], sums['ext_num_gt_comms']),
+		'Persona Recall': safe_div(sums['persona_recall'], sums['num_gt_comms']),
+		'Community Coverage': safe_div(sums['coverage'], sums['num_gt_comms']),
+		'Number of Personas': sums['num_partitions'],
+		'Number of Ground-Truth Communities': sums['num_gt_comms'],
 	}
 
-	# a = 1 - metrics["Community Segmentation"]
-	# b = 1 - metrics["Community Merging"]
-	# metrics["ego_partition_score_harm"] = 1 - harmonic_mean(a, b)
-	# metrics["ego_partition_score_arit"] = (metrics["community_cohesion"] +
-	#                                        metrics["partition_exclusivity"]) / 2
+	# a = 1 - metrics['Community Segmentation']
+	# b = 1 - metrics['Community Merging']
+	# metrics['ego_partition_score_harm'] = 1 - harmonic_mean(a, b)
+	# metrics['ego_partition_score_arit'] = (metrics['community_cohesion'] +
+	#                                        metrics['partition_exclusivity']) / 2
 	return metrics
 
 
@@ -383,7 +378,6 @@ def count_comm_nodes_in_partition(c, ground_truth, partition):
 
 
 # Count the number of connected components for each ground truth community
-# @clockit
 def comm_components(ground_truth, truth_communities, ego_net):
 	communities, _ = get_gt_communities(ego_net, ground_truth, truth_communities)
 
@@ -404,11 +398,7 @@ def comm_components(ground_truth, truth_communities, ego_net):
 	return result_list
 
 
-# TODO: Auch externe Knoten können die Community stärker verbinden
-# TODO: Warum wird das Ergebnis mit vielen externen Knoten besser? (edges vs. sign)
-
 # Count the intra/inter community edges on the whole ego-net
-# @clockit
 def eval_egonet_structure(ground_truth, truth_communities, ego_net):
 	num_intra = 0
 	for u, v in ego_net.edges():
@@ -423,10 +413,7 @@ def eval_egonet_structure(ground_truth, truth_communities, ego_net):
 	}
 
 
-# TODO: Add external nodes to commuities (if at least 50% of edges to one community),
-#   then evaluate community structure
 # Calculate conductance of each community
-# @clockit
 def eval_comms_structure(ground_truth, truth_communities, ego_net):
 	communities, external_nodes = get_gt_communities(ego_net, ground_truth,
 	                                                 truth_communities)
@@ -547,7 +534,6 @@ def calculate_partition_properties(ground_truth, truth_communities, partition_ma
 
 # For each partition: Get the community with the most nodes. Count the number of nodes
 # that are not in that community.
-# @clockit
 def check_partition_composition(ground_truth, partitions, best_communities,
                                 truth_communities):
 	result_list = []
@@ -600,7 +586,6 @@ def check_partition_composition(ground_truth, partitions, best_communities,
 # with the largest number of nodes from that community.
 # Don't count nodes that are in multiple communities and that are assigned to one of its
 # communities correctly.
-# @clockit
 def check_community_partition(ground_truth, partitions, community_sizes,
                               truth_communities):
 	result_list = []

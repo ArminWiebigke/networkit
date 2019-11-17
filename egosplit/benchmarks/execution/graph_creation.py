@@ -14,13 +14,13 @@ class GraphSetsConfig:
 		all_graphs = []
 		for graph_set in graph_sets:
 			graphs = []
-			if graph_set == "om":
+			if graph_set == 'om':
 				graphs = create_om_graphs(1, 7)
-			elif graph_set == "mu":
+			elif graph_set == 'mu':
 				graphs = create_mu_graphs(10, 70, 10)
-			elif graph_set == "overlap":
+			elif graph_set == 'overlap':
 				graphs = create_overlap_graphs(20, 80)
-			elif graph_set == "test":
+			elif graph_set == 'test':
 				graphs = create_om_graphs(3, 3)
 				# graphs = [ReadGraph(lambda: getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71')]
 				# graphs = [ReadGraph(lambda: getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31')]

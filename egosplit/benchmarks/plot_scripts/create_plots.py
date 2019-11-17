@@ -228,4 +228,4 @@ def ego_net_plots_per_graph(default_plots_config, ego_metrics, **kwargs):
 
 
 def safe_filename(filename):
-	return filename.replace("/", "_")
+	return filename.replace('/', '_')

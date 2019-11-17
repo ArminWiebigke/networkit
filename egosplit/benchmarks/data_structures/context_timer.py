@@ -2,7 +2,8 @@ from networkit.stopwatch import Timer
 
 
 class ContextTimer:
-	""" Time code like this:
+	"""
+	Time code like this:
 	t = ContextTimer()
 	with t:
 		<Code>
@@ -10,7 +11,7 @@ class ContextTimer:
 	"""
 
 	def __init__(self):
-		self.elapsed = 0.0
+		self._elapsed = 0.0
 		self.timer = None
 
 	def __enter__(self):
@@ -18,8 +19,12 @@ class ContextTimer:
 
 	# On context exit, add the elapsed time since context enter
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		self.elapsed += self.timer.stop()
+		self._elapsed += self.timer.stop()
 		del self.timer
 
 	def reset(self):
-		self.elapsed = 0.0
+		self._elapsed = 0.0
+
+	@property
+	def elapsed(self):
+		return self._elapsed

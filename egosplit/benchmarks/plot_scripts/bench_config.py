@@ -1,11 +1,11 @@
 from collections import defaultdict
 
-from egosplit.benchmarks.evaluation.config import NMI, F1, F1_rev, Time
+from egosplit.benchmarks.evaluation.metrics import NMI, F1, F1_rev, Time
 
 ego_extend_metrics = {
 	'Community Coverage': 'coverage',
 	'Extended Nodes / Ego-Net Size': 'extended_nodes',
-	'External Nodes Ratio': "external_nodes",
+	'External Nodes Ratio': 'external_nodes',
 	'Added External Nodes Ratio': 'added_external',
 	# 'Conductance': 'conductance',
 	'Community Fitness': 'comm_fitness',
@@ -288,28 +288,28 @@ metrics = [
 
 metric_config = {
 	F1.get_name(): {
-		"ylabel": "F1 Score",
-		"y_val": "F1-Score",
-		"file_name": "F1",
-		"ylim": (0, 1.05),
+		'ylabel': 'F1 Score',
+		'y_val': 'F1-Score',
+		'file_name': 'F1',
+		'ylim': (0, 1.05),
 	},
 	F1_rev.get_name(): {
-		"ylabel": "F1 Score (reversed)",
-		"y_val": "F1-Score (reversed)",
-		"file_name": "F1_rev",
-		"ylim": (0, 1.05),
+		'ylabel': 'F1 Score (reversed)',
+		'y_val': 'F1-Score (reversed)',
+		'file_name': 'F1_rev',
+		'ylim': (0, 1.05),
 	},
 	NMI.get_name(): {
-		"ylabel": "NMI",
-		"y_val": "NMI",
-		"file_name": "NMI",
-		"ylim": (0, 1.05),
+		'ylabel': 'NMI',
+		'y_val': 'NMI',
+		'file_name': 'NMI',
+		'ylim': (0, 1.05),
 	},
 	Time.get_name(): {
-		"ylabel": r"Running Time / (n + m) [\SI{}{\micro\second}]",
-		"y_val": "time / (n + m)",
-		"file_name": "time",
-		"ylim": 0,
+		'ylabel': r'Running Time / (n + m) [\SI{}{\micro\second}]',
+		'y_val': 'time / (n + m)',
+		'file_name': 'time',
+		'ylim': 0,
 	},
 }
 

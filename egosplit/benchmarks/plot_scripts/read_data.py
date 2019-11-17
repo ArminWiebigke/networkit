@@ -22,11 +22,11 @@ class DataReader:
 			files += glob.glob(file_path)
 
 		if not files:
-			raise FileNotFoundError("File " + file_path + " not found")
+			raise FileNotFoundError('File ' + file_path + ' not found')
 		else:
-			print("Read files:")
+			print('Read files:')
 			print(*files)
-			data = pd.concat([pd.read_csv(file, sep=",", comment='#') for file in files],
+			data = pd.concat([pd.read_csv(file, sep=',', comment='#') for file in files],
 			                 ignore_index=True)
 		return data
 
@@ -49,4 +49,4 @@ def create_column_if_missing(data, column):
 		elif column == 'Mixing Factor':
 			data[column] = data['mu']
 		else:
-			raise ValueError("Unknown column \"{}\"")
+			raise ValueError('Unknown column \'{}\'')

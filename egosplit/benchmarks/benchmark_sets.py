@@ -9,7 +9,7 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 
 def get_benchmark_configs():
 	benchmark_sets = [
-		# Scratchpad(),
+		Scratchpad(),
 		# EdgesScore(),
 		# EdgesScoreSignificance(),
 		# EdgesFactor(),
@@ -19,14 +19,14 @@ def get_benchmark_configs():
 		# SigMaxCandidates(),
 		# SigClusterIter(),
 		# SigMemoize(),
-		ExtensionCompare(),
-		LocalClustering(),
+		# ExtensionCompare(),
+		# LocalClustering(),
 		# LocalClusteringPlots(),
 		# ConnectPersonas(),
-		GlobalClustering(),
+		# GlobalClustering(),
 		# CleanUp(),
 		# NewCleanUp(),
-		CleanUpSnap(),
+		# CleanUpSnap(),
 		# CompareOther(),
 	]
 	# TODO: Wonanders hin?

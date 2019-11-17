@@ -156,8 +156,8 @@ def save_legend(handles, labels, num_columns, legend_file):
 
 
 def crop_pdf(file_name):
-	subprocess.call(["pdfcrop",
-	                 "--margins", "0 0 0 0",
+	subprocess.call(['pdfcrop',
+	                 '--margins', '0 0 0 0',
 	                 file_name, file_name])
 
 
@@ -270,7 +270,7 @@ def set_ax(fig, ax, ax_set, x):
 	if 'FB_' in xlabels[0]:
 		xlabels = [remove_facebook_prefix(l) for l in xlabels]
 	if xlabels[0] != '':
-		xlabels = [l.replace("_", ' ') for l in xlabels]
+		xlabels = [l.replace('_', ' ') for l in xlabels]
 		ax.set_xticklabels(xlabels)
 	# for lineplot
 	if ax.lines:

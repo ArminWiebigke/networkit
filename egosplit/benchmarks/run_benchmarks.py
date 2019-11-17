@@ -13,7 +13,7 @@ def run_benchmark_iteration(b, iteration, timestamp):
 
 
 if __name__ == '__main__':
-	# setLogLevel("INFO")
+	# setLogLevel('INFO')
 	t = Timer()
 	timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 	for b in get_benchmark_configs():
@@ -24,4 +24,4 @@ if __name__ == '__main__':
 		# pool.starmap(run_benchmark_iteration, parameters, 1)
 		for i in range(iterations):
 			run_benchmark_iteration(b, i, timestamp)
-	print("Total time for benchmarks: {}s".format(str(t.stop())[:6]))
+	print('Total time for benchmarks: {}s'.format(str(t.stop())[:6]))

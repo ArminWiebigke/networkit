@@ -22,12 +22,12 @@ public:
 	Graph testGraph;
 
 	EgoSplittingBenchmark() {
-//		EdgeListReader reader('\t', 0);
-//		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
+		EdgeListReader reader('\t', 0);
+		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
 //		EdgeListReader reader(' ', 0);
 //		testGraph = reader.read("../input/lfr_om3.graph");
-		METISGraphReader reader{};
-		testGraph = reader.read("../input/FB_Auburn71.graph");
+//		METISGraphReader reader{};
+//		testGraph = reader.read("../input/FB_Auburn71.graph");
 	}
 
 	void benchEgoSplitting(const std::map<std::string, std::string> &parameters) {
@@ -37,7 +37,8 @@ public:
 //			return plm.getPartition();
 //		};
 //		EgoSplitting algo(testGraph, clusterAlgo, clusterAlgo);
-		EgoSplitting algo(testGraph);
+		bool egoNetsParallel = false;
+		EgoSplitting algo(testGraph, egoNetsParallel);
 		algo.setParameters(parameters);
 		algo.run();
 		Cover cover = algo.getCover();

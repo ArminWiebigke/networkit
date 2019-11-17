@@ -16,13 +16,13 @@ class CoverBenchmark:
 		self.cover = None
 
 	def run(self):
-		print("\nStarting: Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
+		print('\nStarting: Graph: ' + self.graph.name + ', Algo: ' + self.get_algo_name())
 
 		gt_comms_cnt = self.graph.ground_truth.numberOfSubsets()
 		gt_comms_size_sum = sum(self.graph.ground_truth.subsetSizes())
 		# print(self.graph.ground_truth.subsetSizes())
-		print("{} nodes, {} edges, {} ground-truth communities, {} avg. gt-comm size,"
-		      " {} max gt-comm size, {} comms per node".format(
+		print('{} nodes, {} edges, {} ground-truth communities, {} avg. gt-comm size,'
+		      ' {} max gt-comm size, {} comms per node'.format(
 			self.graph.graph.numberOfNodes(), self.graph.graph.numberOfEdges(),
 			gt_comms_cnt, gt_comms_size_sum / gt_comms_cnt, max(self.graph.ground_truth.subsetSizes()),
 			gt_comms_size_sum / self.graph.graph.numberOfNodes(),
@@ -30,13 +30,13 @@ class CoverBenchmark:
 
 		self.algo.run(self.graph)
 		algo_cover = self.algo.get_cover()
-		print("Finished: Graph: " + self.graph.name + ", Algo: " + self.get_algo_name())
-		print("Ran algorithm in {:.3f}s".format(self.algo.get_time()))
+		print('Finished: Graph: ' + self.graph.name + ', Algo: ' + self.get_algo_name())
+		print('Ran algorithm in {:.3f}s'.format(self.algo.get_time()))
 
 		self.clean_up.run(self.graph.graph, algo_cover,
 		                  self.graph.ground_truth)
 		self.cover = self.clean_up.get_cover()
-		print("Cleaned up cover in {:.3f}s".format(self.clean_up.get_time()))
+		print('Cleaned up cover in {:.3f}s'.format(self.clean_up.get_time()))
 
 	def get_graph(self):
 		return self.graph.graph
@@ -71,7 +71,7 @@ class CoverBenchmark:
 	def get_algo_name(self):
 		name = self.algo.name
 		if self.clean_up.name:
-			name += " | " + self.clean_up.name
+			name += ' | ' + self.clean_up.name
 		return name
 
 	def clear(self):
@@ -81,9 +81,9 @@ class CoverBenchmark:
 
 	@staticmethod
 	def output_header():
-		header = ["Algorithm"]
+		header = ['Algorithm']
 		header += EgoSplitAlgorithm.output_parameter_names()
-		header += ["Graph Name", "Graph ID", "Number of Nodes", "Number of Edges"]
+		header += ['Graph Name', 'Graph ID', 'Number of Nodes', 'Number of Edges']
 		header += LFRGraph.parameter_names()
 		return header
 
@@ -94,7 +94,7 @@ class CoverBenchmark:
 			algo_params = self.algo.parameters
 		except AttributeError:
 			algo_params = {}
-		line += [algo_params.get(p, "")
+		line += [algo_params.get(p, '')
 		         for p in EgoSplitAlgorithm.output_parameter_names()]
 		# Graph
 		line += [self.get_graph_name(), self.get_graph_id(),
@@ -103,7 +103,7 @@ class CoverBenchmark:
 			graph_params = self.graph.lfr_parameters
 		except AttributeError:
 			graph_params = {}
-		line += [graph_params.get(p, "")
+		line += [graph_params.get(p, '')
 		         for p in LFRGraph.parameter_names()]
 		return line
 

@@ -5,9 +5,9 @@ from copy import copy
 from enum import Enum
 
 from networkit import setLogLevel
-import egosplit.benchmarks.evaluation.config as bm
+import egosplit.benchmarks.evaluation.metrics as bm
 from networkit.stopwatch import clockit
-from egosplit.benchmarks.evaluation.metrics import write_results_to_file, add_compact_results, \
+from egosplit.benchmarks.evaluation.metric_output import write_results_to_file, add_compact_results, \
 	print_compact_results
 from egosplit.benchmarks.execution.algo_creation import get_ego_algos, get_other_algos, \
 	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig
@@ -15,7 +15,7 @@ from egosplit.benchmarks.evaluation.timings import write_timings
 from egosplit.benchmarks.execution.graph_creation import get_graphs, GraphSetsConfig
 from egosplit.benchmarks.evaluation.ego_net_partition import analyse_ego_net_partitions
 from egosplit.benchmarks.evaluation.stream_to_gephi import stream_partition
-from egosplit.benchmarks.evaluation.cover_analysis import analyse_cover
+from egosplit.benchmarks.evaluation.cover_evaluation import analyze_cover
 from egosplit.benchmarks.execution.cleanup_functions import cleanup_test
 from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
 from egosplit.benchmarks.execution.cleanup import CleanUp, CleanUpConfig
@@ -126,7 +126,7 @@ def evaluate_result(graphs, benchmarks, evaluations, append, summary, result_dir
 	if Evaluation.TIMINGS in evaluations:
 		write_timings(benchmarks, result_dir, append)
 	if Evaluation.COVER in evaluations:
-		analyse_cover(benchmarks, result_dir, append)
+		analyze_cover(benchmarks, result_dir, append)
 	if Evaluation.EGO_NETS in evaluations:
 		analyse_ego_net_partitions(benchmarks, result_dir, append, write_scores_per_egonet)
 	if Evaluation.STREAM_TO_GEPHI in evaluations:

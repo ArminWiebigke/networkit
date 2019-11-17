@@ -29,9 +29,7 @@ class CoverAlgorithm:
 		self.has_run = False
 
 	def __copy__(self):
-		""" Override this method in subclass if __init__ takes arguments """
-		# print(self.__class__)
-		return self.__class__(self.name)
+		raise NotImplementedError("Subclasses of CoverAlgorithm must be copyable!")
 
 	def get_time(self):
 		return self.timer.elapsed
@@ -61,6 +59,9 @@ class GroundTruth(CoverAlgorithm):
 	def create_cover(self):
 		self.cover = self.ground_truth
 
+	def __copy__(self):
+		return GroundTruth(self.name)
+
 
 class EgoSplitAlgorithm(CoverAlgorithm):
 	def __init__(self, name, parameters, local_partition_algorithm=None,
@@ -80,6 +81,11 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		self.parameters = parameters
 		self.timings = None
 
+	def __copy__(self):
+		return EgoSplitAlgorithm(self.name, self.parameters,
+		                         self.local_partition_algorithm,
+		                         self.global_partition_algorithm)
+
 	@staticmethod
 	def output_parameter_names():
 		return ['Local Clustering Algorithm', 'Global Clustering Algorithm',
@@ -87,11 +93,6 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		        'Extend and Partition Iterations', 'Maximum Extend Factor', 'Edges Score Strategy',
 		        'connectPersonasStrat', 'signMerge', 'secondarySigExtRounds',
 		        'onlyCheckSignOfMaxCandidates', 'Check Candidates Factor', 'onlyUpdatedCandidates']
-
-	def __copy__(self):
-		return EgoSplitAlgorithm(self.name, self.parameters,
-		                         self.local_partition_algorithm,
-		                         self.global_partition_algorithm)
 
 	def create_cover(self):
 		algo = EgoSplitting(self.graph, self.local_partition_algorithm,
@@ -114,11 +115,11 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		for name in sorted(timings.keys()):
 			t_name = name.decode('ASCII')
 			# print(t_name)
-			lead_new = t_name.find(" ")
+			lead_new = t_name.find(' ')
 			if lead_new < leading_numbers:
 				print()
 			t_name = t_name[lead_new - 1:]
-			print((lead_new - 1) * "  " + str(int(timings[name] / 1000000)).rjust(7)
+			print((lead_new - 1) * '  ' + str(int(timings[name] / 1000000)).rjust(7)
 			      + '   ' + t_name)
 			leading_numbers = lead_new
 		timings_str = ''
@@ -150,6 +151,9 @@ class OlpAlgorithm(CoverAlgorithm):
 	def __init__(self, name='OLP'):
 		super().__init__(name)
 
+	def __copy__(self):
+		return OlpAlgorithm(self.name)
+
 	def create_cover(self):
 		a = OLP(self.graph)
 		with self.timer:
@@ -160,6 +164,9 @@ class OlpAlgorithm(CoverAlgorithm):
 class MosesAlgorithm(CoverAlgorithm):
 	def __init__(self, name='MOSES'):
 		super().__init__(name)
+
+	def __copy__(self):
+		return MosesAlgorithm(self.name)
 
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:
@@ -179,6 +186,9 @@ class PeacockAlgorithm(CoverAlgorithm):
 	def __init__(self, name='Peacock'):
 		super().__init__(name)
 
+	def __copy__(self):
+		return PeacockAlgorithm(self.name)
+
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:
 			old_dir = os.getcwd()
@@ -193,7 +203,7 @@ class PeacockAlgorithm(CoverAlgorithm):
 				          ]
 				print(params)
 				# subprocess.run(params)
-				with open(tempdir + "/split-graph.txt", "r") as f:
+				with open(tempdir + '/split-graph.txt', 'r') as f:
 					for line in f:
 						print(line[:-1])
 			except Exception as e:
@@ -228,33 +238,12 @@ class GceAlgorithm(CoverAlgorithm):
 			self.cover = graphio.CoverReader().read(cover_filename, self.graph)
 
 
-class GceNetworkitAlgorithm(CoverAlgorithm):
-	def __init__(self, name='GCE-NetworKit', alpha=1.5):
-		super().__init__(name)
-		self.alpha = alpha
-
-	def __copy__(self):
-		return GceAlgorithm(self.name, self.alpha)
-
-	def create_cover(self):
-		with tempfile.TemporaryDirectory() as tempdir:
-			graph_filename = os.path.join(tempdir, 'network.edgelist')
-			cover_filename = os.path.join(tempdir, 'cover.txt')
-			cover_file = open(cover_filename, 'x')
-			graphio.writeGraph(self.graph, graph_filename,
-			                   fileformat=graphio.Format.EdgeListSpaceZero)
-			with self.timer:
-				subprocess.call(
-					[code_path + '/GCECommunityFinder/GCECommunityFinderUbuntu910',
-					 graph_filename, '4', '0.6', str(self.alpha), '.75'],
-					stdout=cover_file)
-			cover_file.close()
-			self.cover = graphio.CoverReader().read(cover_filename, self.graph)
-
-
 class OslomAlgorithm(CoverAlgorithm):
 	def __init__(self, name='OSLOM'):
 		super().__init__(name)
+
+	def __copy__(self):
+		return OslomAlgorithm(self.name)
 
 	def create_cover(self):
 		with tempfile.TemporaryDirectory() as tempdir:

@@ -54,18 +54,18 @@ class EgoSplitClusteringAlgorithmsConfig:
 			                                              'none').run().getPartition()]
 		if ego_part_algos == 'test':
 			partition_algos['default'] = []
-			# partition_algos['PLM (fac)'] = [PLMFactory(True, 1.0, "none")]
-			# partition_algos['PLM false (fac)'] = [PLMFactory(False, 1.0, "none")]
+			# partition_algos['PLM (fac)'] = [PLMFactory(True, 1.0, 'none')]
+			# partition_algos['PLM false (fac)'] = [PLMFactory(False, 1.0, 'none')]
 			# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 			# partition_algos['PLM false'] = [lambda g: PLM(g, False, 1.0, 'none').run().getPartition()]
-			partition_algos['PLM + PLM (both fac)'] = [PLMFactory(True, 1.0, "none"),
-			                                           PLMFactory(True, 1.0, "none")]
+			partition_algos['PLM + PLM (both fac)'] = [PLMFactory(True, 1.0, 'none'),
+			                                           PLMFactory(True, 1.0, 'none')]
 		# partition_algos['PLM + PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition(),
 		#                                 lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-		# partition_algos['PLM(fac) + PLM'] = [PLMFactory(True, 1.0, "none"),
+		# partition_algos['PLM(fac) + PLM'] = [PLMFactory(True, 1.0, 'none'),
 		#                                      lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 		# partition_algos['PLM + PLM(fac)'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition(),
-		#                                      PLMFactory(True, 1.0, "none")]
+		#                                      PLMFactory(True, 1.0, 'none')]
 
 		return partition_algos
 
