@@ -46,7 +46,6 @@
 #include "../../io/EdgeListReader.h"
 #include "../OLP.h"
 #include "../../io/CoverReader.h"
-#include "../SignificanceCleanup.h"
 #include "../SLPA.h"
 
 namespace NetworKit {

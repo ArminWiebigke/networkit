@@ -8,6 +8,7 @@ import random
 import igraph
 import leidenalg
 import infomap
+import demon
 
 from networkit import graphio
 from networkit import community
@@ -58,6 +59,7 @@ def partitionInfomap(G):
 	                                 + (' -d' if G.isDirected() else ' -u')
 	                                 + ' -2'
 	                                 + ' -z'
+	                                 + ' --silent'
 	                                 )
 	# G.forEdges(lambda u, v, weight: infomapWrapper.addLink(u, v, weight))
 	for e in G.edges():
@@ -231,10 +233,34 @@ def convertLeidenPartition(G, la_partition, graph_i):
 	return partition
 
 
+# https://github.com/GiulioRossetti/DEMON
+def detectDemon(G):
+	with tempfile.TemporaryDirectory() as tempdir:
+		old_dir = os.getcwd()
+		try:
+			os.chdir(tempdir)
+			graph_filename = os.path.join(tempdir, 'graph.txt')
+			graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+			dm = demon.Demon(network_filename=graph_filename, epsilon=1, min_community_size=5)
+			communities = dm.execute()
+			cover = structures.Cover(G.upperNodeIdBound())
+			cover.setUpperBound(len(communities))
+			for i, comm in enumerate(communities):
+				for u in comm:
+					cover.addToSubset(i, u)
+
+		except Exception as e:
+			print(e)
+			cover = None
+		finally:
+			os.chdir(old_dir)
+
+	return cover
+
+
 # http://gregory.org/research/networks/peacockpaper/
 def clusterPeacock(G):
 	with tempfile.TemporaryDirectory() as tempdir:
-		tempdir = '.'
 		old_dir = os.getcwd()
 		try:
 			os.chdir(tempdir)
@@ -398,7 +424,7 @@ def remove_small_communities(filename):
 
 
 # https://snap.stanford.edu/data/
-def getAmazonGraph(clean=True):
+def getAmazonGraph(clean=False):
 	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.top5000.cmty.txt'
@@ -406,7 +432,7 @@ def getAmazonGraph(clean=True):
 	return g, c
 
 
-def getAmazonGraphAll(clean=True):
+def getAmazonGraphAll(clean=False):
 	g = graphio.readGraph(graphs_path + '/com-amazon.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-amazon.all.dedup.cmty.txt'
@@ -414,7 +440,7 @@ def getAmazonGraphAll(clean=True):
 	return g, c
 
 
-def getDBLPGraph(clean=True):
+def getDBLPGraph(clean=False):
 	g = graphio.readGraph(graphs_path + '/com-dblp.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-dblp.top5000.cmty.txt'
@@ -422,7 +448,15 @@ def getDBLPGraph(clean=True):
 	return g, c
 
 
-def getLiveJournalGraph(clean=True):
+def getOrkutGraph(clean=False):
+	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt',
+	                      fileformat=graphio.Format.EdgeListTabZero)
+	filename = graphs_path + '/com-orkut.top5000.cmty.txt'
+	c = graphio.CoverReader().read(get_filename(filename, clean), g)
+	return g, c
+
+
+def getLiveJournalGraph(clean=False):
 	g = graphio.readGraph(graphs_path + '/com-lj.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
 	filename = graphs_path + '/com-lj.top5000.cmty.txt'
@@ -430,9 +464,9 @@ def getLiveJournalGraph(clean=True):
 	return g, c
 
 
-def getOrkutGraph(clean=True):
-	g = graphio.readGraph(graphs_path + '/com-orkut.ungraph.txt',
+def getFriendsterGraph(clean=False):
+	g = graphio.readGraph(graphs_path + '/com-friendster.ungraph.txt',
 	                      fileformat=graphio.Format.EdgeListTabZero)
-	filename = graphs_path + '/com-orkut.top5000.cmty.txt'
+	filename = graphs_path + '/com-friendster.top5000.cmty.txt'
 	c = graphio.CoverReader().read(get_filename(filename, clean), g)
 	return g, c

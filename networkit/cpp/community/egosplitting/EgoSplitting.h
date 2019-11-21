@@ -150,6 +150,9 @@ private:
 
 	void storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode);
 
+	void cleanUpCover();
+
+	void discardSmallCommunities();
 };
 
 /**

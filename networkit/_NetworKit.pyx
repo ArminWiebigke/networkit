@@ -449,7 +449,6 @@ cdef class Graph:
 	def __str__(self):
 		return "NetworKit.Graph(name={0}, n={1}, m={2})".format(self.getName(), self.numberOfNodes(), self.numberOfEdges())
 
-
 	def copyNodes(self):
 		"""
 		Copies all nodes to a new graph
@@ -4941,7 +4940,7 @@ cdef extern from "cpp/community/PLP.h":
 
 
 cdef class PLPFactory(ClusteringFunctionFactory):
-	def __cinit__(self, count theta = none, count maxIterations = none):
+	def __cinit__(self, count theta, count maxIterations):
 		self._this = new _PLPFactory(theta, maxIterations)
 
 
@@ -4962,7 +4961,6 @@ cdef cppclass _PythonClusteringFunction(_ClusteringFunction):
 		this.callback = callback
 
 	_Partition cython_call_operator(const _Graph& G) nogil:
-		cdef bool_t error = False
 		cdef string message
 		with gil:
 			pyG = Graph()
@@ -4971,10 +4969,12 @@ cdef cppclass _PythonClusteringFunction(_ClusteringFunction):
 			try:
 				pyP = callback(pyG)
 			except Exception as e:
-				error = True
-				message = stdstring("An Exception occurred in the clustering callback: {0}".format(e))
-			if (error):
-				throw_runtime_error(message)
+				if (str(e)) == "Timed out!":
+					print("Timed out!")
+				else:
+					message = stdstring("An Exception occurred in the clustering callback: {0}".format(e))
+					raise(e)
+					throw_runtime_error(message)
 
 			return move((<Partition>(pyP))._this)
 

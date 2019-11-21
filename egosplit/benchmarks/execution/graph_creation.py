@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from egosplit.external import getFacebookGraph, getAmazonGraph, getDBLPGraph, getLiveJournalGraph, getOrkutGraph, \
-	getAmazonGraphAll
+	getAmazonGraphAll, getFriendsterGraph
 from egosplit.benchmarks.data_structures.graph import LFRGraph, ReadGraph, BenchGraph
 
 
@@ -20,14 +20,18 @@ class GraphSetsConfig:
 				graphs = create_mu_graphs(10, 70, 10)
 			elif graph_set == 'overlap':
 				graphs = create_overlap_graphs(20, 80)
-			elif graph_set == 'test':
-				graphs = create_om_graphs(3, 3)
-				# graphs = [ReadGraph(lambda: getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71')]
-				# graphs = [ReadGraph(lambda: getFacebookGraph('Rice31', clean=True), 'FB_3_Rice31')]
 			elif graph_set == 'facebook':
 				graphs = facebook_graphs()
 			elif graph_set == 'snap':
 				graphs = snap_graphs()
+			elif graph_set == 'test':
+				graphs = create_om_graphs(1, 4)
+			# graphs = [ReadGraph(lambda: getFacebookGraph('Auburn71', clean=True), 'FB_4_Auburn71')]
+			# graphs = [ReadGraph(lambda: getFacebookGraph('Caltech36', clean=True), 'FB_1_Caltech36')]
+			# graphs.append(ReadGraph(lambda: getAmazonGraph(), 'Amazon'))
+			# graphs.append(ReadGraph(lambda: getOrkutGraph(), 'Orkut'))
+			else:
+				raise KeyError("No graph set named {0}".format(graph_set))
 
 			all_graphs.extend(graphs)
 		return all_graphs
@@ -49,10 +53,11 @@ def facebook_graphs():
 
 def snap_graphs():
 	graphs = []
-	graphs.append(ReadGraph(lambda: getAmazonGraph(), 'Amazon'))
-	graphs.append(ReadGraph(lambda: getDBLPGraph(), 'DBLP'))
-	# graphs.append(ReadGraph(lambda: getLiveJournalGraph(), 'LiveJournal'))
-	# graphs.append(ReadGraph(lambda: getOrkutGraph(), 'Orkut'))
+	graphs.append(ReadGraph(lambda: getAmazonGraph(clean=False), 'Amazon'))
+	# graphs.append(ReadGraph(lambda: getDBLPGraph(clean=False), 'DBLP'))
+	# graphs.append(ReadGraph(lambda: getLiveJournalGraph(clean=False), 'LiveJournal'))
+	# graphs.append(ReadGraph(lambda: getOrkutGraph(clean=False), 'Orkut'))
+	# graphs.append(ReadGraph(lambda: getFriendsterGraph(clean=False), 'Orkut'))
 	return graphs
 
 

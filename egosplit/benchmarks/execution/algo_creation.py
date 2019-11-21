@@ -1,9 +1,11 @@
 from collections import OrderedDict
 
+from egosplit.benchmarks.data_structures.algorithms import GroundTruth, GceAlgorithm, MosesAlgorithm, OslomAlgorithm, \
+	DemonAlgorithm, EgoSplitAlgorithm
 from egosplit.benchmarks.execution.cleanup import CleanUpConfig
+from egosplit.external import partitionLeiden, partitionInfomap
 from networkit.community import PLM, PLP, LPPotts, LouvainMapEquationFactory, PLMFactory, PLPFactory
-from egosplit.benchmarks.data_structures.algorithms import *
-from egosplit.external import *
+# from egosplit.benchmarks.data_structures.algorithms import *
 
 
 class EgoSplitClusteringAlgorithmsConfig:
@@ -18,33 +20,31 @@ class EgoSplitClusteringAlgorithmsConfig:
 			partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 			partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
 			partition_algos['Leiden'] = [lambda g: partitionLeiden(g, 'modularity')]
-			partition_algos['MapEquation'] = [LouvainMapEquationFactory(False)]
-			partition_algos['MapEquationHierarch'] = [LouvainMapEquationFactory(True)]
+			partition_algos['LM-Map'] = [LouvainMapEquationFactory(True)]
 
 			new_p_algos = {}
 			for name, p_algos in partition_algos.items():
 				if ego_part_algos == 'local':
-					new_p_algos[name + ' + MapEquation'] = [p_algos[0],
-					                                        LouvainMapEquationFactory(True)]
+					new_p_algos[name + ' + LM-Map'] = [p_algos[0],
+					                                   LouvainMapEquationFactory(True)]
 				if ego_part_algos == 'global':
-					new_p_algos['Infomap + ' + name] = [lambda g: partitionInfomap(g), p_algos[0]]
 					new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
 					                                   p_algos[0]]
 			partition_algos = new_p_algos
 
+		if ego_part_algos == 'best':
+			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
+			                                      LouvainMapEquationFactory(True)]
 		if ego_part_algos == 'two_best':
-			partition_algos['Leiden + MapEquation'] = [lambda g: partitionLeiden(g, 'modularity'),
-			                                           LouvainMapEquationFactory(True)]
-			partition_algos['Infomap + Surprise'] = [lambda g: partitionInfomap(g),
+			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
+			                                      LouvainMapEquationFactory(True)]
+			partition_algos['LM-Map + LM-Map'] = [lambda g: partitionInfomap(g),
 			                                         lambda g: partitionLeiden(g, 'surprise')]
 		if ego_part_algos == 'Leiden/Infomap + Infomap':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
 			partition_algos['Infomap + Infomap'] = [lambda g: partitionInfomap(g),
 			                                        lambda g: partitionInfomap(g)]
-		if ego_part_algos == 'best':
-			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
-			                                       lambda g: partitionInfomap(g)]
 		if ego_part_algos == 'leiden local':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
@@ -53,11 +53,13 @@ class EgoSplitClusteringAlgorithmsConfig:
 			                                lambda g: PLM(g, True, 1.0,
 			                                              'none').run().getPartition()]
 		if ego_part_algos == 'test':
-			partition_algos['default'] = []
-			# partition_algos['PLM (fac)'] = [PLMFactory(True, 1.0, 'none')]
-			# partition_algos['PLM false (fac)'] = [PLMFactory(False, 1.0, 'none')]
-			# partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-			# partition_algos['PLM false'] = [lambda g: PLM(g, False, 1.0, 'none').run().getPartition()]
+			partition_algos['PLP + LM-Map'] = [PLPFactory(1, 20), LouvainMapEquationFactory(True)]
+			# def error_func(g):
+			# 	raise RuntimeError("Expected error")
+			# partition_algos['error'] = [error_func, error_func]
+			# partition_algos['default'] = []
+			partition_algos['PLM (fac)'] = [PLMFactory(True, 1.0, 'none')]
+			partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
 			partition_algos['PLM + PLM (both fac)'] = [PLMFactory(True, 1.0, 'none'),
 			                                           PLMFactory(True, 1.0, 'none')]
 		# partition_algos['PLM + PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition(),
@@ -78,7 +80,8 @@ class EgoSplitParameterConfig:
 			'Extend EgoNet Strategy': 'None',
 			'Extend and Partition Iterations': 1,
 			'partitionFromGroundTruth': 'No',
-			'numEgoNetsStored': 500,
+			'numEgoNetsStored': 2000,
+			'Cleanup': 'No',
 			'connectPersonas': 'Yes',
 			'normalizePersonaCut': 'No',
 			'connectPersonasStrat': 'spanning',
@@ -234,6 +237,28 @@ class EgoSplitParameterConfig:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
 			}
+		if 'steps' in ego_parameter_config:
+			ego_parameters['Base'] = {
+				**standard,
+				'connectPersonas': 'No',
+			}
+			ego_parameters['EdgesScore'] = {
+				**edge_scores_standard,
+				'connectPersonas': 'No',
+			}
+			ego_parameters['E + Spanning'] = {
+				**edge_scores_standard,
+			}
+			ego_parameters['E + S + Cleanup'] = {
+				**edge_scores_standard,
+				'Cleanup': 'Yes',
+			}
+		if 'best' in ego_parameter_config:
+			ego_parameters[''] = {
+				**edge_scores_standard,
+				'Cleanup': 'Yes',
+			}
+
 		if 'test' in ego_parameter_config:
 			ego_parameters['EdgesScore'] = {
 				**edge_scores_standard,
@@ -242,38 +267,45 @@ class EgoSplitParameterConfig:
 		return ego_parameters
 
 
-algorithm_create = {
-	'GCE': lambda: GceAlgorithm('GCE', alpha=1.1),
-	'Moses': lambda: MosesAlgorithm(),
-	'Oslom': lambda: OslomAlgorithm(),
-	'Ego-original': lambda: EgoSplitAlgorithm(
-		'Ego-original', original_ego_parameters(),
-		lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
-		lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()
-	),
-	'Ego-base': lambda: EgoSplitAlgorithm(
-		'Ego-base', original_ego_parameters(),
-		lambda g: partitionLeiden(g, 'modularity'),
-		lambda g: partitionInfomap(g)
-	),
-}
+class OtherAlgorithms:
+	@staticmethod
+	def get(algo_list):
+		algos = []  # Elements are tuples (AlgorithmObject, list of clean up procedures)
+		algos.append((GroundTruth(), ['']))
+		if not algo_list:
+			return algos
 
+		algorithm_create = {
+			'GCE': lambda: GceAlgorithm(alpha=1.1),
+			'Moses': lambda: MosesAlgorithm(),
+			'Oslom': lambda: OslomAlgorithm(),
+			'Demon': lambda: DemonAlgorithm(),
+			'Ego-original': lambda: EgoSplitAlgorithm(
+				'Ego-original', original_ego_parameters(),
+				lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition(),
+				lambda g: LPPotts(g, 0, 1, 20, True).run().getPartition()
+			),
+			'Ego-base': lambda: EgoSplitAlgorithm(
+				'Ego-base', original_ego_parameters(),
+				lambda g: partitionLeiden(g, 'modularity'),
+				lambda g: partitionInfomap(g)
+			),
+			'Ego-optimized': lambda: EgoSplitAlgorithm(
+				'Ego-optimized', optimized_ego_parameters(),
+				lambda g: partitionLeiden(g, 'modularity'),
+				LouvainMapEquationFactory(True)
+			),
+		}
+		for algo in algo_list:
+			algos.append((algorithm_create[algo](), ['']))
 
-def get_other_algos(algo_set):
-	algos = []  # Elements are tuples (AlgorithmObject, list of clean up procedures)
-	algos.append((GroundTruth(), ['']))
-	if not algo_set:
+		# algos.append(OlpAlgorithm())
+		# algos.append((GceAlgorithm('GCE', alpha=1.0), ['', 'OSLOM-merge']))
+		# algos.append(GceAlgorithm('GCE_1.0_clean', alpha=1.0, clean_up='OSLOM-merge'))
+		# algos.append((MosesAlgorithm(), ['', 'OSLOM-merge']))
+
 		return algos
 
-	for algo in algo_set:
-		algos.append((algorithm_create[algo](), ['']))
-
-	# algos.append(OlpAlgorithm())
-	# algos.append((GceAlgorithm('GCE', alpha=1.0), ['', 'OSLOM-merge']))
-	# algos.append(GceAlgorithm('GCE_1.0_clean', alpha=1.0, clean_up='OSLOM-merge'))
-	# algos.append((MosesAlgorithm(), ['', 'OSLOM-merge']))
-
-	return algos
 
 
 def get_ego_algos(ego_part_algos, ego_parameter_config, clean_up_set, store_ego_nets):
@@ -355,6 +387,29 @@ def original_ego_parameters():
 		'partitionFromGroundTruth': 'No',
 		'connectPersonas': 'No',
 		'numEgoNetsStored': 2000,
+	}
+
+
+def optimized_ego_parameters():
+	return {
+		'partitionFromGroundTruth': 'No',
+		'numEgoNetsStored': 2000,
+		'connectPersonas': 'Yes',
+		'normalizePersonaCut': 'No',
+		'connectPersonasStrat': 'spanning',
+		'maxPersonaEdges': 1,
+		'normalizePersonaWeights': 'unweighted',
+		'iterationWeight': 'No',
+		#
+		'Extend EgoNet Strategy': 'Edges',
+		'Edges Score Strategy': 'Edges pow 2 div Degree',
+		'Extend and Partition Iterations': 1,
+		'Maximum Extend Factor': 5,
+		'addNodesExponent': 0.5,
+		'minNodeDegree': 2,
+		'keepOnlyTriangles': 'No',
+		#
+		'Cleanup': 'Yes',
 	}
 
 

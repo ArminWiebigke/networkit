@@ -294,8 +294,15 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 		double ratio = changeRatio.incrementingK(x);
 		currentProbability *= ratio;
 		rightCumulativeSum += currentProbability;
+		if (rightCumulativeSum > 1e256) {
+			// currentProbability can become very large if the right cumulative probability is
+			// very low. In this case, we normalize all probabilities.
+			currentProbability /= 1e256;
+			rightCumulativeSum /= 1e256;
+			kInProbability /= 1e256;
+		}
 		assert(ratio != 0.0);
-		assert(currentProbability < 1e200);
+		assert(currentProbability < 1e256);
 
 		double sumChange = currentProbability / rightCumulativeSum;
 		if (sumChange < precision)
@@ -309,13 +316,13 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 		assert(x < 1e100);
 		currentProbability *= changeRatio.decrementingK(x);
 		probabilitySum += currentProbability;
-		if (probabilitySum > 1e200) {
+		if (probabilitySum > 1e256) {
 			// currentProbability can become very large if the right cumulative probability is
 			// very low. In this case, we normalize all probabilities.
-			currentProbability /= 1e200;
-			probabilitySum /= 1e200;
-			kInProbability /= 1e200;
-			rightCumulativeSum /= 1e200;
+			currentProbability /= 1e256;
+			probabilitySum /= 1e256;
+			kInProbability /= 1e256;
+			rightCumulativeSum /= 1e256;
 		}
 
 		double sumChange = currentProbability / probabilitySum;

@@ -1,7 +1,14 @@
 from collections import defaultdict
 
+from egosplit.benchmarks.data_structures.timelimit import run_with_limited_time
+from networkit.structures import Cover
 from egosplit.benchmarks.data_structures.algorithms import EgoSplitAlgorithm
 from egosplit.benchmarks.data_structures.graph import LFRGraph
+from egosplit.benchmarks.data_structures.timeout import time_limit, TimeoutException
+
+
+# class BenchmarkResult:
+# 	def __init__(self, header, output_line):
 
 
 class CoverBenchmark:
@@ -14,6 +21,7 @@ class CoverBenchmark:
 		self.clean_up = clean_up
 		self.graph = graph
 		self.cover = None
+		self.has_finished = False
 
 	def run(self):
 		print('\nStarting: Graph: ' + self.graph.name + ', Algo: ' + self.get_algo_name())
@@ -25,14 +33,13 @@ class CoverBenchmark:
 		      ' {} max gt-comm size, {} comms per node'.format(
 			self.graph.graph.numberOfNodes(), self.graph.graph.numberOfEdges(),
 			gt_comms_cnt, gt_comms_size_sum / gt_comms_cnt, max(self.graph.ground_truth.subsetSizes()),
-			gt_comms_size_sum / self.graph.graph.numberOfNodes(),
+			              gt_comms_size_sum / self.graph.graph.numberOfNodes(),
 		))
 
 		self.algo.run(self.graph)
 		algo_cover = self.algo.get_cover()
 		print('Finished: Graph: ' + self.graph.name + ', Algo: ' + self.get_algo_name())
 		print('Ran algorithm in {:.3f}s'.format(self.algo.get_time()))
-
 		self.clean_up.run(self.graph.graph, algo_cover,
 		                  self.graph.ground_truth)
 		self.cover = self.clean_up.get_cover()

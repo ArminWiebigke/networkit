@@ -2,15 +2,17 @@ from math import log2
 
 from egosplit.benchmarks.data_structures.cover_benchmark import *
 from egosplit.benchmarks.evaluation.utility import create_line
+from networkit.stopwatch import clockit
 
 
 # Analyse the result cover of a benchmark run
-def analyze_cover(benchmarks, result_dir, append):
+@clockit
+def analyze_cover(benchmarks, result_dir, calc_f1, append):
 	if not append:
 		print_headers(result_dir)
 
 	for benchmark in benchmarks:
-		count_benchmark_cover(result_dir, benchmark)
+		count_benchmark_cover(result_dir, calc_f1, benchmark)
 
 
 # Print output file headers
@@ -24,12 +26,7 @@ def print_headers(result_dir):
 
 
 # Count the number of communities and their sizes
-def count_benchmark_cover(result_dir, benchmark):
-	count_communities(result_dir, benchmark)
-
-
-# Count the number of communities and their sizes
-def count_communities(result_dir, benchmark):
+def count_benchmark_cover(result_dir, calc_f1, benchmark):
 	cover = benchmark.get_cover()
 	ground_truth = benchmark.get_ground_truth()
 	comm_map = get_communities(benchmark.get_graph(), cover)
@@ -40,12 +37,12 @@ def count_communities(result_dir, benchmark):
 	with open(result_dir + 'cover_num_comms.result', 'a') as f:
 		f.write(create_line(*benchmark.output_line(), cover.numberOfSubsets()))
 
-	# Community sizes
+	# Community sizes and F1 scores
 	with open(result_dir + 'cover_comm_sizes.result', 'a') as f:
 		for u in cover.getSubsetIds():
 			comm = comm_map[u]
 			size = comm_sizes[u]
-			f1 = f1_score(comm, gt_map)
+			f1 = f1_score(comm, gt_map) if calc_f1 else 0
 			f.write(create_line(*benchmark.output_line(), log2(size), f1))
 
 	# Number of Communities per Node
@@ -54,8 +51,6 @@ def count_communities(result_dir, benchmark):
 			num_comms = len(cover.subsetsOf(u))
 			if num_comms > 0:
 				f.write(create_line(*benchmark.output_line(), log2(num_comms)))
-
-		# f.write(create_line(*benchmark.output_line(), str(log2(0.5))))  # TODO: Why?
 
 
 def get_communities(graph, cover):

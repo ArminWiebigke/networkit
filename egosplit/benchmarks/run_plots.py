@@ -23,9 +23,12 @@ if not result_dir[-1] == '/':
 def create_plots(data, output_dir, config: BenchmarkSet):
 	assert output_dir[-1] == '/'
 	for plot_func in PlotSetConfig.get_plot_functions(config[PlotSetConfig]):
-		for graph_set in PlotGraphSetConfig.get_sets(config[PlotGraphSetConfig]):
-			for algo_set_name, algo_set in PlotAlgoSetConfig.get_algo_sets(config[PlotAlgoSetConfig]):
-				make_plots(config, data, algo_set_name, algo_set, graph_set, output_dir, plot_func)
+		try:
+			for graph_set in PlotGraphSetConfig.get_sets(config[PlotGraphSetConfig]):
+				for algo_set_name, algo_set in PlotAlgoSetConfig.get_algo_sets(config[PlotAlgoSetConfig]):
+					make_plots(config, data, algo_set_name, algo_set, graph_set, output_dir, plot_func)
+		except FileNotFoundError as e:
+			print("Could not create plots", plot_func, "for", config.name, ":", e)
 
 
 def run_plots(config: BenchmarkSet):

@@ -57,119 +57,6 @@ class PlotAlgoSetConfig:
 		return algo_sets
 
 
-algo_sets = {
-	'base': ['No Extension'],
-	'edges': ['Edges'],
-	'sig': ['Significance'],
-	'all': ['!Ground Truth', ''],
-	'ego': ['Ego'],
-	'connect-persona': ['Leiden + Infomap', '!All Unweighted'],
-	'clean-up': ['Leiden + Infomap', '!Clean-remove', '!OSLOM-full'],
-	'Info-Info': ['Infomap + Infomap'],
-	'Info-local': ['Infomap + '],
-	'Leiden-local': ['Leiden + '],
-	'Info-Surprise': ['Infomap + Surprise', '!Remove Overlapping'],
-	'Info-Surprise-noOSLOM': ['Infomap + Surprise', '!OSLOM-full', '!Remove Overlapping'],
-	'Leiden-Info': ['Leiden + Infomap', '!Remove Overlapping'],
-	'Leiden-Info-noOSLOM': ['Leiden + Infomap', '!OSLOM-full', '!Remove Overlapping'],
-}
-for key in algo_sets:
-	algo_sets[key] = (key, algo_sets[key])
-
-graph_sets = {
-	'all': {
-		'name': 'all',
-		'graph_filter': '',
-		'x': 'Graph Name',
-		'x_filter': None,
-		'ax_set': {
-		},
-		'bar_plot': True,
-	},
-	'om': {
-		'name': 'om',
-		'graph_filter': '_om_',
-		'x': 'Communities per Node',
-		'x_filter': None,
-		'ax_set': {
-		}
-	},
-	'om_max': {
-		'name': 'om_max',
-		'graph_filter': '_om_',
-		'x': 'Communities per Node',
-		'x_filter': None,
-		'ax_set': {
-			'ylim': (0, 1190),
-		}
-	},
-	'mu': {
-		'name': 'mu',
-		'graph_filter': '_mu_',
-		'x': 'Mixing Factor',
-		'x_filter': None,
-		'ax_set': {
-		}
-	},
-	'mu_max': {
-		'name': 'mu_max',
-		'graph_filter': '_mu_',
-		'x': 'Mixing Factor',
-		'x_filter': None,
-		'ax_set': {
-			'ylim': (0, 990),
-		}
-	},
-	'om_bar': {
-		'name': 'om_bar',
-		'graph_filter': '_om_',
-		'x': 'Communities per Node',
-		'x_filter': None,
-		'ax_set': {
-		},
-		'bar_plot': True,
-	},
-	'facebook': {
-		'name': 'facebook',
-		'graph_filter': 'FB_',
-		'x': 'Graph Name',
-		'x_filter': None,
-		'plot_args': {
-			'dashes': [(5, 6) for _ in range(10)],
-		},
-		'ax_set': {
-		},
-		'set_ylim': False,
-	},
-	'facebook_bar': {
-		'name': 'facebook_bar',
-		'graph_filter': 'FB_',
-		'x': 'Graph Name',
-		'x_filter': None,
-		'plot_args': {
-		},
-		'ax_set': {
-		},
-		'bar_plot': True,
-		'set_ylim': False,
-		'show_deviation': True,
-	},
-	'large': {
-		'name': 'large',
-		'graph_filter': ['Amazon', 'DBLP'],
-		'x': 'Graph Name',
-		'x_filter': None,
-		'plot_args': {
-		},
-		'ax_set': {
-		},
-		'bar_plot': True,
-		'set_ylim': False,
-	},
-	'overlap': None
-}
-
-
 class PlotGraphSetConfig:
 	@staticmethod
 	def get_sets(graph_set_names):
@@ -277,6 +164,7 @@ timings = [
 	'  create EgoNets',
 	'  Persona Clustering',
 	' Connect Personas',
+	' Cleanup Cover'
 ]
 
 metrics = [

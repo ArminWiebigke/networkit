@@ -20,6 +20,7 @@
 #include "../PLM.h"
 #include "EgoNetExtensionAndPartition.h"
 #include "../LouvainMapEquation.h"
+#include "../cleanup/SignificanceCommunityCleanUp.h"
 
 namespace NetworKit {
 
@@ -55,6 +56,7 @@ void EgoSplitting::init() {
 	parameters["storeEgoNet"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
 	parameters["numEgoNetsStored"] = "2000";
+	parameters["Cleanup"] = "No";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -121,6 +123,10 @@ void EgoSplitting::run() {
 	INFO("create Cover");
 	createCover();
 	addTime(timer, "5  Create Cover");
+
+	INFO("clean up Cover");
+	cleanUpCover();
+	addTime(timer, "6  Cleanup Cover");
 
 	hasRun = true;
 }
@@ -397,8 +403,9 @@ void EgoSplitting::createCover() {
 			resultCover.addToSubset(personaPartition.subsetOf(i), u);
 		}
 	});
+}
 
-	// Discard communities of size 4 or less
+void EgoSplitting::discardSmallCommunities() {// Discard communities of size 4 or less
 	count min_size = 5;
 	std::vector<std::vector<node>> communities{resultCover.upperBound()};
 	G.forNodes([&](node u) {
@@ -441,6 +448,16 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
+}
+
+void EgoSplitting::cleanUpCover() {
+	if (parameters.at("Cleanup") == "Yes") {
+		discardSmallCommunities();
+		SignificanceCommunityCleanUp cleanup(G, resultCover);
+		cleanup.run();
+		resultCover = cleanup.getCover();
+	}
+	discardSmallCommunities();
 }
 
 } /* namespace NetworKit */

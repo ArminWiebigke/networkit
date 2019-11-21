@@ -1,6 +1,6 @@
 from egosplit.benchmarks.data_structures.benchmark_set import BenchmarkSet
 from egosplit.benchmarks.execution.algo_creation import \
-	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig
+	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig, OtherAlgorithms
 from egosplit.benchmarks.execution.cleanup import CleanUpConfig
 from egosplit.benchmarks.execution.graph_creation import GraphSetsConfig
 from egosplit.benchmarks.plot_scripts.bench_config import PlotGraphSetConfig, PlotAlgoSetConfig
@@ -9,7 +9,7 @@ from egosplit.benchmarks.plot_scripts.create_plots import PlotSetConfig
 
 def get_benchmark_configs():
 	benchmark_sets = [
-		Scratchpad(),
+		# Scratchpad(),
 		# EdgesScore(),
 		# EdgesScoreSignificance(),
 		# EdgesFactor(),
@@ -28,6 +28,13 @@ def get_benchmark_configs():
 		# NewCleanUp(),
 		# CleanUpSnap(),
 		# CompareOther(),
+
+		LocalClusteringBest(),
+		GlobalClusteringBest(),
+		OptimizationSteps(),
+		EgoSnap(),
+		AlgorithmsLFR(),
+		AlgorithmsSnap(),
 	]
 	# TODO: Wonanders hin?
 	# To enforce a specific order of the algorithms, numbers are added to algorithm names.
@@ -45,15 +52,21 @@ class Scratchpad(BenchmarkSet):
 			'test',
 		'plot_dir':
 			'test/',
+		'time_limit':
+			1,
 		EgoSplitClusteringAlgorithmsConfig:
-			'local',
+			'test',
 		EgoSplitParameterConfig:
-			['edges'],
+			['no-extend'],
 		CleanUpConfig: 'No Cleanup',
 		# 'stream_to_gephi':
 		# 	True,
 		# 'store_ego_nets':
 		# 	True,
+		'other_algos': [
+			# 'Moses',
+			# 'Oslom',
+		],
 		GraphSetsConfig: [
 			# 'om',
 			# 'mu',
@@ -63,8 +76,9 @@ class Scratchpad(BenchmarkSet):
 			'test',
 		],
 		PlotGraphSetConfig: [
-			'om',
+			# 'om',
 			# 'facebook_bar',
+			'facebook',
 		],
 		PlotSetConfig: [
 			'metrics',
@@ -79,6 +93,235 @@ class Scratchpad(BenchmarkSet):
 		'remove_algo_parts':
 			['Ego', ' + Infomap', ' | ', 'No Clean Up', 'No Extension',
 			 'EdgesScore', 'Significance'],
+	}
+
+
+class LocalClusteringBest(BenchmarkSet):
+	config = {
+		'name':
+			'local_cluster_best',
+		'result_dir':
+			'local_cluster_best',
+		'plot_dir':
+			'local_cluster_best/',
+		EgoSplitClusteringAlgorithmsConfig:
+			'local',
+		EgoSplitParameterConfig:
+			['edges'],
+		CleanUpConfig:
+			'best',
+		GraphSetsConfig: [
+			'om',
+			'overlap',
+			'mu',
+			# 'facebook',
+			# 'snap',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+			# 'facebook',
+			# 'facebook_bar',
+			# 'snap',
+		],
+		PlotSetConfig: [
+			'metrics',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', ' + LM-Map', 'Clean-new', 'EdgesScore'],
+		'replace_legend':
+			{'Leiden': 'LeidenMod', 'Potts': 'LPPotts'},
+	}
+
+
+class GlobalClusteringBest(BenchmarkSet):
+	config = {
+		'name':
+			'global_cluster_best',
+		'result_dir':
+			'global_cluster_best',
+		'plot_dir':
+			'global_cluster_best/',
+		EgoSplitClusteringAlgorithmsConfig:
+			'global',
+		EgoSplitParameterConfig:
+			['edges'],
+		CleanUpConfig:
+			'best',
+		'calc_f1_per_comm':
+			True,
+		GraphSetsConfig: [
+			'om',
+			'overlap',
+			'mu',
+			# 'facebook',
+			# 'snap',
+			# 'test',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+			# 'facebook',
+			# 'facebook_bar',
+			# 'snap',
+		],
+		PlotSetConfig: [
+			'metrics',
+			'timings',
+			'ego_net_cluster',
+			'comm_sizes',
+			'comm_f1',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', 'Clean-new', 'EdgesScore', 'Leiden + '],
+		'replace_legend':
+			{'Leiden': 'LeidenMod', 'Potts': 'LPPotts'},
+	}
+
+
+class OptimizationSteps(BenchmarkSet):
+	config = {
+		'name':
+			'optimization_steps',
+		'result_dir':
+			'optimization_steps',
+		'plot_dir':
+			'optimization_steps/',
+		EgoSplitClusteringAlgorithmsConfig:
+			'best',
+		EgoSplitParameterConfig:
+			['steps'],
+		GraphSetsConfig: [
+			'om',
+			'overlap',
+			'mu',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+		],
+		PlotSetConfig: [
+			'metrics',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', 'Leiden + LM-Map'],
+		'replace_legend':
+			{'Base': 'Ego', 'EdgesScore': 'Ego+E', 'E + Spanning': 'Ego+E+S', 'E + S + Cleanup': 'Ego+E+S+C'},
+	}
+
+
+class EgoSnap(BenchmarkSet):
+	config = {
+		'name':
+			'ego_snap',
+		'result_dir':
+			'ego_snap',
+		'plot_dir':
+			'ego_snap/',
+		'iterations': 1,
+		EgoSplitClusteringAlgorithmsConfig:
+			'two_best',
+		EgoSplitParameterConfig:
+			['best'],
+		GraphSetsConfig: [
+			'snap',
+		],
+		PlotGraphSetConfig: [
+			'snap'
+		],
+		PlotSetConfig: [
+			'metrics',
+			'timings',
+		],
+		PlotAlgoSetConfig:
+			['all'],
+		'remove_algo_parts':
+			['Ego', ' |', 'EdgesScore'],
+		'replace_legend':
+			{'No Clean Up': 'Uncleaned', 'Clean-new': 'Cleaned'},
+	}
+
+
+class AlgorithmsLFR(BenchmarkSet):
+	config = {
+		'name':
+			'other_algos_lfr',
+		'result_dir':
+			'other_algos_lfr',
+		'plot_dir':
+			'other_algos_lfr/',
+		OtherAlgorithms: [
+			'Ego-original',
+			'Ego-optimized',
+			'Oslom',
+			'Moses',
+			'GCE',
+			'Demon'
+		],
+		GraphSetsConfig: [
+			'om',
+			'overlap',
+			'mu',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+		],
+		PlotSetConfig: [
+			'metrics',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			[],
+		'replace_legend':
+			{'Ego-original': 'Ego', 'Ego-optimized': 'Ego+'},
+	}
+
+
+class AlgorithmsSnap(BenchmarkSet):
+	config = {
+		'name':
+			'other_algos_snap',
+		'result_dir':
+			'other_algos_snap',
+		'plot_dir':
+			'other_algos_snap/',
+		'iterations': 1,
+		OtherAlgorithms: [
+			'Ego-original',
+			'Ego-optimized',
+			'Oslom',
+			'Moses',
+			'GCE',
+			'Demon'
+		],
+		GraphSetsConfig: [
+			'snap',
+		],
+		PlotGraphSetConfig: [
+			'snap',
+		],
+		PlotSetConfig: [
+			'metrics',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | '],
+		'replace_legend':
+			{},
 	}
 
 
@@ -404,14 +647,14 @@ class LocalClustering(BenchmarkSet):
 			'overlap',
 			# 'mu',
 			'facebook',
-			'snap',
+			# 'snap',
 		],
 		PlotGraphSetConfig: [
 			'om',
 			# 'mu',
 			'facebook',
 			# 'facebook_bar',
-			'snap',
+			# 'snap',
 		],
 		PlotSetConfig: [
 			'metrics',

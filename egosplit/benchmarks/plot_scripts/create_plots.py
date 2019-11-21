@@ -1,7 +1,6 @@
-from egosplit.benchmarks.plot_scripts.make_plot import make_plot, PlotType
 from egosplit.benchmarks.plot_scripts.bench_config import ego_extend_metrics, ego_cluster_metrics, \
-	algo_sets, timings, metrics, metric_config, ego_metric_ylim, PlotGraphSetConfig, \
-	PlotAlgoSetConfig
+	timings, metrics, metric_config, ego_metric_ylim
+from egosplit.benchmarks.plot_scripts.make_plot import make_plot, PlotType
 
 
 class PlotSetConfig:
@@ -25,8 +24,8 @@ class PlotSetConfig:
 
 
 def make_plots(config, data, algo_set_name, algo_set, graph_set_params, output_dir, plot_func):
-	print(algo_set)
-	print(graph_set_params)
+	# print(algo_set)
+	# print(graph_set_params)
 	graph_set_name = graph_set_params['name']
 	default_plots_config = {
 		'output_dir': output_dir,

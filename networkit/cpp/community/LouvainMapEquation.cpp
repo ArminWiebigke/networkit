@@ -13,6 +13,7 @@
 #include <random>
 
 #include "LouvainMapEquation.h"
+#include "../auxiliary/SignalHandling.h"
 #include "../graph/Graph.h"
 #include "../structures/Partition.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
@@ -29,12 +30,14 @@ LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, co
 void LouvainMapEquation::run() {
 	if (hasRun)
 		throw std::runtime_error("Algorithm was already run!");
+	Aux::SignalHandler handler;
 	partition.allToSingletons();
 	for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
 		if (!graph.hasNode(u)) {
 			partition.remove(u);
 		}
 	}
+	handler.assureRunning();
 
 	calculateClusterCutAndVolume();
 
@@ -50,6 +53,7 @@ void LouvainMapEquation::run() {
 #endif
 
 	for (count iteration = 0; iteration < maxIterations; ++iteration) {
+		handler.assureRunning();
 		bool anyMoved = false;
 		count nodesMoved = 0;
 		INFO("\nIteration ", iteration);
@@ -72,6 +76,7 @@ void LouvainMapEquation::run() {
 	}
 
 	partition.compact();
+	handler.assureRunning();
 	if (hierarchical && partition.numberOfSubsets() < graph.numberOfNodes()) {
 		runHierarchical();
 	}

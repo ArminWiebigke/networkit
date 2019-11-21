@@ -46,7 +46,7 @@ class CleanUpConfig:
 			]
 		elif clean_up_set == 'best':
 			clean_ups = [
-				'Clean-merge',
+				'Clean-new',
 			]
 		elif clean_up_set == 'new_clean':
 			clean_ups = [

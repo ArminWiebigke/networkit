@@ -2,10 +2,12 @@ import tempfile
 import os
 import subprocess
 from copy import copy
+import demon
 
 from networkit.community import EgoSplitting, OLP, SLPA
 from networkit import graphio
 from networkit.graph import Graph
+from networkit.structures import Cover
 from egosplit.benchmarks.data_structures.context_timer import ContextTimer
 
 home_path = os.path.expanduser('~')
@@ -183,6 +185,36 @@ class MosesAlgorithm(CoverAlgorithm):
 					 output_filename], stdout=dev_null)
 			cover = graphio.CoverReader().read(output_filename, self.graph)
 			self.cover = cover
+
+
+class DemonAlgorithm(CoverAlgorithm):
+	def __init__(self, name='DEMON'):
+		super().__init__(name)
+
+	def __copy__(self):
+		return DemonAlgorithm(self.name)
+
+	def create_cover(self):
+		with tempfile.TemporaryDirectory() as tempdir:
+			old_dir = os.getcwd()
+			try:
+				os.chdir(tempdir)
+				graph_filename = os.path.join(tempdir, 'graph.txt')
+				graphio.writeGraph(self.graph, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
+				with self.timer:
+					dm = demon.Demon(network_filename=graph_filename, epsilon=1, min_community_size=5)
+					communities = dm.execute()
+				cover = Cover(self.graph.upperNodeIdBound())
+				cover.setUpperBound(len(communities))
+				for i, comm in enumerate(communities):
+					for u in comm:
+						cover.addToSubset(i, u)
+				self.cover = cover
+
+			except Exception as e:
+				print(e)
+			finally:
+				os.chdir(old_dir)
 
 
 class PeacockAlgorithm(CoverAlgorithm):

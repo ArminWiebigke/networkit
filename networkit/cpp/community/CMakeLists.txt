@@ -35,7 +35,6 @@ networkit_add_module(community
     QualityMeasure.cpp
     SampledGraphStructuralRandMeasure.cpp
     SampledNodeStructuralRandMeasure.cpp
-    SignificanceCleanup.cpp
     SLPA.cpp
     StablePartitionNodes.cpp
     cleanup/MergeCommunities.cpp

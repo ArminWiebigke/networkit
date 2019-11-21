@@ -6,9 +6,11 @@ from egosplit.benchmarks.data_structures.cover_benchmark import CoverBenchmark
 from networkit import none
 from networkit.components import ConnectedComponents
 from egosplit.benchmarks.evaluation.utility import create_line
+from networkit.stopwatch import clockit
 
 
 # Evaluate the partition of the ego-nets
+@clockit
 def analyse_ego_net_partitions(benchmarks, result_dir, append, write_scores_per_egonet):
 	open_mode = 'w'
 	if append:

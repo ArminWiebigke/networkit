@@ -30,6 +30,11 @@ class BenchGraph:
 		if not self._graph:
 			print('Creating graph {}'.format(self.name))
 			self._graph, self._ground_truth = self.create_graph_and_ground_truth()
+		assert self._graph
+
+	def clear(self):
+		del self._graph
+		del self._ground_truth
 
 	@property
 	def graph(self):

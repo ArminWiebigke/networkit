@@ -1,5 +1,5 @@
 from egosplit.benchmarks.execution.algo_creation import EgoSplitClusteringAlgorithmsConfig, \
-	EgoSplitParameterConfig
+	EgoSplitParameterConfig, OtherAlgorithms
 from egosplit.benchmarks.execution.cleanup import CleanUpConfig
 from egosplit.benchmarks.execution.graph_creation import GraphSetsConfig
 from egosplit.benchmarks.plot_scripts.bench_config import PlotGraphSetConfig, PlotAlgoSetConfig
@@ -21,7 +21,10 @@ class BenchmarkSet:
 		self[GraphSetsConfig] = None  # input graphs used in the benchmarks
 		self[CleanUpConfig] = 'No Cleanup'  # clean up the result of EgoSplitting
 		self.stream_to_gephi = False  # stream the results to Gephi for visualization
-		self.other_algos = None  # additionally executed algorithms (not EgoSplitting)
+		self[OtherAlgorithms] = None  # additionally executed algorithms (not EgoSplitting)
+		self.calc_f1_per_comm = False
+		self.iterations = 10
+		self.time_limit = 3600  # time limit in seconds
 		# Plot configuration
 		self.remove_algo_parts = []  # remove parts of the algorithm name when displayed in the plots
 		self.replace_legend = {}  # Replace legend entries in the plots

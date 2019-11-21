@@ -33,14 +33,17 @@ def add_compact_results(summary, benchmark_results, metric_names):
 		algo_name = benchmark.get_algo_name()
 		if algo_name not in summary:
 			summary[algo_name] = OrderedDict()
+		algo_dict = summary[algo_name]
 		graph_name = benchmark.get_graph_name()
-		if graph_name not in summary[algo_name]:
+		if graph_name not in algo_dict:
 			d = OrderedDict()
 			for m in metric_names:
 				d[m] = []
-			summary[algo_name][graph_name] = d
+			algo_dict[graph_name] = d
 		for metric in metric_names:
-			summary[algo_name][graph_name][metric].append(metric_results[metric])
+			algo_dict[graph_name][metric].append(metric_results[metric])
+		# Reassign algo_dict so it works with multiprocessing.Manager().dict
+		summary[algo_name] = algo_dict
 
 
 # Print the compact results to the standard output and the output file
@@ -61,10 +64,11 @@ def print_results_compact(results, metrics, output_file):
 		str_width_first + (2 + len(metrics) * str_width) * len(graphs), '-')
 	# Metrics header
 	graph_header += '\n' + 'Algo'.ljust(str_width_first)
+	value_width = str_width - 1
 	for _ in graphs:
 		graph_header += '| '
 		for metric in metrics:
-			graph_header += metric.rjust(str_width - 1) + ' '
+			graph_header += metric.rjust(value_width) + ' '
 	graph_header += '\n' + str().ljust(
 		str_width_first + (2 + len(metrics) * str_width) * len(graphs), '-')
 	output_str = graph_header
@@ -75,9 +79,18 @@ def print_results_compact(results, metrics, output_file):
 		for graph in graphs:
 			algo_results += '| '
 			for metric in metrics:
-				r = results[algo][graph][metric]
-				val = sum(r) / len(r)
-				algo_results += '{:{f}.{d}f} '.format(val, d=result_decimals, f=str_width - 1)
+				try:
+					value = results[algo][graph][metric]
+				except KeyError as e:
+					value = 'Missing'
+					print(algo, graph, metric, e, sep=', ')
+				if isinstance(value, str):
+					value_string = value
+				else:
+					assert(isinstance(value, list))
+					average = sum(value) / len(value)
+					value_string = '{val:.{d}f}'.format(val=average, d=result_decimals)
+				algo_results += value_string.rjust(value_width) + ' '
 		output_str += '\n' + algo_results
 	output_str += '\n'
 	print(output_str)

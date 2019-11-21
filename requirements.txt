@@ -6,3 +6,6 @@ Cython
 python-igraph
 leidenalg
 infomap==1.0.0b50
+demon==2.0.4
+tqdm==4.35.0
+networkx==2.3
