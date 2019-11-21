@@ -182,16 +182,17 @@ void EgoSplitting::createEgoNets() {
 			addTimings(extAndPartition.getTimings(), "11");
 			addTime(timer, "15    Extend and Partition EgoNet");
 
-			if (parameters.at("storeEgoNet") == "Yes") // only for analysis
+			if (parameters.at("storeEgoNet") == "Yes") { // only for analysis
 				storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
+				// Store ego-net partition with extended nodes
+				for (node i : extendedEgoGraph.nodes()) {
+					egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
+					                                          egoPartition.subsetOf(i));
+				}
+			}
 			addTime(timer, "18    Store EgoNet");
 
 			INFO("Store ego-net");
-			// Store ego-net partition with extended nodes
-			for (node i : extendedEgoGraph.nodes()) {
-				egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
-				                                          egoPartition.subsetOf(i));
-			}
 //			assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
 			// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
 			Partition directNeighborPartition(egoGraph.upperNodeIdBound());
