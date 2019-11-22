@@ -30,7 +30,7 @@ public:
 	/**
 	 * Returns the result of the algorithm.
 	 */
-	Partition getPartition();
+	const Partition& getPartition() const;
 
 	std::string toString() const override;
 

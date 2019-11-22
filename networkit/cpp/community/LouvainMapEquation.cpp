@@ -173,7 +173,7 @@ void LouvainMapEquation::runHierarchical() {
 	});
 }
 
-Partition LouvainMapEquation::getPartition() {
+const Partition& LouvainMapEquation::getPartition() const {
 	return partition;
 }
 
