@@ -56,7 +56,7 @@ void EgoSplitting::init() {
 	parameters["storeEgoNet"] = "No";
 	parameters["partitionFromGroundTruth"] = "No";
 	parameters["numEgoNetsStored"] = "2000";
-	parameters["Cleanup"] = "No";
+	parameters["Cleanup"] = "Yes";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
