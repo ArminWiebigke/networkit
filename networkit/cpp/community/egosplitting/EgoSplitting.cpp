@@ -187,11 +187,11 @@ void EgoSplitting::createEgoNets() {
 			                                            localClusteringAlgo);
 			extAndPartition.run();
 			Partition egoPartition = extAndPartition.getPartition();
-			Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
 			addTimings(extAndPartition.getTimings(), "11");
 			addTime(timer, "15    Extend and Partition EgoNet");
 
 			if (parameters.at("storeEgoNet") == "Yes") { // only for analysis
+				Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
 				storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
 				// Store ego-net partition with extended nodes
 				for (node i : extendedEgoGraph.nodes()) {
