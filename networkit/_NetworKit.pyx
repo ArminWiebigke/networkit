@@ -5068,7 +5068,6 @@ cdef class EgoSplitting(Algorithm):
 	Get the EgoNet graphs.
 	"""
 	def getEgoNets(self):
-		print("Get ego-nets (Cython)")
 		return (<_EgoSplitting*>(self._this)).getEgoNets()
 
 	"""

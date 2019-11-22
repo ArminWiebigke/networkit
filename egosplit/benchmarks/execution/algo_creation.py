@@ -38,8 +38,8 @@ class EgoSplitClusteringAlgorithmsConfig:
 		if ego_part_algos == 'two_best':
 			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                      LouvainMapEquationFactory(True)]
-			partition_algos['LM-Map + LM-Map'] = [lambda g: partitionInfomap(g),
-			                                         lambda g: partitionLeiden(g, 'surprise')]
+			partition_algos['LM-Map + LM-Map'] = [LouvainMapEquationFactory(True),
+			                                      LouvainMapEquationFactory(True)]
 		if ego_part_algos == 'Leiden/Infomap + Infomap':
 			partition_algos['Leiden + Infomap'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                       lambda g: partitionInfomap(g)]
@@ -257,6 +257,7 @@ class EgoSplitParameterConfig:
 			ego_parameters[''] = {
 				**edge_scores_standard,
 				'Cleanup': 'Yes',
+				# 'maxEgoNetsPartitioned': 1e5,
 			}
 
 		if 'test' in ego_parameter_config:
