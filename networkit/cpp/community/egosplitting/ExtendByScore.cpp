@@ -19,20 +19,13 @@ ExtendByScore::ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
 }
 
 void ExtendByScore::run() {
-	Aux::Timer timer;
-	timer.start();
 	searchForCandidates();
 
-	addTime(timer, "3    Count edges");
-
-	addTime(timer, "7    Calculate score");
 	std::vector<NodeAndScore> candidatesAndScores = calculateScores();
 
 	takeBestCandidates(candidatesAndScores);
-	addTime(timer, "9    Take best candidates");
 
 	nodeScores.reset();
-	addTime(timer, "a    Reset node scores");
 
 	hasRun = true;
 }
