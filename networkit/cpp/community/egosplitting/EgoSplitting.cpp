@@ -151,11 +151,12 @@ void EgoSplitting::createEgoNets() {
 
 #pragma omp for
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
+			if (!signalHandler.isRunning()) continue;
+
 			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
 				continue;
 //		G.parallelForNodes([&](node egoNode) {
 			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
-			signalHandler.assureRunning();
 
 			Graph egoGraph(G.degree(egoNode), true);
 			// Find neighbors == nodes of the ego-net
