@@ -56,7 +56,7 @@ void LouvainMapEquation::run() {
 		handler.assureRunning();
 		bool anyMoved = false;
 		count nodesMoved = 0;
-		INFO("\nIteration ", iteration);
+		INFO("Iteration ", iteration);
 #ifndef NDEBUG
 		INFO("Map equation is ", mapEquation());
 #endif

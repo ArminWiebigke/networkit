@@ -228,12 +228,16 @@ class EgoSnap(BenchmarkSet):
 		'plot_dir':
 			'ego_snap/',
 		'iterations': 1,
+		'time_limit': 7200,
 		EgoSplitClusteringAlgorithmsConfig:
 			'two_best',
 		EgoSplitParameterConfig:
 			['best'],
 		GraphSetsConfig: [
 			'snap',
+		],
+		OtherAlgorithms: [
+			'Ego-original',
 		],
 		PlotGraphSetConfig: [
 			'snap'

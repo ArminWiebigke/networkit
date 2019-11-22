@@ -109,9 +109,7 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 		print("Got cover")
 
 		self.egoNetPartitions = algo.getEgoNetPartitions()
-		print("Got ego-net partitions")
 		self.egoNets = algo.getEgoNets()
-		print("Got ego-nets")
 
 		# Output timings
 		timings = algo.getTimings()

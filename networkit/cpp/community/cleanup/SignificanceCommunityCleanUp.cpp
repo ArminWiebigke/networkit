@@ -46,7 +46,11 @@ bool SignificanceCommunityCleanUp::isParallel() const {
 
 void SignificanceCommunityCleanUp::cleanAllCommunities() {
 	auto inputCommunities = cover.getSubsets();
+	index communityId = 0;
 	for (const Community &inputCommunity : inputCommunities) {
+		if (communityId++ % (inputCommunities.size() / 10) == 0) {
+			INFO("Clean community ", communityId, "/", inputCommunities.size());
+		}
 		auto cleanedCommunity = cleanCommunity(inputCommunity);
 		if (cleanedCommunity.empty())
 			discardedCommunities.insert(inputCommunity);
@@ -61,6 +65,7 @@ SignificanceCommunityCleanUp::cleanCommunity(const Community &inputCommunity) {
 }
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
+	INFO("Merge discarded communities");
 	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), singleCommunityCleanup);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {

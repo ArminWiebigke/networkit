@@ -57,6 +57,7 @@ void EgoSplitting::init() {
 	parameters["partitionFromGroundTruth"] = "No";
 	parameters["numEgoNetsStored"] = "2000";
 	parameters["Cleanup"] = "No";
+	parameters["maxEgoNetsPartitioned"] = "-1";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -133,6 +134,7 @@ void EgoSplitting::run() {
 
 
 void EgoSplitting::createEgoNets() {
+	int maxEgoNetsPartitioned = std::stoi(parameters.at("maxEgoNetsPartitioned"));
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{
 		Aux::SignalHandler signalHandler;
@@ -153,6 +155,13 @@ void EgoSplitting::createEgoNets() {
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
 			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
 				continue;
+			if (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned) {
+				egoNetPartitionCounts[egoNode] = 1;
+				G.forNeighborsOf(egoNode, [&](node neighbor) {
+					egoNetPartitions[egoNode].emplace(neighbor, 0);
+				});
+				continue;
+			}
 //		G.parallelForNodes([&](node egoNode) {
 			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 			signalHandler.assureRunning();
@@ -179,7 +188,7 @@ void EgoSplitting::createEgoNets() {
 			extAndPartition.run();
 			Partition egoPartition = extAndPartition.getPartition();
 			Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
-			addTimings(extAndPartition.getTimings(), "11");
+			addTimings(extAndPartition.getTimings(), "15");
 			addTime(timer, "15    Extend and Partition EgoNet");
 
 			if (parameters.at("storeEgoNet") == "Yes") { // only for analysis
@@ -432,7 +441,6 @@ std::string EgoSplitting::toString() const {
 }
 
 std::unordered_map<node, std::vector<WeightedEdge>> EgoSplitting::getEgoNets() {
-	INFO("Get ego-nets");
 	return egoNets;
 }
 

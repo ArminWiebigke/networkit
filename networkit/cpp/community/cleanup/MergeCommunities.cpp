@@ -74,6 +74,7 @@ void MergeCommunities::mergeCommunities() {
 	mergedCommunities.allToSingletons();
 	count maxIterations = 20;
 	for (count i = 0; i < maxIterations; ++i) {
+		INFO("Merge communities iteration ", i);
 		count nodesChanged = 0;
 		discardedCommunitiesGraph.forNodesInRandomOrder([&](node u) {
 			bool wasMoved = tryLocalMove(u);
@@ -145,7 +146,11 @@ bool MergeCommunities::tryLocalMove(node u) {
 }
 
 void MergeCommunities::checkMergedCommunities() {
+	index communityId = 0;
 	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
+		if (communityId++ % (mergedCommunities.numberOfSubsets() / 10) == 0) {
+			INFO("Clean merged community ", communityId, "/", mergedCommunities.numberOfSubsets());
+		}
 		if (communitiesToMerge.size() == 1)
 			continue;
 		Community mergedCommunity;
@@ -156,8 +161,6 @@ void MergeCommunities::checkMergedCommunities() {
 				mergedCommunity.insert(u);
 		}
 		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
-//		std::cout << "Merged: " << mergedCommunity.size() << " -> " << cleanedCommunity.size()
-//		          << std::endl;
 		if (cleanedCommunity.empty())
 			discardedCommunities.insert(mergedCommunity);
 		else
