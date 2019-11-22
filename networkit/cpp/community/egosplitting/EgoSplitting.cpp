@@ -186,7 +186,7 @@ void EgoSplitting::createEgoNets() {
 			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
 			                                            localClusteringAlgo);
 			extAndPartition.run();
-			Partition egoPartition = extAndPartition.getPartition();
+			const Partition& egoPartition = extAndPartition.getPartition();
 			addTimings(extAndPartition.getTimings(), "11");
 			addTime(timer, "15    Extend and Partition EgoNet");
 
@@ -305,11 +305,11 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	}
 
 	// Insert edges between the personas
-	std::string strategy = parameters.at("connectPersonasStrat");
+	const std::string strategy = parameters.at("connectPersonasStrat");
 	if (strategy == "spanning") {
 		RandomMaximumSpanningForest span{coarseGraph};
 		span.run();
-		auto spanningForest = span.getMSF();
+		const Graph& spanningForest = span.getMSF();
 		spanningForest.forEdges([&](node u, node v, edgeweight w) {
 			addPersonaEdge(u, v, w);
 		});
