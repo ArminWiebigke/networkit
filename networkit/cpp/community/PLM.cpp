@@ -44,18 +44,18 @@ void PLM::run() {
 	DEBUG("total edge weight: " , total);
 	edgeweight divisor = (2 * total * total); // needed in modularity calculation
 
-	G.parallelForNodes([&](node u) { // calculate and store volume of each node
+	G.forNodes([&](node u) { // calculate and store volume of each node
 		volNode[u] += G.weightedDegree(u);
 		volNode[u] += G.weight(u, u); // consider self-loop twice
 		// TRACE("init volNode[" , u , "] to " , volNode[u]);
-	}, z > (1 << 20));
+	});
 
 	// init community-dependent temporaries
 	std::vector<double> volCommunity(o, 0.0);
-	zeta.parallelForEntries([&](node u, index C) { 	// set volume for all communities
+	zeta.forEntries([&](node u, index C) { 	// set volume for all communities
 		if (C != none)
 			volCommunity[C] = volNode[u];
-	}, o > (1 << 20));
+	});
 
 	// first move phase
 	bool moved = false; // indicates whether any node has been moved in the last pass
@@ -279,13 +279,13 @@ void PLM::run() {
 			o = zeta.upperBound();
 			volCommunity.clear();
 			volCommunity.resize(o, 0.0);
-			zeta.parallelForEntries([&](node u, index C) { 	// set volume for all communities
+			zeta.forEntries([&](node u, index C) { 	// set volume for all communities
 				if (C != none) {
 					edgeweight volN = volNode[u];
-					#pragma omp atomic
+					//#pragma omp atomic
 					volCommunity[C] += volN;
 				}
-			}, o > (1 << 20));
+			});
 			// second move phase
 			timer.start();
 			//
