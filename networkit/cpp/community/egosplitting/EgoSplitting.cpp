@@ -194,10 +194,10 @@ void EgoSplitting::createEgoNets() {
 				Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
 				storeEgoNet(extendedEgoGraph, egoMapping, egoNode);
 				// Store ego-net partition with extended nodes
-				for (node i : extendedEgoGraph.nodes()) {
+				extendedEgoGraph.forNodes([&](node i) {
 					egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
 					                                          egoPartition.subsetOf(i));
-				}
+				});
 			}
 			addTime(timer, "18    Store EgoNet");
 
@@ -212,10 +212,10 @@ void EgoSplitting::createEgoNets() {
 			directNeighborPartition.compact(true);
 			egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
 //			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
-			for (node i : G.neighbors(egoNode)) {
+			G.forNeighborsOf(egoNode, [&](node i) {
 				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
 						egoMapping.toLocal(i)));
-			}
+			});
 			addTime(timer, "19    Store EgoNet Partition");
 
 			if (parameters.at("connectPersonas") == "Yes")
