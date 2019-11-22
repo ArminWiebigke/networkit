@@ -260,7 +260,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	// Contract graph
 	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition};
 	coarsening.run();
-	Graph coarseGraph = coarsening.getCoarseGraph();
+	const Graph& coarseGraph = coarsening.getCoarseGraph();
 	auto nodeMapping = coarsening.getCoarseToFineNodeMapping();
 	auto getPersonaIndex = [&](node u) {
 		return egoPartition.subsetOf(nodeMapping[u][0]);
@@ -284,17 +284,23 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	// Normalize edgeweights of the coarse graph
 	std::string normalizePersonaCut = parameters.at("normalizePersonaCut");
 	if (normalizePersonaCut == "volume") {
+		throw std::runtime_error("Currently unsupported");
+		/*
 		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
 			double volume = w + coarseGraph.weight(u, u) + coarseGraph.weight(v, v);
 			edgeweight newWeight = w / volume;
 			coarseGraph.setWeight(u, v, newWeight);
 		});
+		*/
 	} else if (normalizePersonaCut == "density") {
+		throw std::runtime_error("Currently unsupported");
+		/*
 		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
 			double possibleEdges = (double) nodeMapping[u].size() * nodeMapping[v].size();
 			double newWeight = w / possibleEdges;
 			coarseGraph.setWeight(u, v, newWeight);
 		});
+		*/
 	}
 
 	// Insert edges between the personas
@@ -305,7 +311,6 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 		auto spanningForest = span.getMSF();
 		spanningForest.forEdges([&](node u, node v, edgeweight w) {
 			addPersonaEdge(u, v, w);
-			coarseGraph.removeEdge(u, v);
 		});
 	} else if (strategy == "all") {
 		coarseGraph.forEdges([&](node u, node v, edgeweight w) {
