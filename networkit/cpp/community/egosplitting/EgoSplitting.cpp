@@ -354,7 +354,7 @@ void EgoSplitting::splitIntoPersonas() {
 		sum += numPersonas;
 	});
 	personaOffsets[G.upperNodeIdBound()] = sum;
-	personaGraph = Graph(sum, true);
+	personaGraph = Graph(sum, (parameters.at("normalizePersonaWeights") != "unweighted" || G.isWeighted()));
 }
 
 void EgoSplitting::connectPersonas() {
