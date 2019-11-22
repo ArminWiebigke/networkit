@@ -158,14 +158,7 @@ void EgoSplitting::createEgoNets() {
 			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
 				continue;
 
-			if (G.degree(egoNode) == 1) {
-				egoNetPartitionCounts[egoNode] = 1;
-				G.forNeighborsOf(egoNode, [&](node i) {
-					egoNetPartitions[egoNode].emplace(i, 0);
-				});
-			}
-
-			if (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned) {
+			if (G.degree(egoNode) == 1 || (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned)) {
 				egoNetPartitionCounts[egoNode] = 1;
 				G.forNeighborsOf(egoNode, [&](node neighbor) {
 					egoNetPartitions[egoNode].emplace(neighbor, 0);
