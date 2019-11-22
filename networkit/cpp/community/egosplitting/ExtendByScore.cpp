@@ -21,12 +21,12 @@ ExtendByScore::ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
 void ExtendByScore::run() {
 	Aux::Timer timer;
 	timer.start();
+	searchForCandidates();
 
-	std::vector<node> candidates = searchForCandidates();
 	addTime(timer, "3    Count edges");
 
-	std::vector<NodeAndScore> candidatesAndScores = calculateScores(candidates);
 	addTime(timer, "7    Calculate score");
+	std::vector<NodeAndScore> candidatesAndScores = calculateScores();
 
 	takeBestCandidates(candidatesAndScores);
 	addTime(timer, "9    Take best candidates");
@@ -37,48 +37,40 @@ void ExtendByScore::run() {
 	hasRun = true;
 }
 
-std::vector<node> ExtendByScore::searchForCandidates() {
-	std::vector<node> candidates;
-	std::vector<node> egoNetNodes = egoMapping.globalNodes();
+void ExtendByScore::searchForCandidates() {
+	const std::vector<node>& egoNetNodes = egoMapping.globalNodes();
 	auto isInEgoNet = [&](node x) {
 		return egoMapping.isMapped(x);
 	};
 	count internalStubs = 0;
 	outgoingStubs = 0;
-	auto countEdges = [&](node egoNetNode, node neighbor, edgeweight weight) {
-		if (!nodeScores.indexIsUsed(neighbor)) {
-			candidates.push_back(neighbor);
-			nodeScores.insert(neighbor, 0.0);
-		}
-		nodeScores[neighbor] += weight;
+	auto countEdges = [&](node, node neighbor, edgeweight weight) {
 		if (isInEgoNet(neighbor)) {
 			++internalStubs;
 		} else {
 			++outgoingStubs;
+
+			// Exclude ego-net nodes and ego-node as candidates
+			if (neighbor != egoNode) {
+				if (!nodeScores.indexIsUsed(neighbor)) {
+					nodeScores.insert(neighbor, 0.0);
+				}
+				nodeScores[neighbor] += weight;
+			}
 		}
 	};
 	for (node egoNetNode : egoNetNodes) {
 		G.forEdgesOf(egoNetNode, countEdges);
 	}
 	externalStubs = G.numberOfEdges() * 2 - internalStubs - outgoingStubs;
-
-	// Remove ego-net nodes and ego-node as candidates
-	auto shouldBeRemoved = [&](node v) {
-		return isInEgoNet(v) || v == egoNode;
-	};
-	auto newEnd = std::remove_if(candidates.begin(), candidates.end(), [&](node v) {
-		return shouldBeRemoved(v);
-	});
-	candidates.resize(newEnd - candidates.begin());
-
-	return candidates;
 }
 
+template<typename F>
 std::vector<ExtendByScore::NodeAndScore>
-ExtendByScore::calculateScores(const std::vector<node> &candidates) const {
+ExtendByScore::calculateScoresImpl(F calculateScore) const {
 	std::vector<NodeAndScore> candidatesAndScores;
-	candidatesAndScores.reserve(candidates.size());
-	for (node candidate : candidates) {
+	candidatesAndScores.reserve(nodeScores.size());
+	for (node candidate : nodeScores.insertedIndexes()) {
 		double numEdges = nodeScores[candidate];
 		if (numEdges >= 3) {
 			double score = calculateScore(candidate, numEdges);
@@ -88,31 +80,44 @@ ExtendByScore::calculateScores(const std::vector<node> &candidates) const {
 	return candidatesAndScores;
 }
 
-double ExtendByScore::calculateScore(node v, count numEdges) const {
-	if (scoreStrategy == "constant")
-		return 1.0;
-	if (scoreStrategy == "Random")
-		return Aux::Random::real();
-	if (scoreStrategy == "Edges" || scoreStrategy == "none")
-		return (double) numEdges;
-	if (scoreStrategy == "Edges div Degree")
-		return (double) numEdges / G.degree(v);
-	if (scoreStrategy == "Edges pow 2 div Degree")
-		return (double) numEdges * numEdges / G.degree(v);
-	if (scoreStrategy == "Significance") {
-		double rScore = significance.rScore(G.degree(v), numEdges, outgoingStubs, externalStubs);
-		return -rScore; // low r-score is better
+std::vector<ExtendByScore::NodeAndScore>
+ExtendByScore::calculateScores() const {
+	std::vector<NodeAndScore> candidatesAndScores;
+	if (scoreStrategy == "Edges pow 2 div Degree") {
+		candidatesAndScores = calculateScoresImpl([&](node v, count numEdges) {
+			return numEdges * numEdges * 1.0 / G.degree(v);
+		});
+	} else if (scoreStrategy == "constant") {
+		candidatesAndScores = calculateScoresImpl([](node, count) { return 1.0; });
+	} else if (scoreStrategy == "Random") {
+		candidatesAndScores = calculateScoresImpl([](node, count) { return Aux::Random::real(); });
+	} else if (scoreStrategy == "Edges" || scoreStrategy == "none") {
+		candidatesAndScores = calculateScoresImpl([](node, count numEdges) { return numEdges; });
+	} else if (scoreStrategy == "Edges div Degree") {
+		candidatesAndScores = calculateScoresImpl([&](node v, count numEdges) {
+			return numEdges * 1.0 / G.degree(v);
+		});
+	} else if (scoreStrategy == "Significance") {
+		candidatesAndScores = calculateScoresImpl([&](node v, count numEdges) {
+			double rScore = significance.rScore(G.degree(v), numEdges, outgoingStubs, externalStubs);
+			return -rScore; // low r-score is better
+		});
+	} else {
+		throw std::runtime_error(scoreStrategy + " is not a valid score strategy!");
 	}
-	throw std::runtime_error(scoreStrategy + " is not a valid score strategy!");
+	return candidatesAndScores;
 }
 
 void ExtendByScore::takeBestCandidates(std::vector<NodeAndScore> &candidatesAndScores) {
-	std::sort(candidatesAndScores.begin(), candidatesAndScores.end(),
-	          [](NodeAndScore a, NodeAndScore b) {
-		          return a.second > b.second;
-	          });
-	if (candidatesAndScores.size() > maxExtendedNodes)
+	if (candidatesAndScores.size() > maxExtendedNodes) {
+		std::nth_element(candidatesAndScores.begin(),
+				 candidatesAndScores.begin() + maxExtendedNodes,
+				 candidatesAndScores.end(),
+			[](NodeAndScore a, NodeAndScore b) {
+				return a.second > b.second;
+			});
 		candidatesAndScores.resize(maxExtendedNodes);
+	}
 	for (NodeAndScore nodeAndScore : candidatesAndScores) {
 		significantCandidates.push_back(nodeAndScore.first);
 	}

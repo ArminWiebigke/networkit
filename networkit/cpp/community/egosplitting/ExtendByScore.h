@@ -34,11 +34,12 @@ private:
 	count outgoingStubs;
 	count externalStubs;
 
-	double calculateScore(node v, count numEdges) const;
+	template<typename F>
+	std::vector<NodeAndScore> calculateScoresImpl(F calculateScore) const;
 
-	std::vector<NodeAndScore> calculateScores(const std::vector<node> &candidates) const;
+	std::vector<NodeAndScore> calculateScores() const;
 
-	std::vector<node> searchForCandidates();
+	void searchForCandidates();
 
 	void takeBestCandidates(std::vector<NodeAndScore> &candidatesAndScores);
 };
