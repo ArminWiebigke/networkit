@@ -274,7 +274,8 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 
 	// Get spanning forest size (for normalization)
 	double spanSize;
-	{
+	const std::string normalizePersonaWeights = parameters.at("normalizePersonaWeights");
+	if (normalizePersonaWeights == "spanSize" || normalizePersonaWeights == "sameWeights") {
 		RandomMaximumSpanningForest span{coarseGraph};
 		span.run();
 		auto spanningForest = span.getMSF();
@@ -321,7 +322,6 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	}
 
 	// Normalize the weights of the edges between the personas
-	std::string normalizePersonaWeights = parameters.at("normalizePersonaWeights");
 	if (normalizePersonaWeights == "spanSize") {
 		edgeweight weightSum = 0.0;
 		for (auto &edge : edges)
