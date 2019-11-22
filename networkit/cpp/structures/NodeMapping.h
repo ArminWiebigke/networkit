@@ -66,7 +66,7 @@ public:
 	 * Returns the global node IDs for all mapped nodes.
 	 * @return A vector of the global nodes.
 	 */
-	std::vector<node> globalNodes() const;
+	const std::vector<node>& globalNodes() const;
 
 	void reset();
 

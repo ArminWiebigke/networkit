@@ -49,7 +49,7 @@ count NodeMapping::nodeCount() const {
 	return localToGlobal.size();
 }
 
-std::vector<node> NodeMapping::globalNodes() const {
+const std::vector<node>& NodeMapping::globalNodes() const {
 	return localToGlobal;
 }
 
