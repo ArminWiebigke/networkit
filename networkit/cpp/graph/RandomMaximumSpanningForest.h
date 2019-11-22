@@ -68,10 +68,9 @@ public:
 	/**
 	 * Gets the calculated maximum-weight spanning forest as graph.
 	 *
-	 * @param move If the graph shall be moved out of the algorithm instance.
 	 * @return The calculated maximum-weight spanning forest.
 	 */
-	Graph getMSF(bool move = false);
+	const Graph& getMSF() const;
 
 	/**
 	 * @return false - this algorithm is not parallelized
