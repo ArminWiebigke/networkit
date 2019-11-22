@@ -155,6 +155,14 @@ void EgoSplitting::createEgoNets() {
 
 			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
 				continue;
+
+			if (G.degree(egoNode) == 1) {
+				egoNetPartitionCounts[egoNode] = 1;
+				G.forNeighborsOf(egoNode, [&](node i) {
+					egoNetPartitions[egoNode].emplace(i, 0);
+				});
+			}
+
 //		G.parallelForNodes([&](node egoNode) {
 			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 
