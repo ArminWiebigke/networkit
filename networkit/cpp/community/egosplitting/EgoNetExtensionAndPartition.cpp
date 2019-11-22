@@ -128,21 +128,25 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	std::vector<node> extendNodes; // nodes and their scores
 
-	auto getExtendNodes = [&](ExtendEgoNetStrategy &&extendEgoNetStrategy) {
-		extendEgoNetStrategy.run();
-		extendNodes = extendEgoNetStrategy.getNodes();
-		addTimings(extendEgoNetStrategy.getTimings(), "33");
-	};
-	if (extendStrategy == "Edges") { ;
-		getExtendNodes(ExtendByScore(egoNetData, extendNodeCnt, egoGraph, egoNode));
-	} else if (extendStrategy == "Significance") {
-		assert(result.numberOfElements() >= egoGraph.numberOfNodes());
-		getExtendNodes(ExtendSignificance(egoNetData, result, extendNodeCnt, egoGraph,
-		                                  egoNode));
-	} else {
-		throw std::runtime_error(extendStrategy
-		                         + " is not a valid strategy to extend the Ego-Net!");
+	{
+		std::unique_ptr<ExtendEgoNetStrategy> extendEgoNetStrategy;
+		if (extendStrategy == "Edges") { ;
+			extendEgoNetStrategy.reset(new ExtendByScore(egoNetData, extendNodeCnt, egoGraph, egoNode));
+
+		} else if (extendStrategy == "Significance") {
+			assert(result.numberOfElements() >= egoGraph.numberOfNodes());
+			extendEgoNetStrategy.reset(new ExtendSignificance(egoNetData, result, extendNodeCnt, egoGraph,
+							egoNode));
+		} else {
+			throw std::runtime_error(extendStrategy
+						+ " is not a valid strategy to extend the Ego-Net!");
+		}
+
+		extendEgoNetStrategy->run();
+		extendNodes = extendEgoNetStrategy->getNodes();
+		addTimings(extendEgoNetStrategy->getTimings(), "33");
 	}
+
 	addTime(timer, "33    Get candidates");
 
 #ifndef NDEBUG
