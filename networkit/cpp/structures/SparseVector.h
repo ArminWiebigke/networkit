@@ -71,7 +71,7 @@ public:
 	/**
 	 * Get all indexes into which elements were inserted.
 	 */
-	std::vector<index> insertedIndexes();
+	const std::vector<index>& insertedIndexes() const;
 
 	/**
 	 * Returns true iff an element was previously inserted at the given index.
@@ -149,7 +149,7 @@ count SparseVector<T>::size() const{
 }
 
 template<typename T>
-std::vector<index> NetworKit::SparseVector<T>::insertedIndexes() {
+const std::vector<index>& NetworKit::SparseVector<T>::insertedIndexes() const {
 	return usedIndexes;
 }
 
