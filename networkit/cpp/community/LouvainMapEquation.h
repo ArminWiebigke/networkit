@@ -40,18 +40,18 @@ private:
 	count maxIterations;
 
 	Partition partition;
-	std::vector<count> clusterVolume;
-	std::vector<count> clusterCut;
-	count totalVolume;
-	count totalCut;
+	std::vector<double> clusterVolume;
+	std::vector<double> clusterCut;
+	double totalVolume;
+	double totalCut;
 	SparseVector<node> neighborClusterWeights;
 
-	double fitnessChange(node, count degree, count loopWeight, node currentCluster,
-	                     node targetCluster, count weightToTarget,
-	                     count weightToCurrent);
+	double fitnessChange(node, double degree, double loopWeight,
+			     node currentCluster, node targetCluster,
+			     double weightToTarget, double weightToCurrent);
 
-	void moveNode(node u, count degree, count loopWeight, node currentCluster,
-	              node targetCluster, count weightToTarget, edgeid weightToCurrent);
+        void moveNode(node u, double degree, double loopWeight, node currentCluster,
+	              node targetCluster, double weightToTarget, double weightToCurrent);
 
 #ifndef NDEBUG
 	long double sumPLogPwAlpha = 0;
