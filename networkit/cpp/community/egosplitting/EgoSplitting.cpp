@@ -27,7 +27,7 @@ namespace NetworKit {
 EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
 		: EgoSplitting(G, parallelEgoNetEvaluation,
 		               PLMFactory(true, 1.0, "none randomized").getFunction(),
-		               LouvainMapEquationFactory(true).getFunction()
+		               LouvainMapEquationFactory(true, 16).getFunction()
 ) {
 	std::cout << "Default EgoSplitting" << std::endl;
 }
@@ -138,9 +138,9 @@ void EgoSplitting::createEgoNets() {
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{
 		Aux::SignalHandler signalHandler;
-		Aux::Timer timer, totalTimer;
-		timer.start();
-		totalTimer.start();
+		//Aux::Timer timer, totalTimer;
+		//timer.start();
+		//totalTimer.start();
 		NodeMapping egoMapping(G); // Assign local IDs to the neighbors
 		MemoizationTable<double> sigTable(-1.0, 0);
 		SparseVector<double> nodeScores(0);
@@ -149,7 +149,7 @@ void EgoSplitting::createEgoNets() {
 		StochasticSignificance stochasticSignificance(0);
 		EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
 		                      significantGroup, edgesToGroups, stochasticSignificance};
-		addTime(timer, "11    Data Setup");
+		//addTime(timer, "11    Data Setup");
 
 #pragma omp for
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
@@ -183,15 +183,15 @@ void EgoSplitting::createEgoNets() {
 					}
 				});
 			});
-			addTime(timer, "13    Build EgoNet");
+			//addTime(timer, "13    Build EgoNet");
 
 			INFO("Extend and partition");
 			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
 			                                            localClusteringAlgo);
 			extAndPartition.run();
 			const Partition& egoPartition = extAndPartition.getPartition();
-			addTimings(extAndPartition.getTimings(), "15");
-			addTime(timer, "15    Extend and Partition EgoNet");
+			//addTimings(extAndPartition.getTimings(), "15");
+			//addTime(timer, "15    Extend and Partition EgoNet");
 
 			if (parameters.at("storeEgoNet") == "Yes") { // only for analysis
 				Graph extendedEgoGraph = extAndPartition.getExtendedEgoGraph();
@@ -202,7 +202,7 @@ void EgoSplitting::createEgoNets() {
 					                                          egoPartition.subsetOf(i));
 				});
 			}
-			addTime(timer, "18    Store EgoNet");
+			//addTime(timer, "18    Store EgoNet");
 
 			INFO("Store ego-net");
 //			assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
@@ -219,16 +219,16 @@ void EgoSplitting::createEgoNets() {
 				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
 						egoMapping.toLocal(i)));
 			});
-			addTime(timer, "19    Store EgoNet Partition");
+			//addTime(timer, "19    Store EgoNet Partition");
 
 			if (parameters.at("connectPersonas") == "Yes")
 				personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
-			addTime(timer, "16    Connect Ego-Personas");
+			//addTime(timer, "16    Connect Ego-Personas");
 
 			egoMapping.reset();
-			addTime(timer, "1x    Clean up");
+			//addTime(timer, "1x    Clean up");
 		}
-		addTime(totalTimer, "10    EgoNet Sum");
+		//addTime(totalTimer, "10    EgoNet Sum");
 	}
 }
 
