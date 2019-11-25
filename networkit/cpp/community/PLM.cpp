@@ -46,7 +46,6 @@ void PLM::run() {
 
 	G.forNodes([&](node u) { // calculate and store volume of each node
 		volNode[u] += G.weightedDegree(u);
-		volNode[u] += G.weight(u, u); // consider self-loop twice
 		// TRACE("init volNode[" , u , "] to " , volNode[u]);
 	});
 
