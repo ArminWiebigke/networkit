@@ -273,16 +273,17 @@ void PLM::run() {
 
 		if (measure_time) timer.start();
 		//
-		std::pair<Graph, std::vector<node>> coarsened = coarsen(G, zeta, parallel);	// coarsen graph according to communitites
+		ParallelPartitionCoarsening coarsening(G, zeta, false, parallel);
+		coarsening.run();
 		//
 		if (measure_time) {
 			timer.stop();
 			timing["coarsen"].push_back(timer.elapsedMilliseconds());
 		}
 
-		PLM onCoarsened(coarsened.first, this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
+		PLM onCoarsened(coarsening.getCoarseGraph(), this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
 		onCoarsened.run();
-		Partition zetaCoarse = onCoarsened.getPartition();
+		const Partition& zetaCoarse = onCoarsened.getPartition();
 
 		// get timings
 		if (measure_time) {
@@ -299,8 +300,16 @@ void PLM::run() {
 		}
 
 
-		DEBUG("coarse graph has ", coarsened.first.numberOfNodes(), " nodes and ", coarsened.first.numberOfEdges(), " edges");
-		zeta = prolong(coarsened.first, zetaCoarse, G, coarsened.second); // unpack communities in coarse graph onto fine graph
+		DEBUG("coarse graph has ", coarsening.getCoarseGraph().numberOfNodes(), " nodes and ", coarsening.getCoarseGraph().numberOfEdges(), " edges");
+
+		// unpack communities in coarse graph onto fine graph
+		const std::vector<node>& nodeToMetaNode(coarsening.getFineToCoarseNodeMapping());
+
+		G.forNodes([&](node v) {
+			zeta[v] = zetaCoarse[nodeToMetaNode[v]];
+		});
+		zeta.setUpperBound(zetaCoarse.upperBound());
+
 		// refinement phase
 		if (refine) {
 			DEBUG("refinement phase");
