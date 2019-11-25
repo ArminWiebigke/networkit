@@ -320,7 +320,7 @@ std::string PLM::toString() const {
 }
 
 std::pair<Graph, std::vector<node> > PLM::coarsen(const Graph& G, const Partition& zeta) {
-	ParallelPartitionCoarsening parCoarsening(G, zeta);
+	ParallelPartitionCoarsening parCoarsening(G, zeta, false, false);
 	parCoarsening.run();
 	return {parCoarsening.getCoarseGraph(),parCoarsening.getFineToCoarseNodeMapping()};
 }
