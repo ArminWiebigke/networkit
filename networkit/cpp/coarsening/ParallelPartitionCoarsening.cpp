@@ -26,7 +26,7 @@ ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
 
 void ParallelPartitionCoarsening::run() {
 	Partition nodeMapping = zeta;
-	nodeMapping.compact(true);
+	nodeMapping.compact(nodeMapping.upperBound() <= G.upperNodeIdBound());
 	index numParts = nodeMapping.upperBound();
 	
 	// Leave out parallel counting sort for now as it requires some more setup.
