@@ -25,13 +25,10 @@ ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
 }
 
 void ParallelPartitionCoarsening::run() {
-	Aux::Timer timer;
-	timer.start();
-	//zeta.compact(true);
 	Partition nodeMapping = zeta;
-	nodeMapping.compact(true);
+	nodeMapping.compact(nodeMapping.upperBound() <= G.upperNodeIdBound());
 	index numParts = nodeMapping.upperBound();
-
+	
 	// Leave out parallel counting sort for now as it requires some more setup.
 	std::vector<index> partBegin(numParts + 2, 0);
 	std::vector<node> nodesSortedByPart(G.numberOfNodes());
@@ -42,18 +39,15 @@ void ParallelPartitionCoarsening::run() {
 	G.forNodes([&](const node u) {
 		nodesSortedByPart[ partBegin[ nodeMapping[u] + 1 ]++ ] = u;
 	});
-
-	for (node su = 0; su < numParts; ++su) {
-		Gcoarsened.addNode();
-	}
-
-
+	
+	Gcoarsened = Graph(numParts, true, false);
+	
 	if (!parallel) {
-
+	
 		std::vector<edgeweight> incidentPartWeights(numParts, 0.0);
 		std::vector<node> incidentParts;
 		incidentParts.reserve(numParts);
-
+		
 		count numEdges = 0;
 		count numSelfLoops = 0;
 		for (node su = 0; su < numParts; ++su) {
@@ -61,16 +55,15 @@ void ParallelPartitionCoarsening::run() {
 				node u = nodesSortedByPart[i];
 				G.forNeighborsOf(u, [&](node v, edgeweight ew) {
 					const node sv = nodeMapping[v];
-					if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+					if (sv != su || u >= v) {
 						if (incidentPartWeights[sv] == 0.0) {
 							incidentParts.push_back(sv);
 						}
 						incidentPartWeights[sv] += ew;
-						// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
 					}
 				});
 			}
-
+			
 			numEdges += incidentParts.size();
 			if (incidentPartWeights[su] != 0.0) {
 				numSelfLoops += 1;
@@ -78,23 +71,20 @@ void ParallelPartitionCoarsening::run() {
 			}
 			for (node sv : incidentParts) {
 				Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
-				//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
 				incidentPartWeights[sv] = 0.0;
 			}
 			incidentParts.clear();
 		}
-
+		
 		Gcoarsened.m = numEdges / 2 + numSelfLoops;
 		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
 
-
 	} else {
-		// convert into omp reduction?
 		int t = omp_get_max_threads();
 		std::vector<count> numEdges(t, 0);
 		std::vector<count> numSelfLoops(t, 0);
-
-
+		
+		
 		#pragma omp parallel
 		{
 			std::vector<edgeweight> incidentPartWeights(numParts, 0.0);
@@ -108,16 +98,15 @@ void ParallelPartitionCoarsening::run() {
 					node u = nodesSortedByPart[i];
 					G.forNeighborsOf(u, [&](node v, edgeweight ew) {
 						const node sv = nodeMapping[v];
-						if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+						if (sv != su || u >= v) {
 							if (incidentPartWeights[sv] == 0.0) {
 								incidentParts.push_back(sv);
 							}
 							incidentPartWeights[sv] += ew;
-							// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
 						}
 					});
 				}
-
+				
 				numEdges[tid] += incidentParts.size();
 				if (incidentPartWeights[su] != 0.0) {
 					numSelfLoops[tid] += 1;
@@ -125,15 +114,14 @@ void ParallelPartitionCoarsening::run() {
 				}
 				for (node sv : incidentParts) {
 					Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
-					//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
 					incidentPartWeights[sv] = 0.0;
 				}
-
+		
 				incidentParts.clear();
 			}
-
+			
 		}
-
+		
 		Gcoarsened.m = 0;
 		Gcoarsened.storedNumberOfSelfLoops = 0;
 		for (size_t tid = 0; tid < numEdges.size(); ++tid) {
@@ -143,9 +131,6 @@ void ParallelPartitionCoarsening::run() {
 		Gcoarsened.m =  Gcoarsened.m / 2 + Gcoarsened.storedNumberOfSelfLoops;
 	}
 
-
-	timer.stop();
-	INFO("parallel coarsening took ", timer.elapsedTag());
 	this->nodeMapping = nodeMapping.moveVector();
 	hasRun = true;
 }
