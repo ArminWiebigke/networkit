@@ -165,12 +165,12 @@ void LouvainMapEquation::runHierarchical() {
 
 	ParallelPartitionCoarsening coarsening(graph, partition);
 	coarsening.run();
-	Graph metaGraph = coarsening.getCoarseGraph();
-	auto fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
+	const Graph& metaGraph = coarsening.getCoarseGraph();
+	const auto& fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
 
 	LouvainMapEquation recursion(metaGraph, true, maxIterations);
 	recursion.run();
-	Partition metaPartition = recursion.getPartition();
+	const Partition& metaPartition = recursion.getPartition();
 
 	graph.forNodes([&](node u) {
 		partition[u] = metaPartition[fineToCoarseMapping[u]];
