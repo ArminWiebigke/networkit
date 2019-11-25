@@ -32,9 +32,11 @@ void LouvainMapEquation::run() {
 		throw std::runtime_error("Algorithm was already run!");
 	Aux::SignalHandler handler;
 	partition.allToSingletons();
-	for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
-		if (!graph.hasNode(u)) {
-			partition.remove(u);
+	if (graph.numberOfNodes() != graph.upperNodeIdBound()) {
+		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
+			if (!graph.hasNode(u)) {
+				partition.remove(u);
+			}
 		}
 	}
 	handler.assureRunning();
