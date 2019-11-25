@@ -48,7 +48,7 @@ void SignificanceCommunityCleanUp::cleanAllCommunities() {
 	auto inputCommunities = cover.getSubsets();
 	index communityId = 0;
 	for (const Community &inputCommunity : inputCommunities) {
-		if (communityId++ % (inputCommunities.size() / 10) == 0) {
+		if (inputCommunities.size() < 10 || communityId++ % (inputCommunities.size() / 10) == 0) {
 			INFO("Clean community ", communityId, "/", inputCommunities.size());
 		}
 		auto cleanedCommunity = cleanCommunity(inputCommunity);
