@@ -11,7 +11,6 @@
 #include "EgoNetExtensionAndPartition.h"
 #include "../../coarsening/ParallelPartitionCoarsening.h"
 #include "../../structures/NodeMapping.h"
-#include "../../oslom/Stochastics.h"
 #include "ExtendSignificance.h"
 #include "ExtendByScore.h"
 #include "../../auxiliary/ParseString.h"

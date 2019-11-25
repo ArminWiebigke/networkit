@@ -10,7 +10,6 @@
 #include "ExtendSignificance.h"
 #include "../../auxiliary/ParseString.h"
 #include "../../coarsening/ParallelPartitionCoarsening.h"
-#include "../../oslom/Stochastics.h"
 #include "../cleanup/StochasticDistribution.h"
 #include "EgoSplitting.h"
 
