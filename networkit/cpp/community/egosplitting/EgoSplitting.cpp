@@ -261,7 +261,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	std::vector<WeightedEdge> edges;
 
 	// Contract graph
-	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition, true, false};
+	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition, false, false};
 	coarsening.run();
 	const Graph& coarseGraph = coarsening.getCoarseGraph();
 	auto nodeMapping = coarsening.getCoarseToFineNodeMapping();
