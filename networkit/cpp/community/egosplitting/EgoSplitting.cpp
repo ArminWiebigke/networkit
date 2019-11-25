@@ -185,7 +185,7 @@ void EgoSplitting::createEgoNets() {
 			});
 			addTime(timer, "13    Build EgoNet");
 
-			INFO("Extend and partition");
+			DEBUG("Extend and partition");
 			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
 			                                            localClusteringAlgo);
 			extAndPartition.run();
@@ -204,7 +204,7 @@ void EgoSplitting::createEgoNets() {
 			}
 			addTime(timer, "18    Store EgoNet");
 
-			INFO("Store ego-net");
+			DEBUG("Store ego-net");
 //			assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
 			// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
 			Partition directNeighborPartition(egoGraph.upperNodeIdBound());
@@ -239,7 +239,7 @@ void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapp
 	if (Aux::Random::real() > storeChance)
 		return;
 
-	INFO("Store ego-net of node ", egoNode);
+	DEBUG("Store ego-net of node ", egoNode);
 	// Get EgoNet with global node ids
 	std::vector<WeightedEdge> edges;
 	edges.reserve(egoGraph.numberOfEdges());
@@ -261,7 +261,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	std::vector<WeightedEdge> edges;
 
 	// Contract graph
-	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition};
+	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition, true, false};
 	coarsening.run();
 	const Graph& coarseGraph = coarsening.getCoarseGraph();
 	auto nodeMapping = coarsening.getCoarseToFineNodeMapping();
