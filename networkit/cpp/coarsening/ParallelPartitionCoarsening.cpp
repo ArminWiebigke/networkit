@@ -55,12 +55,11 @@ void ParallelPartitionCoarsening::run() {
 				node u = nodesSortedByPart[i];
 				G.forNeighborsOf(u, [&](node v, edgeweight ew) {
 					const node sv = nodeMapping[v];
-					if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+					if (sv != su || u >= v) {
 						if (incidentPartWeights[sv] == 0.0) {
 							incidentParts.push_back(sv);
 						}
 						incidentPartWeights[sv] += ew;
-						// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
 					}
 				});
 			}
@@ -72,7 +71,6 @@ void ParallelPartitionCoarsening::run() {
 			}
 			for (node sv : incidentParts) {
 				Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
-				//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
 				incidentPartWeights[sv] = 0.0;
 			}
 			incidentParts.clear();
@@ -82,7 +80,6 @@ void ParallelPartitionCoarsening::run() {
 		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
 		
 	} else {
-		// convert into omp reduction?
 		int t = omp_get_max_threads();
 		std::vector<count> numEdges(t, 0);
 		std::vector<count> numSelfLoops(t, 0);
@@ -101,12 +98,11 @@ void ParallelPartitionCoarsening::run() {
 					node u = nodesSortedByPart[i];
 					G.forNeighborsOf(u, [&](node v, edgeweight ew) {
 						const node sv = nodeMapping[v];
-						if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+						if (sv != su || u >= v) {
 							if (incidentPartWeights[sv] == 0.0) {
 								incidentParts.push_back(sv);
 							}
 							incidentPartWeights[sv] += ew;
-							// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
 						}
 					});
 				}
@@ -118,7 +114,6 @@ void ParallelPartitionCoarsening::run() {
 				}
 				for (node sv : incidentParts) {
 					Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
-					//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
 					incidentPartWeights[sv] = 0.0;
 				}
 		
