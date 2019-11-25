@@ -25,10 +25,10 @@ public:
 //		Aux::Log::setLogLevel("INFO");
 //		EdgeListReader reader('\t', 0);
 //		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
-		EdgeListReader reader(' ', 0);
-		testGraph = reader.read("../input/lfr_om3.graph");
-//		METISGraphReader reader{};
-//		testGraph = reader.read("../input/FB_Auburn71.graph");
+//		EdgeListReader reader(' ', 0);
+//		testGraph = reader.read("input/lfr_om3.graph");
+		METISGraphReader reader{};
+		testGraph = reader.read("input/FB_Auburn71.graph");
 	}
 
 	void benchEgoSplitting(const std::map<std::string, std::string> &parameters) {

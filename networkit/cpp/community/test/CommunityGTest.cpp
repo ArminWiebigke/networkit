@@ -776,8 +776,8 @@ TEST_F(CommunityGTest, testOLP) {
 //	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
 //	Graph G = gen.generate();
 
-	EdgeListReader reader('\t', 0);
-	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+	METISGraphReader reader{};
+	Graph G = reader.read("input/lfr_small.graph");
 	OLP algo(G);
 
 	algo.run();
@@ -785,7 +785,7 @@ TEST_F(CommunityGTest, testOLP) {
 	Cover cover = algo.getCover();
 
 	for (const auto &size : cover.subsetSizes()) {
-		std::cout << size << std::endl;
+//		std::cout << size << std::endl;
 	}
 	auto isProperCover = [](const Graph &G, const Cover &cover) {
 		for (auto size : cover.subsetSizes()) {
