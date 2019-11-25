@@ -40,15 +40,38 @@ void PLM::run() {
 	// init graph-dependent temporaries
 	std::vector<double> volNode(z, 0.0);
 	// $\omega(E)$
-	edgeweight total = G.totalEdgeWeight();
-	DEBUG("total edge weight: " , total);
-	edgeweight divisor = (2 * total * total); // needed in modularity calculation
 
-	G.forNodes([&](node u) { // calculate and store volume of each node
-		volNode[u] += G.weightedDegree(u);
-		volNode[u] += G.weight(u, u); // consider self-loop twice
-		// TRACE("init volNode[" , u , "] to " , volNode[u]);
-	});
+	edgeweight total = 0.0;
+
+	// calculate and store volume of each node
+	if (!G.isWeighted() && G.numberOfSelfLoops() == 0) { // The simple case
+		total = G.totalEdgeWeight();
+		G.forNodes([&](node u) {
+			volNode[u] = G.degree(u);
+		});
+	} else { // Otherwise, we need to iterate over all edges
+		G.forNodes([&](node u) {
+			G.forNeighborsOf(u, [&](node, node v, edgeweight w) {
+				volNode[u] += w;
+				if (u == v) {
+					volNode[u] += w; // consider self-loop twice
+				}
+			});
+
+			//TODO: broken because of 4cce625ea9d5338ac485e612283769a7d80be217
+			//assert(volNode[u] == G.weightedDegree(u) + G.weight(u, u));
+			assert(volNode[u] == G.weightedDegree(u));
+
+			total += volNode[u];
+		});
+
+		total /= 2;
+
+		assert(total == G.totalEdgeWeight());
+	}
+
+	const edgeweight divisor = (2 * total * total); // needed in modularity calculation
+	DEBUG("total edge weight: " , total);
 
 	// init community-dependent temporaries
 	std::vector<double> volCommunity(o, 0.0);
