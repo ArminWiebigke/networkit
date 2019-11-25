@@ -6,6 +6,8 @@
  */
 
 #include <numeric>
+#include <cassert>
+
 
 #include "ParallelPartitionCoarsening.h"
 #include <omp.h>
@@ -25,114 +27,126 @@ ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
 void ParallelPartitionCoarsening::run() {
 	Aux::Timer timer;
 	timer.start();
-
-	Partition nodeToSuperNode = zeta;
-	nodeToSuperNode.compact((zeta.upperBound() <= G.upperNodeIdBound())); // use turbo if the upper id bound is <= number of nodes
-	count nextNodeId = nodeToSuperNode.upperBound();
-
-	Graph Gcombined;
-	if (!useGraphBuilder) {
-		Graph Ginit(nextNodeId, true); // initial graph containing supernodes
-
-		// make copies of initial graph
-		count nThreads = omp_get_max_threads();
-		std::vector<Graph> localGraphs(nThreads, Ginit); // thread-local graphs
-
-
-		// iterate over edges of G and create edges in coarse graph or update edge and node weights in Gcon
-		DEBUG("create edges in coarse graphs");
-		G.parallelForEdges([&](node u, node v, edgeweight ew) {
-			index t = omp_get_thread_num();
-
-			node su = nodeToSuperNode[u];
-			node sv = nodeToSuperNode[v];
-			localGraphs.at(t).increaseWeight(su, sv, ew);
-
-		}, G.numberOfEdges() > (1u << 20u));
-
-
-		Aux::Timer timer2;
-		timer2.start();
-		// combine local graphs in parallel
-		// Graph Gcombined(Ginit.numberOfNodes(), true); //
-		Gcombined = Graph(Ginit.numberOfNodes(), true);
-
-		std::vector<count> numEdges(nThreads);
-
-
-		// access internals of Graph to write adjacencies
-		auto threadSafeIncreaseWeight = [&](node u, node v, edgeweight ew) {
-			index vi = Gcombined.indexInOutEdgeArray(u, v);
-			if (vi == none) {
-				index t = omp_get_thread_num();
-				if (u == v) {
-					numEdges[t] += 2;
-				} else {
-					numEdges[t] += 1; // normal edges count half
-				}
-				Gcombined.outDeg[u]++;
-				Gcombined.outEdges[u].push_back(v);
-				Gcombined.outEdgeWeights[u].push_back(ew);
-			} else {
-				Gcombined.outEdgeWeights[u][vi] += ew;
-			}
-		};
-
-		DEBUG("combining graphs");
-		Gcombined.balancedParallelForNodes([&](node u) {
-			for (index l = 0; l < nThreads; ++l) {
-				localGraphs.at(l).forEdgesOf(u, [&](node u, node v, edgeweight w) {
-					TRACE("increasing weight of (", u, v, ") to", w);
-					threadSafeIncreaseWeight(u, v, w);
-				});
-			}
-		}, Gcombined.numberOfNodes() > (1u << 20u));
-
-
-		// ensure consistency of data structure
-		DEBUG("numEdges: ", numEdges);
-		count twiceM = std::accumulate(numEdges.begin(), numEdges.end(), (count) 0);
-		assert (twiceM % 2 == 0);
-		Gcombined.m = (twiceM / 2);
-
-		assert (Gcombined.checkConsistency());
-
-		// stop both timers before printing
-		timer2.stop();
-		INFO("combining coarse graphs took ", timer2.elapsedTag());
-	} else {
-		std::vector< std::vector<node> > nodesPerSuperNode(nextNodeId);
-		G.forNodes([&](node v) {
-			node sv = nodeToSuperNode[v];
-			nodesPerSuperNode[sv].push_back(v);
-		});
-
-		// iterate over edges of G and create edges in coarse graph or update edge and node weights in Gcon
-		DEBUG("create edges in coarse graphs");
-		GraphBuilder b(nextNodeId, true, false);
-//		#pragma omp parallel for schedule(guided) if (nextNodeId > (1u << 20u))
-		for (omp_index su = 0; su < static_cast<omp_index>(nextNodeId); su++) {
-			std::map<index, edgeweight> outEdges;
-			for (node u : nodesPerSuperNode[su]) {
+	//zeta.compact(true);
+	Partition nodeMapping = zeta;
+	nodeMapping.compact(true);
+	index numParts = nodeMapping.upperBound();
+	
+	// Leave out parallel counting sort for now as it requires some more setup.
+	std::vector<index> partBegin(numParts + 2, 0);
+	std::vector<node> nodesSortedByPart(G.numberOfNodes());
+	G.forNodes([&](const node u) {
+		partBegin[ nodeMapping[u] + 2 ]++;
+	});
+	std::partial_sum(partBegin.begin(), partBegin.end(), partBegin.begin());
+	G.forNodes([&](const node u) {
+		nodesSortedByPart[ partBegin[ nodeMapping[u] + 1 ]++ ] = u;
+	});
+	
+	for (node su = 0; su < numParts; ++su) {
+		Gcoarsened.addNode();
+	}
+	
+	
+	if (!parallel) {
+	
+		std::vector<edgeweight> incidentPartWeights(numParts, 0.0);
+		std::vector<node> incidentParts;
+		incidentParts.reserve(numParts);
+		
+		count numEdges = 0;
+		count numSelfLoops = 0;
+		for (node su = 0; su < numParts; ++su) {
+			for (index i = partBegin[su]; i < partBegin[su+1]; ++i) {
+				node u = nodesSortedByPart[i];
 				G.forNeighborsOf(u, [&](node v, edgeweight ew) {
-					node sv = nodeToSuperNode[v];
-					if (su != sv || u >= v) { // count edges inside uv only once (we iterate over them twice)
-						outEdges[sv] += ew;
+					const node sv = nodeMapping[v];
+					if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+						if (incidentPartWeights[sv] == 0.0) {
+							incidentParts.push_back(sv);
+						}
+						incidentPartWeights[sv] += ew;
+						// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
 					}
 				});
 			}
-			for (auto it : outEdges) {
-				b.addHalfEdge(su, it.first, it.second);
+			
+			numEdges += incidentParts.size();
+			if (incidentPartWeights[su] != 0.0) {
+				numSelfLoops += 1;
+				numEdges -= 1;
 			}
+			for (node sv : incidentParts) {
+				Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
+				//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
+				incidentPartWeights[sv] = 0.0;
+			}
+			incidentParts.clear();
 		}
+		
+		Gcoarsened.m = numEdges / 2 + numSelfLoops;
+		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
+		
+		
+	} else {
+		// convert into omp reduction?
+		int t = omp_get_max_threads();
+		std::vector<count> numEdges(t, 0);
+		std::vector<count> numSelfLoops(t, 0);
+		
+		
+		#pragma omp parallel
+		{
+			std::vector<edgeweight> incidentPartWeights(numParts, 0.0);
+			std::vector<node> incidentParts;
+			incidentParts.reserve(numParts);
+			int tid = omp_get_thread_num();
 
-		Gcombined = b.toGraph(false);
+			#pragma omp for schedule(guided)
+			for (node su = 0; su < numParts; ++su) {
+				for (index i = partBegin[su]; i < partBegin[su+1]; ++i) {
+					node u = nodesSortedByPart[i];
+					G.forNeighborsOf(u, [&](node v, edgeweight ew) {
+						const node sv = nodeMapping[v];
+						if (sv != su || u >= v) {	// deduplication. alternative. let self loops count double and then divide by 2 if su = sv, during edge insertion
+							if (incidentPartWeights[sv] == 0.0) {
+								incidentParts.push_back(sv);
+							}
+							incidentPartWeights[sv] += ew;
+							// if (u == v) { incidentPartWeights[sv] += ew; }	// count self loops twice
+						}
+					});
+				}
+				
+				numEdges[tid] += incidentParts.size();
+				if (incidentPartWeights[su] != 0.0) {
+					numSelfLoops[tid] += 1;
+					numEdges[tid] -= 1;
+				}
+				for (node sv : incidentParts) {
+					Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
+					//Gcoarsened.addHalfEdge(su, sv, su == sv ? incidentPartWeights[sv] / 2.0 : incidentPartWeights[sv]);
+					incidentPartWeights[sv] = 0.0;
+				}
+		
+				incidentParts.clear();
+			}
+			
+		}
+		
+		Gcoarsened.m = 0;
+		Gcoarsened.storedNumberOfSelfLoops = 0;
+		for (size_t tid = 0; tid < numEdges.size(); ++tid) {
+			Gcoarsened.m += numEdges[tid];
+			Gcoarsened.storedNumberOfSelfLoops += numSelfLoops[tid];
+		}
+		Gcoarsened.m =  Gcoarsened.m / 2 + Gcoarsened.storedNumberOfSelfLoops;
 	}
-
+	
+	
 	timer.stop();
 	INFO("parallel coarsening took ", timer.elapsedTag());
-	Gcoarsened = std::move(Gcombined);
-	nodeMapping = nodeToSuperNode.getVector();
+	this->nodeMapping = nodeMapping.moveVector();
 	hasRun = true;
 }
 

@@ -192,6 +192,19 @@ public:
 	 */
 	void compact(bool useTurbo = false);
 
+	bool isCompact() const {
+		std::vector<bool> id_contained(upperBound(), false);
+		for (index e = 0; e < z; ++e) {
+			id_contained[data[e]] = true;
+		}
+		for (index e = 0; e < upperBound(); ++e) {
+			if (!id_contained[e]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 
 	/**
 	 * Check if partition assigns a valid subset to the element @a e.
@@ -264,7 +277,12 @@ public:
 	 */
 	std::vector<index> getVector() const;
 
-
+	/**
+	 * Move the vector representing the partition data structure and leave behind an invalid vector
+	 * @return vector containing partition
+	 */
+	std::vector<index> moveVector();
+	
 	/**
 	 * @return the subsets of the partition as a set of sets.
 	 */
