@@ -749,6 +749,34 @@ public:
 	 */
 	void addEdge(node u, node v, edgeweight ew = defaultEdgeWeight);
 
+	
+	void addHalfEdge(node u, node v, edgeweight ew = defaultEdgeWeight) {
+		assert(!isDirected());
+		assert(u < z);
+		assert(exists[u]);
+		assert(v < z);
+		assert(exists[v]);
+		
+		outDeg[u]++;
+		outEdges[u].push_back(v);
+		if (weighted) {
+			outEdgeWeights[u].push_back(ew);
+		}
+		
+		// if edges indexed, give new id
+		if (edgesIndexed) {
+			edgeid id = omega++;
+			outEdgeIds[u].push_back(id);
+		}
+
+		/*
+		if (u == v) {
+			#pragma atomic
+			storedNumberOfSelfLoops++;
+		}
+		 */
+	}
+	
 	/**
 	 * Removes the undirected edge {@a u,@a v}.
 	 * @param u Endpoint of edge.

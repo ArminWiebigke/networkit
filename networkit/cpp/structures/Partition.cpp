@@ -5,12 +5,14 @@
  *      Author: cls
  */
 
-#include "Partition.h"
-#include "../auxiliary/Parallel.h"
 #include <algorithm>
 #include <atomic>
 #include <memory>
 #include <numeric>
+
+#include "Partition.h"
+#include "../auxiliary/Parallel.h"
+#include "../../../extlibs/tlx/tlx/define/likely.hpp"
 
 namespace NetworKit {
 
@@ -100,16 +102,15 @@ void Partition::compact(bool useTurbo) {
 		});
 	} else {
 		std::vector<index> compactingMap(this->upperBound(), none);
-		this->forEntries([&](index e, index s){
-			if (s != none && compactingMap[s] == none) {
-				compactingMap[s] = i++;
+		for (index e = 0; e < z; ++e) {
+			const index cid = data[e];
+			if (TLX_LIKELY(cid != none)) {
+				if (compactingMap[cid] == none) {
+					compactingMap[cid] = i++;
+				}
+				data[e] = compactingMap[cid];
 			}
-		});
-		this->forEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
-			if (s != none) {
-				data[e] = compactingMap[s];
-			}
-		});
+		}
 	}
 	this->setUpperBound(i);
 }
@@ -148,6 +149,10 @@ std::set<index> Partition::getMembers(const index s) const {
 
 std::vector<index> Partition::getVector() const {
 	return this->data; //FIXME is this appropriate? - why not?
+}
+
+std::vector<index> Partition::moveVector() {
+	return std::move(this->data);
 }
 
 
