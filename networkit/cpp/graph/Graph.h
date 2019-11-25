@@ -749,7 +749,7 @@ public:
 	 */
 	void addEdge(node u, node v, edgeweight ew = defaultEdgeWeight);
 
-	
+	// TODO consolidate when merging
 	void addHalfEdge(node u, node v, edgeweight ew = defaultEdgeWeight) {
 		assert(!isDirected());
 		assert(u < z);
@@ -768,13 +768,6 @@ public:
 			edgeid id = omega++;
 			outEdgeIds[u].push_back(id);
 		}
-
-		/*
-		if (u == v) {
-			#pragma atomic
-			storedNumberOfSelfLoops++;
-		}
-		 */
 	}
 	
 	/**

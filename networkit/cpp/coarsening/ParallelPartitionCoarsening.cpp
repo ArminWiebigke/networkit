@@ -25,9 +25,6 @@ ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
 }
 
 void ParallelPartitionCoarsening::run() {
-	Aux::Timer timer;
-	timer.start();
-	//zeta.compact(true);
 	Partition nodeMapping = zeta;
 	nodeMapping.compact(true);
 	index numParts = nodeMapping.upperBound();
@@ -43,10 +40,7 @@ void ParallelPartitionCoarsening::run() {
 		nodesSortedByPart[ partBegin[ nodeMapping[u] + 1 ]++ ] = u;
 	});
 	
-	for (node su = 0; su < numParts; ++su) {
-		Gcoarsened.addNode();
-	}
-	
+	Gcoarsened = Graph(numParts, true, false);
 	
 	if (!parallel) {
 	
@@ -86,7 +80,6 @@ void ParallelPartitionCoarsening::run() {
 		
 		Gcoarsened.m = numEdges / 2 + numSelfLoops;
 		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
-		
 		
 	} else {
 		// convert into omp reduction?
@@ -143,9 +136,6 @@ void ParallelPartitionCoarsening::run() {
 		Gcoarsened.m =  Gcoarsened.m / 2 + Gcoarsened.storedNumberOfSelfLoops;
 	}
 	
-	
-	timer.stop();
-	INFO("parallel coarsening took ", timer.elapsedTag());
 	this->nodeMapping = nodeMapping.moveVector();
 	hasRun = true;
 }
