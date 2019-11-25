@@ -273,7 +273,7 @@ void PLM::run() {
 
 		if (measure_time) timer.start();
 		//
-		std::pair<Graph, std::vector<node>> coarsened = coarsen(G, zeta);	// coarsen graph according to communitites
+		std::pair<Graph, std::vector<node>> coarsened = coarsen(G, zeta, parallel);	// coarsen graph according to communitites
 		//
 		if (measure_time) {
 			timer.stop();
@@ -350,8 +350,8 @@ std::string PLM::toString() const {
 	return stream.str();
 }
 
-std::pair<Graph, std::vector<node> > PLM::coarsen(const Graph& G, const Partition& zeta) {
-	ParallelPartitionCoarsening parCoarsening(G, zeta, false, false);
+std::pair<Graph, std::vector<node>> PLM::coarsen(const Graph &G, const Partition &zeta, bool parallel) {
+	ParallelPartitionCoarsening parCoarsening(G, zeta, false, parallel);
 	parCoarsening.run();
 	return {parCoarsening.getCoarseGraph(),parCoarsening.getFineToCoarseNodeMapping()};
 }

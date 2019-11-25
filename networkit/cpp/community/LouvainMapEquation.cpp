@@ -163,7 +163,7 @@ void LouvainMapEquation::runHierarchical() {
 	clusterCut.shrink_to_fit();
 	neighborClusterWeights.clear();
 
-	ParallelPartitionCoarsening coarsening(graph, partition);
+	ParallelPartitionCoarsening coarsening(graph, partition, true, graph.numberOfNodes() > 1e6);
 	coarsening.run();
 	const Graph& metaGraph = coarsening.getCoarseGraph();
 	const auto& fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();

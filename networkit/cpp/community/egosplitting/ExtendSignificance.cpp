@@ -174,7 +174,7 @@ void ExtendSignificance::updateCandidates() {
  * Get coarse graph from base partition
  */
 void ExtendSignificance::createCoarseGraph() {
-	ParallelPartitionCoarsening coarsening(egoGraph, basePartition);
+	ParallelPartitionCoarsening coarsening(egoGraph, basePartition, true, false);
 	coarsening.run();
 	coarseGraph = coarsening.getCoarseGraph();
 	coarseToEgo = coarsening.getCoarseToFineNodeMapping();

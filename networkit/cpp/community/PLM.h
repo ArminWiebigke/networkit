@@ -53,7 +53,7 @@ public:
 	 */
 	void run() override;
 
-	static std::pair<Graph, std::vector<node>> coarsen(const Graph &G, const Partition &zeta);
+	static std::pair<Graph, std::vector<node>> coarsen(const Graph &G, const Partition &zeta, bool parallel);
 
 	static Partition
 	prolong(const Graph &Gcoarse, const Partition &zetaCoarse, const Graph &Gfine, std::vector<node> nodeToMetaNode);

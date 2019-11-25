@@ -140,7 +140,7 @@ TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnErdosRenyiWithGraphBuil
 
 TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraph) {
 	METISGraphReader reader;
-	Graph G = reader.read("input/celegans_metabolic.graph");
+	Graph G = reader.read("../input/celegans_metabolic.graph");
 
 	ClusteringGenerator clusteringGen;
 	count k = 10; // number of clusters in random clustering
@@ -172,7 +172,7 @@ TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraph) {
 
 TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraphWithGraphBuilder) {
 	METISGraphReader reader;
-	Graph G = reader.read("input/celegans_metabolic.graph");
+	Graph G = reader.read("../input/celegans_metabolic.graph");
 
 	ClusteringGenerator clusteringGen;
 	count k = 10; // number of clusters in random clustering
@@ -201,7 +201,7 @@ TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraphWithGraphBuild
 
 TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraphWithGraphBuilderAndLoops) {
 	METISGraphReader reader;
-	Graph G = reader.read("input/celegans_metabolic.graph");
+	Graph G = reader.read("../input/celegans_metabolic.graph");
 	G.addEdge(0, 0);
 
 	ClusteringGenerator clusteringGen;
@@ -231,7 +231,7 @@ TEST_F(CoarseningGTest, testParallelPartitionCoarseningOnRealGraphWithGraphBuild
 
 TEST_F(CoarseningGTest, testMatchingContractor) {
 	METISGraphReader reader;
-	Graph G = reader.read("input/celegans_metabolic.graph");
+	Graph G = reader.read("../input/celegans_metabolic.graph");
 
 	LocalMaxMatcher matcher(G);
 	matcher.run();
