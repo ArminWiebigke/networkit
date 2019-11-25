@@ -2,7 +2,7 @@ from egosplit.benchmarks.execution.cleanup_functions import merge_overlap_comms,
 	add_communities, \
 	remove_small_comms, remove_overlap_comms
 from egosplit.external import cleanUpOslom
-from networkit.community import OslomCleanUp, SignificanceCommunityCleanUp
+from networkit.community import SignificanceCommunityCleanUp
 from egosplit.benchmarks.data_structures.context_timer import ContextTimer
 
 
