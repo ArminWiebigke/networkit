@@ -18,7 +18,7 @@
 
 namespace NetworKit {
 
-PLM::PLM(const Graph& G, bool refine, double gamma, std::string par, count maxIter, bool turbo, bool recurse) : CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma), maxIter(maxIter), turbo(turbo), recurse(recurse) {
+PLM::PLM(const Graph& G, bool refine, double gamma, std::string par, count maxIter, bool turbo, bool recurse, bool measure_time) : CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma), maxIter(maxIter), turbo(turbo), recurse(recurse), measure_time(measure_time) {
 
 }
 
@@ -259,37 +259,43 @@ void PLM::run() {
 	handler.assureRunning();
 	// first move phase
 	Aux::Timer timer;
-	timer.start();
+	if (measure_time) timer.start();
 	//
 	movePhase();
 	//
-	timer.stop();
-	timing["move"].push_back(timer.elapsedMilliseconds());
+	if (measure_time) {
+		timer.stop();
+		timing["move"].push_back(timer.elapsedMilliseconds());
+	}
 	handler.assureRunning();
 	if (recurse && change) {
 		DEBUG("nodes moved, so begin coarsening and recursive call");
 
-		timer.start();
+		if (measure_time) timer.start();
 		//
 		std::pair<Graph, std::vector<node>> coarsened = coarsen(G, zeta);	// coarsen graph according to communitites
 		//
-		timer.stop();
-		timing["coarsen"].push_back(timer.elapsedMilliseconds());
+		if (measure_time) {
+			timer.stop();
+			timing["coarsen"].push_back(timer.elapsedMilliseconds());
+		}
 
-		PLM onCoarsened(coarsened.first, this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo);
+		PLM onCoarsened(coarsened.first, this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
 		onCoarsened.run();
 		Partition zetaCoarse = onCoarsened.getPartition();
 
 		// get timings
-		auto tim = onCoarsened.getTiming();
-		for (count t : tim["move"]) {
-			timing["move"].push_back(t);
-		}
-		for (count t : tim["coarsen"]) {
-			timing["coarsen"].push_back(t);
-		}
-		for (count t : tim["refine"]) {
-			timing["refine"].push_back(t);
+		if (measure_time) {
+			auto tim = onCoarsened.getTiming();
+			for (count t : tim["move"]) {
+				timing["move"].push_back(t);
+			}
+			for (count t : tim["coarsen"]) {
+				timing["coarsen"].push_back(t);
+			}
+			for (count t : tim["refine"]) {
+				timing["refine"].push_back(t);
+			}
 		}
 
 
@@ -310,12 +316,14 @@ void PLM::run() {
 				}
 			});
 			// second move phase
-			timer.start();
+			if (measure_time) timer.start();
 			//
 			movePhase();
 			//
-			timer.stop();
-			timing["refine"].push_back(timer.elapsedMilliseconds());
+			if (measure_time) {
+				timer.stop();
+				timing["refine"].push_back(timer.elapsedMilliseconds());
+			}
 
 		}
 	}

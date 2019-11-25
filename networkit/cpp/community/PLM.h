@@ -32,10 +32,11 @@ public:
 	 * @param[in]	parallelCoarsening	use parallel graph coarsening
 	 * @param[in]	turbo	faster but uses O(n) additional memory per thread
 	 * @param[in]	recurse	use recursive coarsening, see http://journals.aps.org/pre/abstract/10.1103/PhysRevE.89.049902 for some explanations (default: true)
+	 * @param[in]   measure_time Measure the running time of various phases. As timers have some overhead in particular for small graphs, this is disabled by default.
 	 *
 	 */
 	PLM(const Graph &G, bool refine = false, double gamma = 1.0, std::string par = "balanced", count maxIter = 32,
-	    bool turbo = true, bool recurse = true);
+	    bool turbo = true, bool recurse = true, bool measure_time = false);
 
 	PLM(const Graph &G, const PLM &other);
 
@@ -70,6 +71,7 @@ private:
 	count maxIter;
 	bool turbo;
 	bool recurse;
+	bool measure_time;
 	std::map<std::string, std::vector<count> > timing;     // fine-grained running time measurement
 };
 
