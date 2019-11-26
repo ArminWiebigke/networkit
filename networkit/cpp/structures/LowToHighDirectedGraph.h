@@ -44,8 +44,14 @@ private:
 
 template<typename L>
 void LowToHighDirectedGraph::forEdgesOf(node u, L handle) const {
-	for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
-		handle(u, edgeTargets[i], edgeWeights[i]);
+	if (edgeWeights.empty()) {
+		for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
+			handle(u, edgeTargets[i], defaultEdgeWeight);
+		}
+	} else {
+		for (index i = edgesBegin[u]; i < edgesBegin[u + 1]; ++i) {
+			handle(u, edgeTargets[i], edgeWeights[i]);
+		}
 	}
 }
 
