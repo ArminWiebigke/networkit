@@ -148,7 +148,7 @@ bool MergeCommunities::tryLocalMove(node u) {
 void MergeCommunities::checkMergedCommunities() {
 	index communityId = 0;
 	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		if (communityId++ % (mergedCommunities.numberOfSubsets() / 10) == 0) {
+		if (mergedCommunities.numberOfSubsets() < 10 || communityId++ % (mergedCommunities.numberOfSubsets() / 10) == 0) {
 			INFO("Clean merged community ", communityId, "/", mergedCommunities.numberOfSubsets());
 		}
 		if (communitiesToMerge.size() == 1)

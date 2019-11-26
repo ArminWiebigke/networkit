@@ -20,10 +20,10 @@ class CleanUpBenchmark : public testing::Test {
 
 TEST_F(CleanUpBenchmark, benchCommunityCleanup) {
 //	METISGraphReader graphReader;
-//	Graph G = graphReader.read("../input/10_clusters.graph");
+//	Graph G = graphReader.read("input/10_clusters.graph");
 //                             G);
 	EdgeListReader reader(' ', 0);
-	Graph G = reader.read("../input/lfr_om3.graph");
+	Graph G = reader.read("input/lfr_om3.graph");
 //		Graph G = reader.read("/home/armin/graphs/email-Eu-core.txt");
 //		G.removeSelfLoops();
 

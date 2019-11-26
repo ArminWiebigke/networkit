@@ -78,7 +78,7 @@ void ParallelPartitionCoarsening::run() {
 		
 		Gcoarsened.m = numEdges / 2 + numSelfLoops;
 		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
-		
+
 	} else {
 		int t = omp_get_max_threads();
 		std::vector<count> numEdges(t, 0);
@@ -130,7 +130,7 @@ void ParallelPartitionCoarsening::run() {
 		}
 		Gcoarsened.m =  Gcoarsened.m / 2 + Gcoarsened.storedNumberOfSelfLoops;
 	}
-	
+
 	this->nodeMapping = nodeMapping.moveVector();
 	hasRun = true;
 }

@@ -11,7 +11,6 @@
 #include "EgoNetExtensionAndPartition.h"
 #include "../../coarsening/ParallelPartitionCoarsening.h"
 #include "../../structures/NodeMapping.h"
-#include "../../oslom/Stochastics.h"
 #include "ExtendSignificance.h"
 #include "ExtendByScore.h"
 #include "../../auxiliary/ParseString.h"
@@ -39,21 +38,21 @@ void EgoNetExtensionAndPartition::run() {
 }
 
 void EgoNetExtensionAndPartition::extendAndPartition() {
-	Aux::Timer timer;
-	timer.start();
+	//Aux::Timer timer;
+	//timer.start();
 	count extendIterations = extendIterationsCount();
 	if (extendIterations == 0) {
 		partitionEgoNet();
-		addTime(timer, "4    Partition EgoNet");
+		//addTime(timer, "4    Partition EgoNet");
 		return;
 	}
 
 	auto extendAndPartitionFunc = [&](std::string const &strategy) {
 		extendEgoNet(strategy);
-		addTime(timer, "3    Extend EgoNet");
+		//addTime(timer, "3    Extend EgoNet");
 
 		partitionEgoNet();
-		addTime(timer, "4    Partition EgoNet");
+		//addTime(timer, "4    Partition EgoNet");
 	};
 	std::string extendStrategy = parameters.at("Extend EgoNet Strategy");
 	std::string firstExtendStrategy = extendStrategy;
@@ -69,7 +68,7 @@ void EgoNetExtensionAndPartition::extendAndPartition() {
 		for (count i = 1; i < extendIterations; ++i) {
 			egoGraph = egoGraphBase;
 			egoMapping = nodeMappingBase;
-			addTime(timer, "2    Copy EgoNet/Mapping");
+			//addTime(timer, "2    Copy EgoNet/Mapping");
 
 			extendAndPartitionFunc(extendStrategy);
 		}
@@ -116,8 +115,8 @@ void
 EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	if (extendStrategy == "None")
 		return;
-	Aux::Timer timer;
-	timer.start();
+	//Aux::Timer timer;
+	//timer.start();
 	assert(egoMapping.nodeCount() == egoGraph.upperNodeIdBound());
 	count directNeighborsBound = egoGraph.upperNodeIdBound();
 
@@ -144,10 +143,10 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 
 		extendEgoNetStrategy->run();
 		extendNodes = extendEgoNetStrategy->getNodes();
-		addTimings(extendEgoNetStrategy->getTimings(), "33");
+		//addTimings(extendEgoNetStrategy->getTimings(), "33");
 	}
 
-	addTime(timer, "33    Get candidates");
+	//addTime(timer, "33    Get candidates");
 
 #ifndef NDEBUG
 	std::set<node> candidates;
@@ -180,7 +179,7 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 
 	count minDegree = std::stoi(parameters.at("minNodeDegree"));
 	removeLowDegreeNodes(minDegree, directNeighborsBound);
-	addTime(timer, "3a    Add candidates to ego-net");
+	//addTime(timer, "3a    Add candidates to ego-net");
 }
 
 void EgoNetExtensionAndPartition::removeLowDegreeNodes(count minDegree, count directNeighborsBound) {

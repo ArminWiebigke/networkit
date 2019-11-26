@@ -18,7 +18,7 @@
 
 namespace NetworKit {
 
-PLM::PLM(const Graph& G, bool refine, double gamma, std::string par, count maxIter, bool turbo, bool recurse) : CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma), maxIter(maxIter), turbo(turbo), recurse(recurse) {
+PLM::PLM(const Graph& G, bool refine, double gamma, std::string par, count maxIter, bool turbo, bool recurse, bool measure_time) : CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma), maxIter(maxIter), turbo(turbo), recurse(recurse), measure_time(measure_time) {
 
 }
 
@@ -40,15 +40,38 @@ void PLM::run() {
 	// init graph-dependent temporaries
 	std::vector<double> volNode(z, 0.0);
 	// $\omega(E)$
-	edgeweight total = G.totalEdgeWeight();
-	DEBUG("total edge weight: " , total);
-	edgeweight divisor = (2 * total * total); // needed in modularity calculation
 
-	G.forNodes([&](node u) { // calculate and store volume of each node
-		volNode[u] += G.weightedDegree(u);
-		volNode[u] += G.weight(u, u); // consider self-loop twice
-		// TRACE("init volNode[" , u , "] to " , volNode[u]);
-	});
+	edgeweight total = 0.0;
+
+	// calculate and store volume of each node
+	if (!G.isWeighted() && G.numberOfSelfLoops() == 0) { // The simple case
+		total = G.totalEdgeWeight();
+		G.forNodes([&](node u) {
+			volNode[u] = G.degree(u);
+		});
+	} else { // Otherwise, we need to iterate over all edges
+		G.forNodes([&](node u) {
+			G.forNeighborsOf(u, [&](node, node v, edgeweight w) {
+				volNode[u] += w;
+				if (u == v) {
+					volNode[u] += w; // consider self-loop twice
+				}
+			});
+
+			//TODO: broken because of 4cce625ea9d5338ac485e612283769a7d80be217
+			//assert(volNode[u] == G.weightedDegree(u) + G.weight(u, u));
+			assert(volNode[u] == G.weightedDegree(u));
+
+			total += volNode[u];
+		});
+
+		total /= 2;
+
+		assert(total == G.totalEdgeWeight());
+	}
+
+	const edgeweight divisor = (2 * total * total); // needed in modularity calculation
+	DEBUG("total edge weight: " , total);
 
 	// init community-dependent temporaries
 	std::vector<double> volCommunity(o, 0.0);
@@ -236,42 +259,57 @@ void PLM::run() {
 	handler.assureRunning();
 	// first move phase
 	Aux::Timer timer;
-	timer.start();
+	if (measure_time) timer.start();
 	//
 	movePhase();
 	//
-	timer.stop();
-	timing["move"].push_back(timer.elapsedMilliseconds());
+	if (measure_time) {
+		timer.stop();
+		timing["move"].push_back(timer.elapsedMilliseconds());
+	}
 	handler.assureRunning();
 	if (recurse && change) {
 		DEBUG("nodes moved, so begin coarsening and recursive call");
 
-		timer.start();
+		if (measure_time) timer.start();
 		//
-		std::pair<Graph, std::vector<node>> coarsened = coarsen(G, zeta);	// coarsen graph according to communitites
+		ParallelPartitionCoarsening coarsening(G, zeta, false, parallel);
+		coarsening.run();
 		//
-		timer.stop();
-		timing["coarsen"].push_back(timer.elapsedMilliseconds());
+		if (measure_time) {
+			timer.stop();
+			timing["coarsen"].push_back(timer.elapsedMilliseconds());
+		}
 
-		PLM onCoarsened(coarsened.first, this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo);
+		PLM onCoarsened(coarsening.getCoarseGraph(), this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
 		onCoarsened.run();
-		Partition zetaCoarse = onCoarsened.getPartition();
+		const Partition& zetaCoarse = onCoarsened.getPartition();
 
 		// get timings
-		auto tim = onCoarsened.getTiming();
-		for (count t : tim["move"]) {
-			timing["move"].push_back(t);
-		}
-		for (count t : tim["coarsen"]) {
-			timing["coarsen"].push_back(t);
-		}
-		for (count t : tim["refine"]) {
-			timing["refine"].push_back(t);
+		if (measure_time) {
+			auto tim = onCoarsened.getTiming();
+			for (count t : tim["move"]) {
+				timing["move"].push_back(t);
+			}
+			for (count t : tim["coarsen"]) {
+				timing["coarsen"].push_back(t);
+			}
+			for (count t : tim["refine"]) {
+				timing["refine"].push_back(t);
+			}
 		}
 
 
-		DEBUG("coarse graph has ", coarsened.first.numberOfNodes(), " nodes and ", coarsened.first.numberOfEdges(), " edges");
-		zeta = prolong(coarsened.first, zetaCoarse, G, coarsened.second); // unpack communities in coarse graph onto fine graph
+		DEBUG("coarse graph has ", coarsening.getCoarseGraph().numberOfNodes(), " nodes and ", coarsening.getCoarseGraph().numberOfEdges(), " edges");
+
+		// unpack communities in coarse graph onto fine graph
+		const std::vector<node>& nodeToMetaNode(coarsening.getFineToCoarseNodeMapping());
+
+		G.forNodes([&](node v) {
+			zeta[v] = zetaCoarse[nodeToMetaNode[v]];
+		});
+		zeta.setUpperBound(zetaCoarse.upperBound());
+
 		// refinement phase
 		if (refine) {
 			DEBUG("refinement phase");
@@ -287,12 +325,14 @@ void PLM::run() {
 				}
 			});
 			// second move phase
-			timer.start();
+			if (measure_time) timer.start();
 			//
 			movePhase();
 			//
-			timer.stop();
-			timing["refine"].push_back(timer.elapsedMilliseconds());
+			if (measure_time) {
+				timer.stop();
+				timing["refine"].push_back(timer.elapsedMilliseconds());
+			}
 
 		}
 	}
@@ -319,8 +359,8 @@ std::string PLM::toString() const {
 	return stream.str();
 }
 
-std::pair<Graph, std::vector<node> > PLM::coarsen(const Graph& G, const Partition& zeta) {
-	ParallelPartitionCoarsening parCoarsening(G, zeta);
+std::pair<Graph, std::vector<node>> PLM::coarsen(const Graph &G, const Partition &zeta, bool parallel) {
+	ParallelPartitionCoarsening parCoarsening(G, zeta, false, parallel);
 	parCoarsening.run();
 	return {parCoarsening.getCoarseGraph(),parCoarsening.getFineToCoarseNodeMapping()};
 }

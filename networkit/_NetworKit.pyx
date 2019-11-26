@@ -1863,7 +1863,7 @@ cdef extern from "cpp/graph/RandomMaximumSpanningForest.h":
 	cdef cppclass _RandomMaximumSpanningForest "NetworKit::RandomMaximumSpanningForest"(_Algorithm):
 		_RandomMaximumSpanningForest(_Graph) except +
 		_RandomMaximumSpanningForest(_Graph, vector[double]) except +
-		_Graph getMSF(bool_t move) except +
+		_Graph getMSF() except +
 		vector[bool_t] getAttribute(bool_t move) except +
 		bool_t inMSF(edgeid eid) except +
 		bool_t inMSF(node u, node v) except +
@@ -1890,7 +1890,7 @@ cdef class RandomMaximumSpanningForest(Algorithm):
 			self._attribute = move(attribute)
 			self._this = new _RandomMaximumSpanningForest(G._this, self._attribute)
 
-	def getMSF(self, bool_t move = False):
+	def getMSF(self):
 		"""
 		Gets the calculated maximum-weight spanning forest as graph.
 
@@ -1904,7 +1904,7 @@ cdef class RandomMaximumSpanningForest(Algorithm):
 		networkit.Graph
 			The calculated maximum-weight spanning forest.
 		"""
-		return Graph().setThis((<_RandomMaximumSpanningForest*>(self._this)).getMSF(move))
+		return Graph().setThis((<_RandomMaximumSpanningForest*>(self._this)).getMSF())
 
 	def getAttribute(self, bool_t move = False):
 		"""
@@ -4747,7 +4747,7 @@ cdef extern from "cpp/community/PLM.h":
 		map[string, vector[count]] getTiming() except +
 
 cdef extern from "cpp/community/PLM.h" namespace "NetworKit::PLM":
-	pair[_Graph, vector[node]] PLM_coarsen "NetworKit::PLM::coarsen" (const _Graph& G, const _Partition& zeta) except +
+	pair[_Graph, vector[node]] PLM_coarsen "NetworKit::PLM::coarsen" (const _Graph& G, const _Partition& zeta, bool_t parallel) except +
 	_Partition PLM_prolong "NetworKit::PLM::prolong"(const _Graph& Gcoarse, const _Partition& zetaCoarse, const _Graph& Gfine, vector[node] nodeToMetaNode) except +
 
 
@@ -4787,7 +4787,7 @@ cdef class PLM(CommunityDetector):
 
 	@staticmethod
 	def coarsen(Graph G, Partition zeta, bool_t parallel = False):
-		cdef pair[_Graph, vector[node]] result = move(PLM_coarsen(G._this, zeta._this))
+		cdef pair[_Graph, vector[node]] result = move(PLM_coarsen(G._this, zeta._this, parallel))
 		return (Graph().setThis(result.first), result.second)
 
 	@staticmethod
@@ -5117,43 +5117,6 @@ cdef class SignificanceCommunityCleanUp(Algorithm):
 	"""
 	def getCover(self):
 		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
-
-cdef extern from "cpp/oslom/OslomCleanUp.h":
-	cdef cppclass _OslomCleanUp "NetworKit::OslomCleanUp"(_Algorithm):
-		_OslomCleanUp(_Graph G, _Cover C, vector[string] args) except +
-		_Cover getCover() except +
-
-cdef class OslomCleanUp(Algorithm):
-	"""
-	Constructor to the clean up algorithm.
-
-	Parameters
-	----------
-	G : networkit.Graph
-		The graph on which the algorithm has to run.
-	C : networkit.Cover
-		The cover that should be cleaned up.
-	args : vector[string]
-		Options for the clean up.
-	"""
-
-	cdef Graph _G
-	cdef Cover _C
-
-	def __cinit__(self, Graph G not None, Cover C not None, args = None):
-		self._G = G
-		self._C = C
-
-		if args is None:
-			args = []
-
-		self._this = new _OslomCleanUp(G._this, C._this, args)
-
-	"""
-	Get the result of the algorithm.
-	"""
-	def getCover(self):
-		return Cover().setThis((<_OslomCleanUp*>(self._this)).getCover())
 
 
 cdef extern from "cpp/community/SLPA.h":

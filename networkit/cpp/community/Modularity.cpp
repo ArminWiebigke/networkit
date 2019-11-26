@@ -55,7 +55,7 @@ double Modularity::getQuality(const Partition& zeta, const Graph& G) {
 		assert (zeta.lowerBound() <= c);
 		assert (c < zeta.upperBound());
 #pragma omp atomic
-		incidentWeightSum[c] += G.weightedDegree(v) + G.weight(v,v); // account for self-loops a second time
+		incidentWeightSum[c] += G.weightedDegree(v);
 	});
 
 	// compute sum of squared cluster volumes and divide by squared graph volume

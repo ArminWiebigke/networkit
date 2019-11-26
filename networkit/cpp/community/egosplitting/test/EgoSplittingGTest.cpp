@@ -22,13 +22,15 @@ public:
 	Graph testGraph;
 
 	EgoSplittingGTest() {
+		std::string inputDir = "input";
 //		EdgeListReader reader('\t', 0);
 //		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
 //		EdgeListReader reader(' ', 0);
-//		testGraph = reader.read("../input/lfr_om3.graph");
+//		testGraph = reader.read(inputDir + "/lfr_om3.graph");
 		METISGraphReader reader{};
-//		testGraph = reader.read("../input/FB_Auburn71.graph");
-		testGraph = reader.read("../input/FB_Caltech36.graph");
+		testGraph = reader.read(inputDir + "/lfr_small.graph");
+//		testGraph = reader.read(inputDir + "/FB_Auburn71.graph");
+//		testGraph = reader.read(inputDir + "/FB_Caltech36.graph");
 		testGraph.removeNode(0);
 		testGraph.forNeighborsOf(1, [&](node v){
 			testGraph.removeEdge(1, v);
@@ -51,7 +53,7 @@ public:
 			algo.run();
 			Cover cover = algo.getCover();
 
-			std::cout << algo.timingsAsString() << std::endl;
+//			std::cout << algo.timingsAsString() << std::endl;
 			EXPECT_GE(cover.numberOfSubsets(), 5);
 			for (auto size : cover.subsetSizes()) {
 				EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";

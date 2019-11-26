@@ -14,7 +14,6 @@
 #include "../../../io/METISGraphReader.h"
 #include "../../../generators/ErdosRenyiGenerator.h"
 #include "../MergeCommunities.h"
-#include "../../../oslom/OslomCleanUp.h"
 
 namespace NetworKit {
 
@@ -23,7 +22,7 @@ class CleanupGTest : public testing::Test {
 
 TEST_F(CleanupGTest, testCleanUp) {
 	METISGraphReader graphReader;
-	Graph G = graphReader.read("../input/10_clusters.graph");
+	Graph G = graphReader.read("input/10_clusters.graph");
 	node isolatedNode = G.addNode();
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "None";
@@ -58,7 +57,7 @@ TEST_F(CleanupGTest, testCleanUp) {
 
 TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 	METISGraphReader graphReader;
-	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
+	Graph G = graphReader.read("input/erdos_renyi_200_0.05.graph");
 	// Create clique
 	count cliqueSize = 6;
 	for (node u = 0; u < cliqueSize; ++u) {
@@ -83,45 +82,9 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 
-TEST_F(CleanupGTest, testSingleCommunityCleanUpOslom) {
-	METISGraphReader graphReader;
-	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
-	// Create clique
-	count cliqueSize = 6;
-	for (node u = 0; u < cliqueSize; ++u) {
-		for (node v = u + 1; v < cliqueSize; ++v) {
-			if (!G.hasEdge(u, v))
-				G.addEdge(u, v, defaultEdgeWeight);
-		}
-	}
-	std::set<node> expectedCommunity;
-	for (node u = 0; u < cliqueSize; ++u)
-		expectedCommunity.insert(u);
-	// Create a community for the clique, but exclude a node and include weakly connected ones
-	std::set<node> testCommunity;
-	count excludeCliqueMembers = 1;
-	count addWeaklyConnected = 3;
-	for (node u = excludeCliqueMembers; u < cliqueSize + addWeaklyConnected; ++u)
-		testCommunity.insert(u);
-	Cover cover(G.upperNodeIdBound());
-	cover.addSubset(testCommunity);
-	std::vector<std::string> arguments{"-simple_cleanup",
-	                                   "-merge_discarded", "-discard_max_extend_groups",
-	                                   "-max_extend", "2",
-	                                   "-cup_runs", "1",};
-	OslomCleanUp cleanUp(G, cover, arguments);
-
-	cleanUp.run();
-	auto cleanedCover = cleanUp.getCover();
-
-	EXPECT_EQ(cleanedCover.numberOfSubsets(), 1);
-	std::set<node> cleanedCommunity = cleanedCover.getMembers(0);
-	EXPECT_EQ(cleanedCommunity, expectedCommunity);
-}
-
 TEST_F(CleanupGTest, testMergeDiscarded) {
 	METISGraphReader graphReader;
-	Graph G = graphReader.read("../input/erdos_renyi_200_0.05.graph");
+	Graph G = graphReader.read("input/erdos_renyi_200_0.05.graph");
 	// Create clique
 	count cliqueSize = 8;
 	for (node u = 0; u < cliqueSize; ++u) {
