@@ -130,6 +130,7 @@ T& SparseVector<T>::operator[](index i) {
 
 template<typename T>
 const T &NetworKit::SparseVector<T>::operator[](NetworKit::index i) const {
+	assert(i < data.size());
 	return data[i];
 }
 

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <random>
 #include <cmath>
+#include <mutex>
 
 #include "../Globals.h"
 #include "../graph/Graph.h"
@@ -44,14 +45,14 @@ private:
 	std::vector<double> clusterCut;
 	double totalVolume;
 	double totalCut;
-	SparseVector<node> neighborClusterWeights;
-
+	
+	std::vector< std::mutex > locks;
+	
 	double fitnessChange(node, double degree, double loopWeight,
 			     node currentCluster, node targetCluster,
-			     double weightToTarget, double weightToCurrent);
+			     double weightToTarget, double weightToCurrent, double totalCutCurrently);
 
-        void moveNode(node u, double degree, double loopWeight, node currentCluster,
-	              node targetCluster, double weightToTarget, double weightToCurrent);
+	bool moveNode(node u, double degree, double loopWeight, node currentCluster, node targetCluster, double weightToTarget, double weightToCurrent);
 
 #ifndef NDEBUG
 	long double sumPLogPwAlpha = 0;
@@ -62,7 +63,7 @@ private:
 	double mapEquation();
 #endif
 
-	bool tryLocalMove(node u);
+	bool tryLocalMove(node u, SparseVector<node>& neighborClusterWeights);
 
 	void calculateClusterCutAndVolume();
 
