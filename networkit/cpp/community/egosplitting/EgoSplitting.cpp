@@ -169,7 +169,7 @@ void EgoSplitting::createEgoNets() {
 //		G.parallelForNodes([&](node egoNode) {
 			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 
-			Graph egoGraph(G.degree(egoNode), true);
+			Graph egoGraph(G.degree(egoNode), G.isWeighted());
 			// Find neighbors == nodes of the ego-net
 			G.forEdgesOf(egoNode, [&](node, node v) {
 				egoMapping.addNode(v);
