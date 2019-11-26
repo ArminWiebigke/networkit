@@ -63,7 +63,7 @@ TEST_F(MapEquationGTest, testLocalMove) {
 	mapequation.run();
 	auto partition = mapequation.getPartition();
 
-	EXPECT_EQ(partition.getSubsets(), groundTruth.getSubsets());
+	EXPECT_EQ(partition.getSubsets(), groundTruth.getSubsets()); // FIXME: This fails after recent changes
 }
 
 TEST_F(MapEquationGTest, testLocalMoveLargeHierarchical) {

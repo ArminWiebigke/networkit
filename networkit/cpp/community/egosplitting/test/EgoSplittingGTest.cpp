@@ -38,7 +38,7 @@ public:
 	}
 
 	void testEgoSplitting(const std::map<std::string, std::string> &parameters) {
-		Aux::Log::setLogLevel("INFO");
+//		Aux::Log::setLogLevel("INFO");
 		bool parallelEgoNets = false;
 		EgoSplitting algo(testGraph, parallelEgoNets);
 		//	PLMFactory clusterFactory{true, 1.0, "none"};

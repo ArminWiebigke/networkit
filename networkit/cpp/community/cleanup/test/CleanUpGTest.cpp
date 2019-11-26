@@ -108,7 +108,7 @@ TEST_F(CleanupGTest, testMergeDiscarded) {
 	discardedCommunitites.insert({18});
 	discardedCommunitites.insert({19});
 	SingleCommunityCleanUp singleCommunityCleanUp(G);
-	MergeCommunities mergeCommunities(G, discardedCommunitites, singleCommunityCleanUp, true);
+	MergeCommunities mergeCommunities(G, discardedCommunitites, singleCommunityCleanUp, none);
 
 	mergeCommunities.run();
 	auto cleanedCommunities = mergeCommunities.getCleanedCommunities();
