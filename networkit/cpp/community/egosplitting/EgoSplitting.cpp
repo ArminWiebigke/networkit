@@ -213,8 +213,8 @@ void EgoSplitting::createEgoNets() {
 				directNeighborPartition.addToSubset(egoPartition.subsetOf(v), v);
 			});
 			directNeighborPartition.compact(true);
-			egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
-//			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
+			egoNetPartitionCounts[egoNode] = directNeighborPartition.upperBound();
+			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.numberOfSubsets());
 			G.forNeighborsOf(egoNode, [&](node i) {
 				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
 						egoMapping.toLocal(i)));
