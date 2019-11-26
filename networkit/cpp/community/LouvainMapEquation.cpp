@@ -20,6 +20,7 @@
 #include "../structures/Partition.h"
 #include "../coarsening/ParallelPartitionCoarsening.h"
 #include "../auxiliary/Parallelism.h"
+#include "../auxiliary/Timer.h"
 
 namespace NetworKit {
 
@@ -34,6 +35,10 @@ void LouvainMapEquation::run() {
 	if (hasRun)
 		throw std::runtime_error("Algorithm was already run!");
 	Aux::SignalHandler handler;
+
+	Aux::Timer timer;
+
+	timer.start();
 	partition.allToSingletons();
 	if (graph.numberOfNodes() != graph.upperNodeIdBound()) {
 		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
@@ -45,6 +50,9 @@ void LouvainMapEquation::run() {
 	handler.assureRunning();
 
 	calculateClusterCutAndVolume();
+	timer.stop();
+	std::cout << "init " << timer.elapsedMilliseconds() << " ms" << std::endl;
+	
 
 #ifndef NDEBUG
 	updatePLogPSums();
@@ -69,9 +77,14 @@ void LouvainMapEquation::run() {
 		INFO("Map equation is ", mapEquation());
 #endif
 
+		timer.start();
 		std::shuffle(nodes.begin(), nodes.end(), Aux::Random::getURNG());
+		timer.stop();
+		std::cout << "shuffle " << timer.elapsedMilliseconds() << " ms" << std::endl;
+
 		std::vector<count> ets_nodesMoved(Aux::getMaxNumberOfThreads(), 0);
 		
+		timer.start();
 		#pragma omp parallel
 		{
 			int tid = omp_get_thread_num();
@@ -86,6 +99,8 @@ void LouvainMapEquation::run() {
 				}
 			}
 		}
+		timer.stop();
+		std::cout << "move iteration " << iteration << " took " << timer.elapsedMilliseconds() << " ms" << std::endl;
 
 		count nodesMoved = 0;
 		for (count x : ets_nodesMoved) {
@@ -98,11 +113,14 @@ void LouvainMapEquation::run() {
 			break;
 		}
 		
+	
+
 		// partition.compact(true);		// try compacting to increase locality
 	}
 
 	handler.assureRunning();
 	if (hierarchical && clusteringChanged) {
+		std::cout << "recursion" << std::endl;
 		runHierarchical();
 	}
 	hasRun = true;

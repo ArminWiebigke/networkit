@@ -12,6 +12,7 @@
 #include <random>
 #include <cmath>
 #include <mutex>
+#include <atomic>
 
 #include "../Globals.h"
 #include "../graph/Graph.h"
@@ -21,6 +22,21 @@
 #include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
+
+class Spinlock {
+public:
+	void lock() {
+		while(spinner.test_and_set(std::memory_order_acquire)) {
+		
+		}
+	}
+	
+	void unlock() {
+		spinner.clear(std::memory_order::memory_order_release);
+	}
+private:
+	std::atomic_flag spinner = ATOMIC_FLAG_INIT;
+};
 
 class LouvainMapEquation : public Algorithm {
 public:
@@ -46,7 +62,7 @@ private:
 	double totalVolume;
 	double totalCut;
 	
-	std::vector< std::mutex > locks;
+	std::vector< Spinlock > locks;
 	
 	double fitnessChange(node, double degree, double loopWeight,
 			     node currentCluster, node targetCluster,

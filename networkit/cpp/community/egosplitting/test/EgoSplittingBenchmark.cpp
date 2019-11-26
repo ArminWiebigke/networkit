@@ -27,8 +27,11 @@ public:
 //		testGraph = reader.read("/home/armin/graphs/com-amazon.ungraph.txt");
 //		EdgeListReader reader(' ', 0);
 //		testGraph = reader.read("input/lfr_om3.graph");
-		METISGraphReader reader{};
-		testGraph = reader.read("input/FB_Auburn71.graph");
+		std::string graphPath;
+		std::cout << "[INPUT] graph file path (edge list tab 0, like SNAP) > " << std::endl;
+		std::getline(std::cin, graphPath);
+		EdgeListReader reader('t', 0);
+		testGraph = reader.read(graphPath);
 	}
 
 	void benchEgoSplitting(const std::map<std::string, std::string> &parameters) {
