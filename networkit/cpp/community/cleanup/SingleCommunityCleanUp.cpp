@@ -213,6 +213,7 @@ SingleCommunityCleanUp::reset() {
 	edgesToCommunity.reset();
 	isInCommunity.reset();
 	isInOriginalCommunity.reset();
+#ifndef NDEBUG
 	for (index i = 0; i < graph.upperNodeIdBound(); ++i) {
 		assert(edgesToCommunity[i] == 0);
 		assert(isCandidate[i] == 0);
@@ -220,6 +221,7 @@ SingleCommunityCleanUp::reset() {
 		assert(isInOriginalCommunity[i] == 0);
 		assert(edgesToCommunity[i] == 0);
 	}
+#endif
 	community.clear();
 	candidates.clear();
 }

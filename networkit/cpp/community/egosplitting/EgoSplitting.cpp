@@ -166,9 +166,7 @@ void EgoSplitting::createEgoNets() {
 				continue;
 			}
 
-//		G.parallelForNodes([&](node egoNode) {
-			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
-
+			DEBUG("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 			Graph egoGraph(G.degree(egoNode), true);
 			// Find neighbors == nodes of the ego-net
 			G.forEdgesOf(egoNode, [&](node, node v) {
@@ -205,7 +203,6 @@ void EgoSplitting::createEgoNets() {
 			//addTime(timer, "18    Store EgoNet");
 
 			DEBUG("Store ego-net");
-//			assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
 			// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
 			Partition directNeighborPartition(egoGraph.upperNodeIdBound());
 			directNeighborPartition.setUpperBound(egoPartition.upperBound());
@@ -214,7 +211,6 @@ void EgoSplitting::createEgoNets() {
 			});
 			directNeighborPartition.compact(true);
 			egoNetPartitionCounts[egoNode] = directNeighborPartition.numberOfSubsets();
-//			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.upperBound());
 			G.forNeighborsOf(egoNode, [&](node i) {
 				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
 						egoMapping.toLocal(i)));
@@ -257,7 +253,7 @@ void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapp
 std::vector<WeightedEdge>
 EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
                                           const Partition &egoPartition) const {
-	INFO("Connect personas of one node");
+	DEBUG("Connect personas of one node");
 	std::vector<WeightedEdge> edges;
 
 	// Contract graph
@@ -405,6 +401,7 @@ void EgoSplitting::connectPersonas() {
 	auto iso2 = numIsolatedNodes(personaGraph);
 	assert(iso1 == iso2);
 #endif
+	egoNetPartitions.clear();
 }
 
 void EgoSplitting::createPersonaClustering() {

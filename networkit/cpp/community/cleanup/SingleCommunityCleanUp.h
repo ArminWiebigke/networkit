@@ -8,7 +8,6 @@
 #ifndef NETWORKIT_SINGLECOMMUNITYCLEANUP_H
 #define NETWORKIT_SINGLECOMMUNITYCLEANUP_H
 
-
 #include "../../graph/Graph.h"
 #include "StochasticSignificance.h"
 #include "../../structures/SparseVector.h"

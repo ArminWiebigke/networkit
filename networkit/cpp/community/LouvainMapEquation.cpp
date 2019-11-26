@@ -58,7 +58,7 @@ void LouvainMapEquation::run() {
 		handler.assureRunning();
 		bool anyMoved = false;
 		count nodesMoved = 0;
-		INFO("Iteration ", iteration);
+		DEBUG("Iteration ", iteration);
 #ifndef NDEBUG
 		INFO("Map equation is ", mapEquation());
 #endif
@@ -71,7 +71,7 @@ void LouvainMapEquation::run() {
 			}
 		});
 
-		INFO("Moved ", nodesMoved, " nodes");
+		DEBUG("Moved ", nodesMoved, " nodes");
 		if (!anyMoved) {
 			break;
 		}
@@ -155,7 +155,7 @@ bool LouvainMapEquation::tryLocalMove(node u) {
 
 void LouvainMapEquation::runHierarchical() {
 	assert(partition.numberOfSubsets() < partition.numberOfElements());
-	INFO("Run hierarchical with ", partition.numberOfSubsets(), " nodes (", graph.numberOfNodes());
+	INFO("Run hierarchical with ", partition.numberOfSubsets(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 	// free some memory
 	clusterVolume.clear();
 	clusterVolume.shrink_to_fit();

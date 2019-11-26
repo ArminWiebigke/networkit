@@ -32,32 +32,25 @@ public:
 //		testGraph = reader.read(inputDir + "/FB_Auburn71.graph");
 //		testGraph = reader.read(inputDir + "/FB_Caltech36.graph");
 		testGraph.removeNode(0);
-		testGraph.forNeighborsOf(1, [&](node v){
+		testGraph.forNeighborsOf(1, [&](node v) {
 			testGraph.removeEdge(1, v);
 		});
 	}
 
 	void testEgoSplitting(const std::map<std::string, std::string> &parameters) {
-		for (std::size_t i = 0; i < 1; ++i) {
-			//	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
-			//		PLM plm(G, true, 1.0, "none");
-			//		plm.run();
-			//		return plm.getPartition();
-			//	};
-			//	EgoSplitting algo(G, clusterAlgo, clusterAlgo);
-			bool parallelEgoNets = true;
-			EgoSplitting algo(testGraph, parallelEgoNets);
-			//	PLMFactory clusterFactory{true, 1.0, "none"};
-			//	EgoSplitting algo(G, true, clusterFactory.getFunction(), clusterFactory.getFunction());
-			algo.setParameters(parameters);
-			algo.run();
-			Cover cover = algo.getCover();
+		Aux::Log::setLogLevel("INFO");
+		bool parallelEgoNets = false;
+		EgoSplitting algo(testGraph, parallelEgoNets);
+		//	PLMFactory clusterFactory{true, 1.0, "none"};
+		//	EgoSplitting algo(G, true, clusterFactory.getFunction(), clusterFactory.getFunction());
+		algo.setParameters(parameters);
+		algo.run();
+		Cover cover = algo.getCover();
 
 //			std::cout << algo.timingsAsString() << std::endl;
-			EXPECT_GE(cover.numberOfSubsets(), 5);
-			for (auto size : cover.subsetSizes()) {
-				EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
-			}
+		EXPECT_GE(cover.numberOfSubsets(), 5);
+		for (auto size : cover.subsetSizes()) {
+			EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
 		}
 	}
 };
