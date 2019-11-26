@@ -24,7 +24,7 @@ namespace NetworKit {
  */
 class SignificanceCommunityCleanUp : public Algorithm {
 public:
-	using Community = std::set<index>;
+	using Community = SingleCommunityCleanUp::Community;
 
 	/**
 	 * Constructor of the algorithm.
@@ -35,7 +35,8 @@ public:
 	                             const Cover &cover,
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
-	                             double minOverlapRatio = 0.5);
+	                             double minOverlapRatio = 0.5,
+	                             bool mergeDiscarded = true);
 
 	void run() override;
 
@@ -56,6 +57,8 @@ private:
 	Cover cleanedCommunities;
 	std::set<Community> discardedCommunities;
 	SingleCommunityCleanUp singleCommunityCleanup;
+	const bool mergeDiscarded;
+	count maxCommunitySize;
 
 	void cleanAllCommunities();
 

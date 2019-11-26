@@ -16,17 +16,22 @@ SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
                                                            const Cover &cover,
                                                            double significanceThreshold,
                                                            double scoreThreshold,
-                                                           double minOverlapRatio)
+                                                           double minOverlapRatio,
+                                                           bool mergeDiscarded)
 		: graph(graph),
 		  cover(cover),
-		  singleCommunityCleanup(graph, scoreThreshold, significanceThreshold, minOverlapRatio) {
+		  singleCommunityCleanup(graph, scoreThreshold, significanceThreshold, minOverlapRatio),
+		  mergeDiscarded(mergeDiscarded),
+		  maxCommunitySize(0) {
 }
 
 void SignificanceCommunityCleanUp::run() {
 	hasRun = false;
 	cleanedCommunities = Cover(graph.upperNodeIdBound());
 	cleanAllCommunities();
-	mergeDiscardedCommunities();
+	if (mergeDiscarded) {
+		mergeDiscardedCommunities();
+	}
 	hasRun = true;
 }
 
@@ -47,15 +52,16 @@ bool SignificanceCommunityCleanUp::isParallel() const {
 void SignificanceCommunityCleanUp::cleanAllCommunities() {
 	auto inputCommunities = cover.getSubsets();
 	index communityId = 0;
-	for (const Community &inputCommunity : inputCommunities) {
-		if (inputCommunities.size() < 10 || communityId++ % (inputCommunities.size() / 10) == 0) {
-			INFO("Clean community ", communityId, "/", inputCommunities.size());
-		}
+	INFO("Clean ", inputCommunities.size(), " communities");
+	for (auto const &inputCommunity : inputCommunities) {
+		DEBUG("Clean community ", communityId++, "/", inputCommunities.size(), " with size ", inputCommunity.size());
 		auto cleanedCommunity = cleanCommunity(inputCommunity);
-		if (cleanedCommunity.empty())
+		if (cleanedCommunity.empty() && mergeDiscarded)
 			discardedCommunities.insert(inputCommunity);
-		else
+		else {
 			cleanedCommunities.addSubset(cleanedCommunity);
+			maxCommunitySize = std::max(maxCommunitySize, cleanedCommunity.size());
+		}
 	}
 }
 
@@ -65,8 +71,9 @@ SignificanceCommunityCleanUp::cleanCommunity(const Community &inputCommunity) {
 }
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
-	INFO("Merge discarded communities");
-	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), singleCommunityCleanup);
+	INFO("Try to merge ", discardedCommunities.size(), " discarded communities");
+	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), singleCommunityCleanup,
+	                                  2 * maxCommunitySize);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {
 		cleanedCommunities.addSubset(community);
