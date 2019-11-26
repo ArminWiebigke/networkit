@@ -155,10 +155,10 @@ void EgoSplitting::createEgoNets() {
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
 			if (!signalHandler.isRunning()) continue;
 
-			if (!G.hasNode(egoNode) || G.degree(egoNode) == 0)
+			if (!G.hasNode(egoNode) || G.degree(egoNode) < 2)
 				continue;
 
-			if (G.degree(egoNode) == 1 || (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned)) {
+			if (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned) {
 				egoNetPartitionCounts[egoNode] = 1;
 				G.forNeighborsOf(egoNode, [&](node neighbor) {
 					egoNetPartitions[egoNode].emplace(neighbor, 0);
@@ -169,17 +169,22 @@ void EgoSplitting::createEgoNets() {
 //		G.parallelForNodes([&](node egoNode) {
 			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 
-			Graph egoGraph(G.degree(egoNode), G.isWeighted());
 			// Find neighbors == nodes of the ego-net
 			G.forEdgesOf(egoNode, [&](node, node v) {
-				egoMapping.addNode(v);
+				if (G.degree(v) > 1) {
+					egoMapping.addNode(v);
+				}
 			});
+
+			Graph egoGraph(egoMapping.nodeCount(), G.isWeighted());
+
 			// Find all triangles and add the edges to the egoGraph
-			G.forEdgesOf(egoNode, [&](node, node v, edgeweight weight1) {
-				directedG.forEdgesOf(v, [&](node, node w, edgeweight weight2) {
+			egoGraph.forNodes([&](const node localV) {
+				const node globalV = egoMapping.toGlobal(localV);
+				directedG.forEdgesOf(globalV, [&](node, node w, edgeweight weight2) {
 					if (egoMapping.isMapped(w)) {
 						// we have found a triangle u-v-w
-						egoGraph.addEdge(egoMapping.toLocal(v), egoMapping.toLocal(w), weight2);
+						egoGraph.addEdge(localV, egoMapping.toLocal(w), weight2);
 					}
 				});
 			});
@@ -215,9 +220,9 @@ void EgoSplitting::createEgoNets() {
 			directNeighborPartition.compact(true);
 			egoNetPartitionCounts[egoNode] = directNeighborPartition.upperBound();
 			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.numberOfSubsets());
-			G.forNeighborsOf(egoNode, [&](node i) {
-				egoNetPartitions[egoNode].emplace(i, directNeighborPartition.subsetOf(
-						egoMapping.toLocal(i)));
+			egoGraph.forNodes([&](const node localI) {
+				const node i = egoMapping.toGlobal(localI);
+				egoNetPartitions[egoNode].emplace(i, directNeighborPartition[localI]);
 			});
 			//addTime(timer, "19    Store EgoNet Partition");
 
@@ -358,7 +363,7 @@ void EgoSplitting::splitIntoPersonas() {
 	count sum = 0;
 	G.forNodes([&](node u) {
 		personaOffsets[u] = sum;
-		count numPersonas = std::max(egoNetPartitionCounts[u], (count) 1);
+		count numPersonas = egoNetPartitionCounts[u];
 		sum += numPersonas;
 	});
 	personaOffsets[G.upperNodeIdBound()] = sum;
@@ -381,6 +386,7 @@ void EgoSplitting::connectPersonas() {
 
 	// Connect personas of different nodes
 	G.forEdges([&](node u, node v, edgeweight weight) {
+		if (G.degree(u) < 2 || G.degree(v) < 2) return;
 		auto idx_u = egoNetPartitions[u].find(v);
 		auto idx_v = egoNetPartitions[v].find(u);
 		assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
@@ -392,7 +398,9 @@ void EgoSplitting::connectPersonas() {
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
 		internalPersonaEdges += edges.size();
-	assert(personaGraph.numberOfEdges() == G.numberOfEdges() + internalPersonaEdges);
+	count degreeOneNodes = 0;
+	G.forNodes([&](node v) { degreeOneNodes += (G.degree(v) == 1); });
+	assert(personaGraph.numberOfEdges() + degreeOneNodes == G.numberOfEdges() + internalPersonaEdges);
 	// check that no isolated nodes were added
 	auto numIsolatedNodes = [](const Graph &graph) {
 		ConnectedComponents compsAlgo(graph);
@@ -406,9 +414,8 @@ void EgoSplitting::connectPersonas() {
 		}
 		return isolated;
 	};
-	auto iso1 = numIsolatedNodes(G);
 	auto iso2 = numIsolatedNodes(personaGraph);
-	assert(iso1 == iso2);
+	assert(iso2 == 0);
 #endif
 }
 
