@@ -29,44 +29,68 @@ public:
 	 * @param u The node to add.
 	 * @return true if the node was added, false if node was already mapped
 	 */
-	bool addNode(node u);
+	bool addNode(node u) {
+		if (!isMapped(u)) {
+			globalToLocal[u] = localToGlobal.size();
+			localToGlobal.push_back(u);
+			return true;
+		}
+		return false;
+	}
 
-	void addDummy();
+	void addDummy() {
+		localToGlobal.push_back(none);
+	}
 
-	void addMapping(node global, node local);
+	void addMapping(node global, node local) {
+		globalToLocal[global] = local;
+		localToGlobal[local] = global;
+	}
 
 	/**
 	 * Get the local node from a global node.
 	 * @param globalNode The global node.
 	 * @return The mapped local node.
 	 */
-	node toLocal(node globalNode) const;
+	node toLocal(node globalNode) const {
+		assert(globalToLocal[globalNode] != none);
+		return globalToLocal[globalNode];
+        }
 
 	/**
 	 * Get the global node from a local node.
 	 * @param localNode The local node.
 	 * @return The mapped global node.
 	 */
-	node toGlobal(node localNode) const;
+	node toGlobal(node localNode) const {
+		assert(localToGlobal[localNode] != none);
+		return localToGlobal[localNode];
+	}
 
 	/**
 	 * Check if a global node is mapped.
 	 * @param globalNode The global node.
 	 * @return True iff the node is mapped.
 	 */
-	bool isMapped(node globalNode) const;
+	bool isMapped(node globalNode) const {
+		return globalToLocal[globalNode] != none;
+	}
 
 	/**
 	 * Get the number of mapped nodes.
 	 * @return The number of mapped nodes.
 	 */
-	count nodeCount() const;
+	count nodeCount() const {
+		return localToGlobal.size();
+	}
 
 	/**
 	 * Returns the global node IDs for all mapped nodes.
 	 * @return A vector of the global nodes.
 	 */
-	const std::vector<node>& globalNodes() const;
+	const std::vector<node>& globalNodes() const {
+		return localToGlobal;
+	}
 
 	void reset();
 
