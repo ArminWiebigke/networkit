@@ -264,13 +264,18 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition, false, false};
 	coarsening.run();
 	const Graph& coarseGraph = coarsening.getCoarseGraph();
-	auto nodeMapping = coarsening.getCoarseToFineNodeMapping();
-	auto getPersonaIndex = [&](node u) {
-		return egoPartition.subsetOf(nodeMapping[u][0]);
-	};
+	const std::vector<node>& egoToCoarse = coarsening.getFineToCoarseNodeMapping();
+
+	// Build a mpaaing from nodes in the coarse graph to partition ids in egoPartition
+	// Note that if we could assume that calling Partition::compact() twice does not modify partition ids, we might be able to omit this altogether
+	std::vector<node> personaIndex(coarseGraph.upperNodeIdBound(), none);
+	egoGraph.forNodes([&](node u) {
+		personaIndex[egoToCoarse[u]] = egoPartition[u];
+	});
+
 	auto addPersonaEdge = [&](node u, node v, edgeweight w = 1) {
-		index p_u = getPersonaIndex(u);
-		index p_v = getPersonaIndex(v);
+		index p_u = personaIndex[u];
+		index p_v = personaIndex[v];
 		if (p_u != p_v)
 			edges.emplace_back(p_u, p_v, w);
 	};
