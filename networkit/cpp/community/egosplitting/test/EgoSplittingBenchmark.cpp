@@ -30,7 +30,7 @@ public:
 		std::string graphPath;
 		std::cout << "[INPUT] graph file path (edge list tab 0, like SNAP) > " << std::endl;
 		std::getline(std::cin, graphPath);
-		EdgeListReader reader('t', 0);
+		EdgeListReader reader('\t', 0);
 		testGraph = reader.read(graphPath);
 	}
 
