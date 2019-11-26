@@ -51,7 +51,7 @@ void LouvainMapEquation::run() {
 
 	calculateClusterCutAndVolume();
 	timer.stop();
-	std::cout << "init " << timer.elapsedMilliseconds() << " ms" << std::endl;
+	DEBUG("init ", timer.elapsedMilliseconds(), " ms");
 	
 
 #ifndef NDEBUG
@@ -80,7 +80,7 @@ void LouvainMapEquation::run() {
 		timer.start();
 		std::shuffle(nodes.begin(), nodes.end(), Aux::Random::getURNG());
 		timer.stop();
-		std::cout << "shuffle " << timer.elapsedMilliseconds() << " ms" << std::endl;
+		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
 
 		std::vector<count> ets_nodesMoved(Aux::getMaxNumberOfThreads(), 0);
 		
@@ -100,7 +100,8 @@ void LouvainMapEquation::run() {
 			}
 		}
 		timer.stop();
-		std::cout << "move iteration " << iteration << " took " << timer.elapsedMilliseconds() << " ms" << std::endl;
+		
+		DEBUG("move iteration ", iteration, " took ", " ms");
 
 		count nodesMoved = 0;
 		for (count x : ets_nodesMoved) {
@@ -120,7 +121,6 @@ void LouvainMapEquation::run() {
 
 	handler.assureRunning();
 	if (hierarchical && clusteringChanged) {
-		std::cout << "recursion" << std::endl;
 		runHierarchical();
 	}
 	hasRun = true;
