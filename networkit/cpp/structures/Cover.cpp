@@ -202,21 +202,21 @@ void Cover::removeSubset(NetworKit::index s) {
 std::vector<std::set<index>> Cover::getSubsets() const {
 	auto ids = getSubsetIds();
 	auto idMapping = std::vector<index>(upperBound());
-	std::vector<std::set<index>> subsets;
+	std::vector<std::set<index>> subsets(ids.size());
+	index newSubsetId = 0;
 	for (index id : ids) {
-		idMapping[id] = subsets.size();
-		subsets.emplace_back();
+		idMapping[id] = newSubsetId++;
 	}
 
-	for (index e = 0; e <= this->z; ++e) {
-		for (index t : data[e]) {
-			subsets[idMapping[t]].insert(e);
+	for (index element = 0; element <= this->z; ++element) {
+		for (index subsetId : data[element]) {
+			subsets[idMapping[subsetId]].insert(element);
 		}
 	}
 	return subsets;
 }
 
-void Cover::addSubset(const std::set<index>& subset) {
+void Cover::addSubset(const std::set<index> &subset) {
 	index id = newSubsetId();
 	for (node e : subset)
 		addToSubset(id, e);
