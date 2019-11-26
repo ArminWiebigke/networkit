@@ -29,7 +29,7 @@ EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
 		               PLMFactory(true, 1.0, "none randomized").getFunction(),
 		               LouvainMapEquationFactory(true, 16).getFunction()
 ) {
-	std::cout << "Default EgoSplitting" << std::endl;
+	INFO("Default EgoSplitting");
 }
 
 EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction clusterAlgo)
