@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <random>
 #include <cmath>
+#include <mutex>
+#include <atomic>
 
 #include "../Globals.h"
 #include "../graph/Graph.h"
@@ -20,6 +22,21 @@
 #include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
+
+class Spinlock {
+public:
+	void lock() {
+		while(spinner.test_and_set(std::memory_order_acquire)) {
+		
+		}
+	}
+	
+	void unlock() {
+		spinner.clear(std::memory_order::memory_order_release);
+	}
+private:
+	std::atomic_flag spinner = ATOMIC_FLAG_INIT;
+};
 
 class LouvainMapEquation : public Algorithm {
 public:
@@ -44,14 +61,14 @@ private:
 	std::vector<double> clusterCut;
 	double totalVolume;
 	double totalCut;
-	SparseVector<node> neighborClusterWeights;
-
+	
+	std::vector< Spinlock > locks;
+	
 	double fitnessChange(node, double degree, double loopWeight,
 			     node currentCluster, node targetCluster,
-			     double weightToTarget, double weightToCurrent);
+			     double weightToTarget, double weightToCurrent, double totalCutCurrently);
 
-        void moveNode(node u, double degree, double loopWeight, node currentCluster,
-	              node targetCluster, double weightToTarget, double weightToCurrent);
+	bool moveNode(node u, double degree, double loopWeight, node currentCluster, node targetCluster, double weightToTarget, double weightToCurrent);
 
 #ifndef NDEBUG
 	long double sumPLogPwAlpha = 0;
@@ -62,7 +79,7 @@ private:
 	double mapEquation();
 #endif
 
-	bool tryLocalMove(node u);
+	bool tryLocalMove(node u, SparseVector<node>& neighborClusterWeights);
 
 	void calculateClusterCutAndVolume();
 

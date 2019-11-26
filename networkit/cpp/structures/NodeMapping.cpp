@@ -13,46 +13,6 @@ namespace NetworKit {
 NodeMapping::NodeMapping(const NetworKit::Graph &G)
 		: globalToLocal(G.upperNodeIdBound(), none) {}
 
-bool NodeMapping::addNode(NetworKit::node u) {
-	if (!isMapped(u)) {
-		globalToLocal[u] = localToGlobal.size();
-		localToGlobal.push_back(u);
-		return true;
-	}
-	return false;
-}
-
-void NodeMapping::addDummy() {
-	localToGlobal.push_back(none);
-}
-
-void NodeMapping::addMapping(node global, node local) {
-	globalToLocal[global] = local;
-	localToGlobal[local] = global;
-}
-
-node NodeMapping::toLocal(NetworKit::node globalNode) const {
-	assert(globalToLocal[globalNode] != none);
-	return globalToLocal[globalNode];
-}
-
-node NodeMapping::toGlobal(NetworKit::node localNode) const {
-	assert(localToGlobal[localNode] != none);
-	return localToGlobal[localNode];
-}
-
-bool NodeMapping::isMapped(NetworKit::node globalNode) const {
-	return globalToLocal[globalNode] != none;
-}
-
-count NodeMapping::nodeCount() const {
-	return localToGlobal.size();
-}
-
-const std::vector<node>& NodeMapping::globalNodes() const {
-	return localToGlobal;
-}
-
 void NodeMapping::reset() {
 	for (node v : localToGlobal) {
 		globalToLocal[v] = none;

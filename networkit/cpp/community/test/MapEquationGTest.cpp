@@ -50,7 +50,6 @@ TEST_F(MapEquationGTest, testLocalMoveSmall) {
 	LouvainMapEquation mapequation(G, false);
 	mapequation.run();
 	auto partition = mapequation.getPartition();
-
 	EXPECT_EQ(partition.getSubsets(), groundTruth.getSubsets());
 }
 

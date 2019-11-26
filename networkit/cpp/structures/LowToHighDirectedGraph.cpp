@@ -12,7 +12,9 @@ namespace NetworKit {
 LowToHighDirectedGraph::LowToHighDirectedGraph(const NetworKit::Graph &G) {
     edgesBegin.resize(G.upperNodeIdBound() + 1);
     edgeTargets.resize(G.numberOfEdges());
-    edgeWeights.resize(G.numberOfEdges());
+    if (G.isWeighted()) {
+        edgeWeights.resize(G.numberOfEdges());
+    }
 
     // direct edge from low to high-degree nodes
     auto isOutEdge = [&](node u, node v) {
@@ -25,7 +27,9 @@ LowToHighDirectedGraph::LowToHighDirectedGraph(const NetworKit::Graph &G) {
         if (G.hasNode(u)) {
             G.forEdgesOf(u, [&](node, node v, edgeweight ew) {
                 if (isOutEdge(u, v)) {
-                    edgeWeights[pos] = ew;
+                    if (G.isWeighted()) {
+                        edgeWeights[pos] = ew;
+                    }
 	                edgeTargets[pos++] = v;
                 }
             });
