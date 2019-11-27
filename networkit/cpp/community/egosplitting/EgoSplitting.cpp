@@ -391,6 +391,20 @@ void EgoSplitting::connectPersonas() {
 		                     weight);
 	});
 
+	ConnectedComponents compsAlgo(personaGraph);
+	compsAlgo.run();
+	std::vector<count> componentSizes(compsAlgo.numberOfComponents());
+	personaGraph.forNodes([&](node u) {
+		++componentSizes[compsAlgo.componentOfNode(u)];
+	});
+
+	personaGraph.forNodes([&](node u) {
+		const index c = compsAlgo.componentOfNode(u);
+		if (componentSizes[c] < 5) {
+			personaGraph.removeNode(u);
+		}
+	});
+
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
@@ -428,7 +442,9 @@ void EgoSplitting::createCover() {
 	resultCover.setUpperBound(personaPartition.upperBound());
 	G.forNodes([&](node u) {
 		for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
-			resultCover.addToSubset(personaPartition.subsetOf(i), u);
+			if (personaGraph.hasNode(i)) {
+				resultCover.addToSubset(personaPartition.subsetOf(i), u);
+			}
 		}
 	});
 }

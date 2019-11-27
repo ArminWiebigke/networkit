@@ -150,10 +150,12 @@ bool MergeCommunities::tryLocalMove(node u) {
 
 void MergeCommunities::checkMergedCommunities() {
 	index communityCount = 0;
-	INFO("Check significance of ", mergedCommunities.numberOfSubsets(), " merged communities");
+	// Store number of communities as this is not an O(1) lookup
+	const count numMergedCommunities = mergedCommunities.numberOfSubsets();
+	INFO("Check significance of ", numMergedCommunities, " merged communities");
 	count skippedCommunities = 0;
 	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		DEBUG("Clean merged community ", ++communityCount, "/", mergedCommunities.numberOfSubsets());
+		DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
 		if (communitiesToMerge.size() == 1)
 			continue;
 		Community mergedCommunity;
@@ -172,9 +174,9 @@ void MergeCommunities::checkMergedCommunities() {
 		}
 		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
 		if (cleanedCommunity.empty())
-			discardedCommunities.insert(mergedCommunity);
+			discardedCommunities.emplace(std::move(mergedCommunity));
 		else
-			cleanedCommunities.push_back(cleanedCommunity);
+			cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 	}
 	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }

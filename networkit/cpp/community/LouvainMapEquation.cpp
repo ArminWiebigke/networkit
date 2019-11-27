@@ -4,6 +4,7 @@
  * Created on: 2019-01-28
  * Author: Armin Wiebigke
  *         Michael Hamann
+ *         Lars Gottesbüren
  */
 
 #include <unordered_map>
@@ -275,7 +276,6 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClus
 
 void LouvainMapEquation::runHierarchical() {
 	assert(partition.numberOfSubsets() < partition.numberOfElements());
-	INFO("Run hierarchical with ", partition.numberOfSubsets(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 	// free some memory
 	clusterVolume.clear();
 	clusterVolume.shrink_to_fit();
@@ -286,6 +286,8 @@ void LouvainMapEquation::runHierarchical() {
 	coarsening.run();
 	const Graph& metaGraph = coarsening.getCoarseGraph();
 	const auto& fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
+
+	INFO("Run hierarchical with ", metaGraph.numberOfNodes(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 
 	LouvainMapEquation recursion(metaGraph, true, maxIterations);
 	recursion.run();
