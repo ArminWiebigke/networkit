@@ -10,17 +10,19 @@ namespace NetworKit {
 
 using Community = SingleCommunityCleanUp::Community;
 
-SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph, double scoreThreshold,
+SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph,
+					       const StochasticDistribution& stochasticDistribution,
+					       double scoreThreshold,
                                                double significanceThreshold, double minOverlapRatio)
 		: graph(graph),
-		  scoreThreshold(scoreThreshold),
 		  significanceThreshold(significanceThreshold),
+		  scoreThreshold(scoreThreshold),
 		  minOverlapRatio(minOverlapRatio),
 		  edgesToCommunity(graph.upperNodeIdBound()),
 		  isInCommunity(graph.upperNodeIdBound()),
 		  isInOriginalCommunity(graph.upperNodeIdBound()),
 		  isCandidate(graph.upperNodeIdBound()),
-		  stochastic(2 * graph.numberOfEdges() + graph.numberOfNodes()) {
+		  stochastic(stochasticDistribution) {
 }
 
 Community

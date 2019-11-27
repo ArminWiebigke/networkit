@@ -25,7 +25,7 @@ public:
 	 * Constructor
 	 * @param maxValue maximum value that can be used as an argument for the calculations
 	 */
-	explicit StochasticSignificance(count maxValue);
+	explicit StochasticSignificance(const StochasticDistribution& dist);
 
 	/**
 	 * Calculate the r-score
@@ -47,13 +47,13 @@ public:
 	double orderStatistic(double rScore, count externalNodes, count pos);
 
 private:
-	mutable StochasticDistribution dist;
+	const StochasticDistribution& dist;
 	std::mt19937_64 rng;
 	std::uniform_real_distribution<double> random_distribution;
 
-	void ensureMaxValue(count maxValue) const {
+	void ensureMaxValue(count maxValue) {
 		if (dist.maxValue() < maxValue)
-			dist.setMaxValue(maxValue);
+			throw std::runtime_error("Maximum value of the distribution is not high enough.");
 	}
 };
 

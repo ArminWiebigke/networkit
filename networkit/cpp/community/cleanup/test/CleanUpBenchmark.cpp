@@ -36,7 +36,8 @@ TEST_F(CleanUpBenchmark, benchCommunityCleanup) {
 	std::cout << "egosplitting took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 
 	timer.start();
-	SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);
+	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
+	SignificanceCommunityCleanUp cleanUp(G, cover, dist, 0.1, 0.1, 0.5);
 	cleanUp.run();
 	Cover cleanedCover = cleanUp.getCover();
 	timer.stop();

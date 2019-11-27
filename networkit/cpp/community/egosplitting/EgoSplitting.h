@@ -129,6 +129,7 @@ private:
 	LowToHighDirectedGraph directedG;
 	Cover groundTruth;
 	std::vector<std::vector<WeightedEdge>> personaEdges; // for each node: edges between its personas
+	StochasticDistribution stochasticDistribution; // Stochastic distribution needed for significance calculations
 
 	void init();
 

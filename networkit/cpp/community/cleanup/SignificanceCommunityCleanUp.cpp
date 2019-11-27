@@ -14,15 +14,19 @@ using Community = SignificanceCommunityCleanUp::Community;
 
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
                                                            const Cover &cover,
+							   const StochasticDistribution& distribution,
                                                            double significanceThreshold,
                                                            double scoreThreshold,
                                                            double minOverlapRatio,
                                                            bool mergeDiscarded)
 		: graph(graph),
 		  cover(cover),
-		  singleCommunityCleanup(graph, scoreThreshold, significanceThreshold, minOverlapRatio),
+		  significanceThreshold(significanceThreshold),
+		  scoreThreshold(scoreThreshold),
+		  minOverlapRatio(minOverlapRatio),
 		  mergeDiscarded(mergeDiscarded),
-		  maxCommunitySize(0) {
+		  maxCommunitySize(0),
+		  stochasticDistribution(distribution) {
 }
 
 void SignificanceCommunityCleanUp::run() {
@@ -46,33 +50,37 @@ std::string SignificanceCommunityCleanUp::toString() const {
 }
 
 bool SignificanceCommunityCleanUp::isParallel() const {
-	return false;
+	return true;
 }
 
 void SignificanceCommunityCleanUp::cleanAllCommunities() {
 	auto inputCommunities = cover.getSubsets();
-	index communityId = 0;
 	INFO("Clean ", inputCommunities.size(), " communities");
-	for (auto const &inputCommunity : inputCommunities) {
-		DEBUG("Clean community ", communityId++, "/", inputCommunities.size(), " with size ", inputCommunity.size());
-		auto cleanedCommunity = cleanCommunity(inputCommunity);
-		if (cleanedCommunity.empty() && mergeDiscarded)
-			discardedCommunities.insert(inputCommunity);
-		else {
-			cleanedCommunities.addSubset(cleanedCommunity);
-			maxCommunitySize = std::max(maxCommunitySize, cleanedCommunity.size());
+	#pragma omp parallel
+	{
+		SingleCommunityCleanUp singleCommunityCleanup(graph, stochasticDistribution, scoreThreshold, significanceThreshold, minOverlapRatio);
+#pragma omp for schedule(dynamic, 1)
+		for (omp_index i = 0; i < static_cast<omp_index>(inputCommunities.size()); ++i) {
+			const Community& inputCommunity = inputCommunities[i];
+			DEBUG("Clean community ", i, "/", inputCommunities.size(), " with size ", inputCommunity.size());
+			auto cleanedCommunity = singleCommunityCleanup.clean(inputCommunity);
+			#pragma omp critical
+			{
+				if (cleanedCommunity.empty() && mergeDiscarded)
+					discardedCommunities.insert(inputCommunity);
+				else {
+					cleanedCommunities.addSubset(cleanedCommunity);
+					maxCommunitySize = std::max(maxCommunitySize, cleanedCommunity.size());
+				}
+			}
 		}
 	}
 }
 
-SignificanceCommunityCleanUp::Community
-SignificanceCommunityCleanUp::cleanCommunity(const Community &inputCommunity) {
-	return singleCommunityCleanup.clean(inputCommunity);
-}
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
 	INFO("Try to merge ", discardedCommunities.size(), " discarded communities");
-	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), singleCommunityCleanup,
+	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), stochasticDistribution, significanceThreshold, scoreThreshold, minOverlapRatio,
 	                                  2 * maxCommunitySize);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {

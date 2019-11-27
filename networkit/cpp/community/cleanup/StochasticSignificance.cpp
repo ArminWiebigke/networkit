@@ -12,7 +12,7 @@
 
 namespace NetworKit {
 
-	StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue), rng(Aux::Random::integer()), random_distribution(-0.5, 0.5) {
+	StochasticSignificance::StochasticSignificance(const StochasticDistribution& stochasticDistribution) : dist(stochasticDistribution), rng(Aux::Random::integer()), random_distribution(-0.5, 0.5) {
 
 }
 

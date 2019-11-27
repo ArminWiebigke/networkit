@@ -22,6 +22,7 @@ public:
 	using Community = std::set<node>;
 
 	explicit SingleCommunityCleanUp(const Graph &graph,
+					const StochasticDistribution& stochasticDistribution,
 	                                double scoreThreshold = 0.1,
 	                                double significanceThreshold = 0.1,
 	                                double minOverlapRatio = 0.5);

@@ -12,11 +12,18 @@ namespace NetworKit {
 using Community = MergeCommunities::Community;
 
 MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-                                   SingleCommunityCleanUp &singleCommunityCleanUp, count maxCommunitySize)
+				   const StochasticDistribution& stochasticDistribution,
+                                   double significanceThreshold,
+                                   double scoreThreshold,
+                                   double minOverlapRatio,
+                                   count maxCommunitySize)
 		: graph(graph),
 		  discardedCommunities(std::move(discardedCommunities)),
-		  stochastic(graph.numberOfNodes() + 2 * graph.numberOfEdges()),
-		  singleCommunityCleanUp(singleCommunityCleanUp),
+		  stochasticDistribution(stochasticDistribution),
+		  stochastic(stochasticDistribution),
+		  significanceThreshold(significanceThreshold),
+		  scoreThreshold(scoreThreshold),
+		  minOverlapRatio(minOverlapRatio),
 		  maxCommunitySize(maxCommunitySize) {
 }
 
@@ -149,34 +156,59 @@ bool MergeCommunities::tryLocalMove(node u) {
 }
 
 void MergeCommunities::checkMergedCommunities() {
-	index communityCount = 0;
 	// Store number of communities as this is not an O(1) lookup
 	const count numMergedCommunities = mergedCommunities.numberOfSubsets();
 	INFO("Check significance of ", numMergedCommunities, " merged communities");
 	count skippedCommunities = 0;
-	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
-		if (communitiesToMerge.size() == 1)
-			continue;
-		Community mergedCommunity;
-		for (index communityId : communitiesToMerge) {
-			auto community = coarseToFineMapping[communityId];
-			discardedCommunities.erase(community);
-			for (node u : community) {
-				mergedCommunity.insert(u);
+
+	std::vector<index> partitionMap(mergedCommunities.upperBound(), none);
+	std::vector<std::vector<node>> mergedCommunitiesSubsets;
+	mergedCommunitiesSubsets.reserve(numMergedCommunities);
+	mergedCommunities.forEntries([&](index e, index s){
+		if (partitionMap[s] == none) {
+			partitionMap[s] = mergedCommunitiesSubsets.size();
+			mergedCommunitiesSubsets.emplace_back();
+		}
+		mergedCommunitiesSubsets[partitionMap[s]].push_back(e);
+	});
+
+	#pragma omp parallel
+	{
+		SingleCommunityCleanUp singleCommunityCleanUp(graph, stochasticDistribution, scoreThreshold, significanceThreshold, minOverlapRatio);
+#pragma omp for schedule(dynamic, 1)
+		for (omp_index i = 0; i < static_cast<omp_index>(mergedCommunitiesSubsets.size()); ++i) {
+			const std::vector<node>& communitiesToMerge(mergedCommunitiesSubsets[i]);
+
+			DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
+			if (communitiesToMerge.size() == 1)
+				continue;
+
+			Community mergedCommunity;
+
+			for (index communityId : communitiesToMerge) {
+				const auto& community = coarseToFineMapping[communityId];
+#pragma omp critical
+				discardedCommunities.erase(community);
+				for (node u : community) {
+					mergedCommunity.insert(u);
+				}
+				if (mergedCommunity.size() >= maxCommunitySize)
+					break;
 			}
-			if (mergedCommunity.size() >= maxCommunitySize)
-				break;
+			if (mergedCommunity.size() >= maxCommunitySize) {
+#pragma omp atomic update
+				++skippedCommunities;
+				continue;
+			}
+			Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
+#pragma omp critical
+			{
+				if (cleanedCommunity.empty())
+					discardedCommunities.emplace(std::move(mergedCommunity));
+				else
+					cleanedCommunities.emplace_back(std::move(cleanedCommunity));
+			}
 		}
-		if (mergedCommunity.size() >= maxCommunitySize) {
-			++skippedCommunities;
-			continue;
-		}
-		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
-		if (cleanedCommunity.empty())
-			discardedCommunities.emplace(std::move(mergedCommunity));
-		else
-			cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 	}
 	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }
@@ -190,7 +222,7 @@ std::string MergeCommunities::toString() const {
 }
 
 bool MergeCommunities::isParallel() const {
-	return false;
+	return true;
 }
 
 } /* namespace NetworKit */
