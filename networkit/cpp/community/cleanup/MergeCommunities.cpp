@@ -147,9 +147,11 @@ bool MergeCommunities::tryLocalMove(node u) {
 
 void MergeCommunities::checkMergedCommunities() {
 	index communityId = 0;
+	// Store number of communities as this is not an O(1) lookup
+	const count numMergedCommunities = mergedCommunities.numberOfSubsets();
 	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		if (mergedCommunities.numberOfSubsets() < 10 || communityId++ % (mergedCommunities.numberOfSubsets() / 10) == 0) {
-			INFO("Clean merged community ", communityId, "/", mergedCommunities.numberOfSubsets());
+		if (numMergedCommunities < 10 || communityId++ % (numMergedCommunities / 10) == 0) {
+			INFO("Clean merged community ", communityId, "/", numMergedCommunities);
 		}
 		if (communitiesToMerge.size() == 1)
 			continue;
