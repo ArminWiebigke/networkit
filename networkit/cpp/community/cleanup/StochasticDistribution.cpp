@@ -173,8 +173,7 @@ double StochasticDistribution::rightCumulativeHyper(count N, count K, count n, c
 	assert(K <= N && "Error: K > N");
 	assert(n >= 0 && "Error: n < 0");
 	assert(k >= 0 && "Error: k < 0");
-	count maxValue = this->maxValue();
-	assert(maxValue >= N);
+	assert(this->maxValue() >= N);
 	if (k == 0)
 		return 1;
 	if (k > n || k > K)
