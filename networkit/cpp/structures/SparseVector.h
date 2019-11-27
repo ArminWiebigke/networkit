@@ -88,6 +88,14 @@ public:
 	 * Clear the vector, setting the upper bound of usable indexes to 0.
 	 */
 	void clear();
+	
+	/**
+	 * Reallocate the datastructure if size exceeds current upper bound
+	 * This is different from setUpperBound() since we want to make sure both usedIndexes and data are allocated on the socket of the calling thread
+	 * @param size
+	 * @param emptyValue new emptyValue
+	 */
+	void resize(size_t size, T emptyValue);
 
 private:
 	std::vector<T> data;
@@ -160,6 +168,15 @@ void NetworKit::SparseVector<T>::clear() {
 	usedIndexes.shrink_to_fit();
 	data.clear();
 	data.shrink_to_fit();
+}
+
+template<typename T>
+void NetworKit::SparseVector<T>::resize(size_t size, T emptyValue) {
+	if (size > upperBound()) {
+		this->emptyValue = emptyValue;
+		data = std::vector<T>(size, this->emptyValue);
+		usedIndexes = std::vector<index>();
+	}
 }
 
 template<typename T>

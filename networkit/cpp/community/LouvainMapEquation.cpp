@@ -24,26 +24,37 @@
 
 namespace NetworKit {
 
-LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, count maxIterations)
+LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, count maxIterations, double additionalCut = 0.0, double additionalVolume = 0.0)
 		: graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
+		  clusterCut(graph.upperNodeIdBound()),
 		  clusterVolume(graph.upperNodeIdBound()),
-		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()),
-		  locks(graph.numberOfNodes()) {
+		  additionalCut(additionalCut),
+		  additionalVolume(additionalVolume),
+		  totalCut(additionalCut),
+		  totalVolume(additionalVolume),
+		  partition(graph.upperNodeIdBound()),
+		  nextPartition(graph.upperNodeIdBound())
+{
+
 }
 
 void LouvainMapEquation::run() {
 	if (hasRun)
 		throw std::runtime_error("Algorithm was already run!");
+	
 	Aux::SignalHandler handler;
 
 	Aux::Timer timer;
-
 	timer.start();
+	
 	partition.allToSingletons();
+	nextPartition.allToSingletons();
+	
 	if (graph.numberOfNodes() != graph.upperNodeIdBound()) {
 		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
 			if (!graph.hasNode(u)) {
 				partition.remove(u);
+				nextPartition.remove(u);
 			}
 		}
 	}
@@ -67,8 +78,12 @@ void LouvainMapEquation::run() {
 
 	bool clusteringChanged = false;
 	std::vector<node> nodes = graph.nodes();
-	std::vector< SparseVector<node> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads(), SparseVector<node>(graph.upperNodeIdBound(), 0.0));
-
+	std::vector< SparseVector<double> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads());
+	
+	// could abuse neighborClusterWeights
+	std::vector< std::vector<double> > ets_volumeUpdates(Aux::getMaxNumberOfThreads());
+	std::vector< std::vector<double> > ets_cutUpdates(Aux::getMaxNumberOfThreads());
+	
 	for (count iteration = 0; iteration < maxIterations; ++iteration) {
 		handler.assureRunning();
 
@@ -82,35 +97,106 @@ void LouvainMapEquation::run() {
 		timer.stop();
 		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
 
-		std::vector<count> ets_nodesMoved(Aux::getMaxNumberOfThreads(), 0);
-
+		// chunks = fixed number of nodes, or degree sum ?
+		const size_t chunkSize = 420;
+		const size_t numberOfChunks = 1 + (graph.numberOfNodes() / chunkSize);
+		std::vector<size_t> chunks;//chunks(numberOfChunks, 0);
+		chunks.push_back(0);
+		chunks.push_back(10);
+		chunks.push_back(20);
+		
+		count numberOfNodesMoved = 0;
+		
 		timer.start();
 		#pragma omp parallel
 		{
 			int tid = omp_get_thread_num();
-			count& nodesMoved = ets_nodesMoved[tid];
-			SparseVector<node>& neighborClusterWeights = ets_neighborClusterWeights[tid];
-
-
-			#pragma omp for
-			for (size_t i = 0; i < nodes.size(); ++i) {
-				if (tryLocalMove(nodes[i], neighborClusterWeights)) {
-					nodesMoved += 1;
+			
+			SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[tid];
+			neighborClusterWeights.resize(graph.upperNodeIdBound(), 0.0);
+			
+			std::vector<double>& volumeUpdates = ets_volumeUpdates[tid];
+			volumeUpdates.resize(graph.upperNodeIdBound(), 0.0);	// allocation happens once, not every iteration. and then it's local to the socket
+			std::vector<double>& cutUpdates = ets_cutUpdates[tid];
+			cutUpdates.resize(graph.upperNodeIdBound(), 0.0);
+			
+			std::vector<node> movedNodes;
+			movedNodes.reserve(chunkSize);
+			
+			for (size_t i = 0; i < chunks.size() - 1; ++i) {
+				const size_t firstInvalid = chunks[i + 1];
+				
+				// find moves
+				#pragma omp for		// this works :) I wonder if distributing this loop across cores incurs some strange overhead
+				for (size_t j = chunks[i]; j < firstInvalid; ++j) {
+					const node u = nodes[j];
+					if (tryLocalMove(u, neighborClusterWeights)) {
+						movedNodes.push_back(u);
+					}
 				}
+				
+				// aggregate cut and volume updates
+				// option a) every core iterates over its own performed moves, option b) iterate over the entire round again and check if partition changed
+				// option a) has better locality, option b) better load balancing
+				for (const node u : movedNodes) {
+					const index cu = partition[u], ncu = nextPartition[u];
+					assert(cu != ncu);
+					double volU = 0.0;
+					graph.forEdgesOf(u, [&](node , node v, edgeweight w) {
+						if (cu != partition[v]) {
+							cutUpdates[cu] -= w;
+						}
+						if (ncu != nextPartition[v]) {
+							cutUpdates[ncu] += w;
+						}
+						volU += w;
+						if (u == v) {
+							volU += w;
+						}
+					});
+					
+					volumeUpdates[cu] -= volU;
+					volumeUpdates[ncu] += volU;
+				}
+				
+				auto applyUpdate = [&](std::vector<double>& global, std::vector<double>& local, index i) {
+					if (local[i] != 0.0) {
+						#pragma omp atomic
+						global[i] += local[i];
+						local[i] = 0.0;
+					}
+				};
+				
+				// apply aggregated updates to cut, volume and partition
+				for (const node u : movedNodes) {
+					const index cu = partition[u], ncu = nextPartition[u];
+					applyUpdate(clusterVolume, volumeUpdates, cu);
+					applyUpdate(clusterVolume, volumeUpdates, ncu);
+					applyUpdate(clusterCut, cutUpdates, cu);
+					applyUpdate(clusterCut, cutUpdates, ncu);
+					partition[u] = nextPartition[u];
+				}
+
+
+				#ifndef NDEBUG
+					#pragma omp single
+					checkUpdatedCutsAndVolumesAgainstRecomputation();
+				#endif
+
+
+
+				#pragma omp atomic
+				numberOfNodesMoved += movedNodes.size();
+				movedNodes.clear();
 			}
 		}
 		timer.stop();
 
 		DEBUG("move iteration ", iteration, " took ", " ms");
 
-		count nodesMoved = 0;
-		for (count x : ets_nodesMoved) {
-			nodesMoved += x;
-		}
-
-		DEBUG("Moved ", nodesMoved, " nodes");
-		clusteringChanged |= nodesMoved > 0;
-		if (nodesMoved == 0) {
+		DEBUG("Moved ", numberOfNodesMoved, " nodes");
+		clusteringChanged |= numberOfNodesMoved > 0;
+		if (numberOfNodesMoved == 0) {
 			break;
 		}
 
@@ -139,7 +225,7 @@ void LouvainMapEquation::calculateClusterCutAndVolume() {
 	});
 }
 
-bool LouvainMapEquation::tryLocalMove(node u, SparseVector<node>& neighborClusterWeights) {
+bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClusterWeights) {
 	// Find neighbor clusters
 	double degree = 0;
 	double loop = 0;
@@ -163,28 +249,28 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<node>& neighborCluste
 	});
 	assert(degree == graph.weightedDegree(u));
 
-	bool moved = false;
 	if (neighborClusterWeights.size() > 0) {
 		// Calculate best cluster
 		node targetCluster = currentCluster;
-		double bestChange = fitnessChange(u, degree, loop, currentCluster, currentCluster, weightToCurrent, weightToCurrent, totalCut);
+		double bestChange = fitnessChange(u, degree, loop, currentCluster, currentCluster, weightToCurrent, weightToCurrent);
 		for (index neighborCluster : neighborClusterWeights.insertedIndexes()) {
 			const double neighborClusterWeight = neighborClusterWeights[neighborCluster];
-			const double change = fitnessChange(u, degree, loop, currentCluster, neighborCluster, neighborClusterWeight, weightToCurrent, totalCut);
+			const double change = fitnessChange(u, degree, loop, currentCluster, neighborCluster, neighborClusterWeight, weightToCurrent);
 			if (change < bestChange || (change == bestChange && neighborCluster < targetCluster)) {
 				bestChange = change;
 				targetCluster = neighborCluster;
 			}
 		}
-
-		// Move node to best cluster
-		if (targetCluster != currentCluster) {
-			moved = moveNode(u, degree, loop, currentCluster, targetCluster, neighborClusterWeights[targetCluster], weightToCurrent);
-		}
-
+		
 		neighborClusterWeights.reset();
+		
+		// dont' apply move yet. just save it
+		if (targetCluster != currentCluster) {
+			nextPartition[u] = targetCluster;
+			return true;
+		}
 	}
-	return moved;
+	return false;
 }
 
 void LouvainMapEquation::runHierarchical() {
@@ -228,8 +314,7 @@ const Partition& LouvainMapEquation::getPartition() const {
  */
 double
 LouvainMapEquation::fitnessChange(node, double degree, double loopWeight, node currentCluster, node targetCluster,
-                                  double weightToTarget, double weightToCurrent,
-								  const double totalCutCurrently /* copy of totalCut so it at least stays consistent for the fitnessChange calculations */) {
+                                  double weightToTarget, double weightToCurrent) {
 
 	const double cutTarget = clusterCut[targetCluster];
 	const double volTarget = clusterVolume[targetCluster];
@@ -238,22 +323,20 @@ LouvainMapEquation::fitnessChange(node, double degree, double loopWeight, node c
 	if (currentCluster != targetCluster) {
 		double cutDifferenceTarget = degree - 2 * weightToTarget - 2 * loopWeight;
 
-		totalCutNew = totalCutCurrently + cutDifferenceCurrent + cutDifferenceTarget;
+		totalCutNew = totalCut + cutDifferenceCurrent + cutDifferenceTarget;
 		targetClusterCutNew = cutTarget + cutDifferenceTarget;
 		targetClusterCutCurrent = cutTarget;
-		targetCutPlusVolumeNew = cutTarget + cutDifferenceTarget +
-                                         volTarget + degree;
+		targetCutPlusVolumeNew = cutTarget + cutDifferenceTarget + volTarget + degree;
 		targetCutPlusVolumeCurrent = cutTarget + volTarget;
 	} else {
-		totalCutNew = totalCutCurrently;
+		totalCutNew = totalCut;
 		targetClusterCutNew = cutTarget;
 		targetClusterCutCurrent = cutTarget + cutDifferenceCurrent;
 		targetCutPlusVolumeNew = cutTarget + volTarget;
-		targetCutPlusVolumeCurrent =
-		    cutTarget + cutDifferenceCurrent + volTarget - degree;
-        }
+		targetCutPlusVolumeCurrent = cutTarget + cutDifferenceCurrent + volTarget - degree;
+	}
 
-        auto normalizeAndPLogP = [&](double &x) {
+	auto normalizeAndPLogP = [&](double& x) {
 		x /= totalVolume;
 		if (x > .0) {
 			x *= std::log(x);
@@ -266,57 +349,7 @@ LouvainMapEquation::fitnessChange(node, double degree, double loopWeight, node c
 	normalizeAndPLogP(targetCutPlusVolumeNew);
 	normalizeAndPLogP(targetCutPlusVolumeCurrent);
 
-	return totalCutNew + ((targetCutPlusVolumeNew - targetCutPlusVolumeCurrent)
-	                      - (2 * (targetClusterCutNew - targetClusterCutCurrent)));
-}
-
-bool LouvainMapEquation::moveNode(node u, double degree, double loopWeight, node currentCluster,
-                                  node targetCluster, double weightToTarget,
-                                  double weightToCurrent) {
-
-	// lock currentCluster and targetCluster
-	locks[ std::min(currentCluster, targetCluster) ].lock();
-	locks[ std::max(currentCluster, targetCluster) ].lock();
-
-	// recompute weightToCurrent and weightToTarget
-	weightToCurrent = 0;
-	weightToTarget = 0;
-	graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
-		if (u != v) {
-			if (partition[v] == currentCluster) {
-				weightToCurrent += weight;
-			} else if (partition[v] == targetCluster) {
-				weightToTarget += weight;
-			}
-		}
-	});
-
-	// perform move
-	bool moved = false;
-	const double totalCutCurrently = totalCut;
-	const double fitnessCurrent = fitnessChange(u, degree, loopWeight, currentCluster, currentCluster, weightToCurrent, weightToCurrent, totalCutCurrently);
-	const double fitnessTarget = fitnessChange(u, degree, loopWeight, currentCluster, targetCluster, weightToTarget, weightToCurrent, totalCutCurrently);
-	if (fitnessTarget < fitnessCurrent) {
-		double cutDifferenceCurrent = 2 * weightToCurrent - degree + 2 * loopWeight;
-		double cutDifferenceTarget = degree - 2 * weightToTarget - 2 * loopWeight;
-		clusterCut[currentCluster] += cutDifferenceCurrent;
-		clusterCut[targetCluster] += cutDifferenceTarget;
-
-		clusterVolume[currentCluster] -= degree;
-		clusterVolume[targetCluster] += degree;
-
-		#pragma omp atomic
-		totalCut += cutDifferenceCurrent + cutDifferenceTarget;
-
-		partition.moveToSubset(targetCluster, u);
-		moved = true;
-	}
-
-	// unlock clusters again
-	locks[ std::max(currentCluster, targetCluster) ].unlock();
-	locks[ std::min(currentCluster, targetCluster) ].unlock();
-
-	return moved;
+	return totalCutNew + ((targetCutPlusVolumeNew - targetCutPlusVolumeCurrent) - (2 * (targetClusterCutNew - targetClusterCutCurrent)));
 }
 
 std::string LouvainMapEquation::toString() const {
@@ -350,6 +383,10 @@ double LouvainMapEquation::mapEquation() {
 	       sumPLogPwAlpha;
 }
 
+void checkUpdatedCutsAndVolumesAgainstRecomputation() const {
+	std::vector<double> cut, vol;
+}
+
 #endif
 
 LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations)
@@ -357,10 +394,10 @@ LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count ma
 }
 
 ClusteringFunction LouvainMapEquationFactory::getFunction() const {
-	bool hiearchicalCopy = hierarchical;
+	bool hierarchicalCopy = hierarchical;
 	count maxIterationsCopy = maxIterations;
-	return [hiearchicalCopy, maxIterationsCopy](const Graph &graph) {
-		LouvainMapEquation algo(graph, hiearchicalCopy, maxIterationsCopy);
+	return [hierarchicalCopy, maxIterationsCopy](const Graph &graph) {
+		LouvainMapEquation algo(graph, hierarchicalCopy, maxIterationsCopy);
 		algo.run();
 		return algo.getPartition();
 	};

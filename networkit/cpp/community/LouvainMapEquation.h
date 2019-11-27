@@ -12,7 +12,6 @@
 #include <random>
 #include <cmath>
 #include <mutex>
-#include <atomic>
 
 #include "../Globals.h"
 #include "../graph/Graph.h"
@@ -23,24 +22,10 @@
 
 namespace NetworKit {
 
-class Spinlock {
-public:
-	void lock() {
-		while(spinner.test_and_set(std::memory_order_acquire)) {
-		
-		}
-	}
-	
-	void unlock() {
-		spinner.clear(std::memory_order::memory_order_release);
-	}
-private:
-	std::atomic_flag spinner = ATOMIC_FLAG_INIT;
-};
 
 class LouvainMapEquation : public Algorithm {
 public:
-	explicit LouvainMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256);
+	explicit LouvainMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256, double additionalCut = 0.0, double additionalVolume = 0.0);
 
 	void run() override;
 
@@ -52,23 +37,19 @@ public:
 	std::string toString() const override;
 
 private:
-	const Graph &graph;
+	const Graph& graph;
 	bool hierarchical;
 	count maxIterations;
 
-	Partition partition;
-	std::vector<double> clusterVolume;
-	std::vector<double> clusterCut;
-	double totalVolume;
-	double totalCut;
+	Partition partition, nextPartition;
+	std::vector<double> clusterCut, clusterVolume;
+	const double additionalCut, additionalVolume;		// only for debug mode to compare updated cuts/volumes against recomputed cuts/volumes
+	double totalCut, totalVolume;
 	
-	std::vector< Spinlock > locks;
 	
 	double fitnessChange(node, double degree, double loopWeight,
 			     node currentCluster, node targetCluster,
-			     double weightToTarget, double weightToCurrent, double totalCutCurrently);
-
-	bool moveNode(node u, double degree, double loopWeight, node currentCluster, node targetCluster, double weightToTarget, double weightToCurrent);
+			     double weightToTarget, double weightToCurrent);
 
 #ifndef NDEBUG
 	long double sumPLogPwAlpha = 0;
@@ -77,9 +58,10 @@ private:
 	double plogpRel(count w);
 	void updatePLogPSums();
 	double mapEquation();
+	void checkUpdatedCutsAndVolumesAgainstRecomputation() const;
 #endif
 
-	bool tryLocalMove(node u, SparseVector<node>& neighborClusterWeights);
+	bool tryLocalMove(node u, SparseVector<double>& neighborClusterWeights);
 
 	void calculateClusterCutAndVolume();
 
