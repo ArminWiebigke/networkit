@@ -28,7 +28,7 @@ LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, co
 		: graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
 		  clusterVolume(graph.upperNodeIdBound()),
 		  clusterCut(graph.upperNodeIdBound()), totalVolume(0), totalCut(0), partition(graph.upperNodeIdBound()),
-		  locks(graph.numberOfNodes()) {
+		  locks(graph.upperNodeIdBound()) {
 }
 
 void LouvainMapEquation::run() {
