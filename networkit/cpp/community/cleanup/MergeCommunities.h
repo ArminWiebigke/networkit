@@ -21,10 +21,10 @@ namespace NetworKit {
  */
 class MergeCommunities : public Algorithm {
 public:
-	using Community = std::set<node>;
+	using Community = SingleCommunityCleanUp::Community;
 
 	MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-	                 SingleCommunityCleanUp &singleCommunityCleanUp);
+	                 SingleCommunityCleanUp &singleCommunityCleanUp, count maxCommunitySize = none);
 
 	void run() override;
 
@@ -46,10 +46,11 @@ private:
 	std::vector<count> outgoingGroupStubs;
 	std::vector<count> totalGroupStubs;
 	count totalStubs;
+	const count maxCommunitySize;
 
 	void createDiscardedCommunitiesGraph();
 
-	void mergeCommunities();
+	void tryToMergeCommunities();
 
 	void checkMergedCommunities();
 

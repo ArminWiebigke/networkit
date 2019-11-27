@@ -52,7 +52,7 @@ void LouvainMapEquation::run() {
 	calculateClusterCutAndVolume();
 	timer.stop();
 	DEBUG("init ", timer.elapsedMilliseconds(), " ms");
-	
+
 
 #ifndef NDEBUG
 	updatePLogPSums();
@@ -68,13 +68,13 @@ void LouvainMapEquation::run() {
 	bool clusteringChanged = false;
 	std::vector<node> nodes = graph.nodes();
 	std::vector< SparseVector<node> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads(), SparseVector<node>(graph.upperNodeIdBound(), 0.0));
-	
+
 	for (count iteration = 0; iteration < maxIterations; ++iteration) {
 		handler.assureRunning();
-		
-		INFO("Iteration ", iteration);
+
+		DEBUG("Iteration ", iteration);
 #ifndef NDEBUG
-		INFO("Map equation is ", mapEquation());
+		DEBUG("Map equation is ", mapEquation());
 #endif
 
 		timer.start();
@@ -83,7 +83,7 @@ void LouvainMapEquation::run() {
 		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
 
 		std::vector<count> ets_nodesMoved(Aux::getMaxNumberOfThreads(), 0);
-		
+
 		timer.start();
 		#pragma omp parallel
 		{
@@ -91,7 +91,7 @@ void LouvainMapEquation::run() {
 			count& nodesMoved = ets_nodesMoved[tid];
 			SparseVector<node>& neighborClusterWeights = ets_neighborClusterWeights[tid];
 
-			
+
 			#pragma omp for
 			for (size_t i = 0; i < nodes.size(); ++i) {
 				if (tryLocalMove(nodes[i], neighborClusterWeights)) {
@@ -100,21 +100,19 @@ void LouvainMapEquation::run() {
 			}
 		}
 		timer.stop();
-		
+
 		DEBUG("move iteration ", iteration, " took ", " ms");
 
 		count nodesMoved = 0;
 		for (count x : ets_nodesMoved) {
 			nodesMoved += x;
 		}
-		
-		INFO("Moved ", nodesMoved, " nodes");
+
+		DEBUG("Moved ", nodesMoved, " nodes");
 		clusteringChanged |= nodesMoved > 0;
 		if (nodesMoved == 0) {
 			break;
 		}
-		
-	
 
 		// partition.compact(true);		// try compacting to increase locality
 	}
@@ -191,7 +189,7 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<node>& neighborCluste
 
 void LouvainMapEquation::runHierarchical() {
 	assert(partition.numberOfSubsets() < partition.numberOfElements());
-	INFO("Run hierarchical with ", partition.numberOfSubsets(), " nodes (", graph.numberOfNodes());
+	INFO("Run hierarchical with ", partition.numberOfSubsets(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 	// free some memory
 	clusterVolume.clear();
 	clusterVolume.shrink_to_fit();
@@ -232,7 +230,7 @@ double
 LouvainMapEquation::fitnessChange(node, double degree, double loopWeight, node currentCluster, node targetCluster,
                                   double weightToTarget, double weightToCurrent,
 								  const double totalCutCurrently /* copy of totalCut so it at least stays consistent for the fitnessChange calculations */) {
-	
+
 	const double cutTarget = clusterCut[targetCluster];
 	const double volTarget = clusterVolume[targetCluster];
 	const double cutDifferenceCurrent = 2 * weightToCurrent - degree + 2 * loopWeight;
@@ -279,7 +277,7 @@ bool LouvainMapEquation::moveNode(node u, double degree, double loopWeight, node
 	// lock currentCluster and targetCluster
 	locks[ std::min(currentCluster, targetCluster) ].lock();
 	locks[ std::max(currentCluster, targetCluster) ].lock();
-	
+
 	// recompute weightToCurrent and weightToTarget
 	weightToCurrent = 0;
 	weightToTarget = 0;
@@ -292,7 +290,7 @@ bool LouvainMapEquation::moveNode(node u, double degree, double loopWeight, node
 			}
 		}
 	});
-	
+
 	// perform move
 	bool moved = false;
 	const double totalCutCurrently = totalCut;
@@ -303,21 +301,21 @@ bool LouvainMapEquation::moveNode(node u, double degree, double loopWeight, node
 		double cutDifferenceTarget = degree - 2 * weightToTarget - 2 * loopWeight;
 		clusterCut[currentCluster] += cutDifferenceCurrent;
 		clusterCut[targetCluster] += cutDifferenceTarget;
-		
+
 		clusterVolume[currentCluster] -= degree;
 		clusterVolume[targetCluster] += degree;
 
 		#pragma omp atomic
 		totalCut += cutDifferenceCurrent + cutDifferenceTarget;
-		
+
 		partition.moveToSubset(targetCluster, u);
 		moved = true;
 	}
-	
+
 	// unlock clusters again
 	locks[ std::max(currentCluster, targetCluster) ].unlock();
 	locks[ std::min(currentCluster, targetCluster) ].unlock();
-	
+
 	return moved;
 }
 

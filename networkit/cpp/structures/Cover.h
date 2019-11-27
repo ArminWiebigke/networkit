@@ -14,6 +14,7 @@
 #include <map>
 #include <cassert>
 #include <limits>
+
 #include "Partition.h"
 #include "../Globals.h"
 
@@ -225,7 +226,7 @@ public:
 	 * Add a subset of nodes.
 	 * @param[in]	subset	a set of nodes
 	 */
-	void addSubset(const std::set<index>& subset);
+	void addSubset(const std::set<index> &subset);
 
 
 	/**

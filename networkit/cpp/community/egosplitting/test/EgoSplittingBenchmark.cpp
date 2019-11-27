@@ -44,12 +44,8 @@ public:
 		Cover cover = algo.getCover();
 
 		std::cout << algo.timingsAsString() << std::endl;
-		for (auto size : cover.subsetSizes()) {
-			EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
-		}
 	}
 };
-
 
 TEST_F(EgoSplittingBenchmark, benchNoExtend) {
 	std::map<std::string, std::string> parameters;

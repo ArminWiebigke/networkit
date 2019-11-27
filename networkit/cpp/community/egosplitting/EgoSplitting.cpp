@@ -29,7 +29,7 @@ EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
 		               PLMFactory(true, 1.0, "none randomized").getFunction(),
 		               LouvainMapEquationFactory(true, 16).getFunction()
 ) {
-	std::cout << "Default EgoSplitting" << std::endl;
+	INFO("Default EgoSplitting");
 }
 
 EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, ClusteringFunction clusterAlgo)
@@ -166,9 +166,7 @@ void EgoSplitting::createEgoNets() {
 				continue;
 			}
 
-//		G.parallelForNodes([&](node egoNode) {
-			INFO("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
-
+			DEBUG("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 			// Find neighbors == nodes of the ego-net
 			G.forEdgesOf(egoNode, [&](node, node v) {
 				if (G.degree(v) > 1) {
@@ -210,7 +208,6 @@ void EgoSplitting::createEgoNets() {
 			//addTime(timer, "18    Store EgoNet");
 
 			DEBUG("Store ego-net");
-//			assert(egoNetExtendedPartitions[egoNode].size() == extendedEgoGraph.numberOfNodes());
 			// Remove nodes that are not directed neighbors (they were added by the ego-net extension)
 			Partition directNeighborPartition(egoGraph.upperNodeIdBound());
 			directNeighborPartition.setUpperBound(egoPartition.upperBound());
@@ -262,7 +259,7 @@ void EgoSplitting::storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapp
 std::vector<WeightedEdge>
 EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
                                           const Partition &egoPartition) const {
-	INFO("Connect personas of one node");
+	DEBUG("Connect personas of one node");
 	std::vector<WeightedEdge> edges;
 
 	// Contract graph
@@ -271,7 +268,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	const Graph& coarseGraph = coarsening.getCoarseGraph();
 	const std::vector<node>& egoToCoarse = coarsening.getFineToCoarseNodeMapping();
 
-	// Build a mpaaing from nodes in the coarse graph to partition ids in egoPartition
+	// Build a mapping from nodes in the coarse graph to partition ids in egoPartition
 	// Note that if we could assume that calling Partition::compact() twice does not modify partition ids, we might be able to omit this altogether
 	std::vector<node> personaIndex(coarseGraph.upperNodeIdBound(), none);
 	egoGraph.forNodes([&](node u) {
@@ -417,6 +414,7 @@ void EgoSplitting::connectPersonas() {
 	auto iso2 = numIsolatedNodes(personaGraph);
 	assert(iso2 == 0);
 #endif
+	egoNetPartitions.clear();
 }
 
 void EgoSplitting::createPersonaClustering() {

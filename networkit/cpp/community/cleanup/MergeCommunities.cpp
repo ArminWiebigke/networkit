@@ -12,18 +12,19 @@ namespace NetworKit {
 using Community = MergeCommunities::Community;
 
 MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-                                   SingleCommunityCleanUp &singleCommunityCleanUp)
+                                   SingleCommunityCleanUp &singleCommunityCleanUp, count maxCommunitySize)
 		: graph(graph),
 		  discardedCommunities(std::move(discardedCommunities)),
 		  stochastic(graph.numberOfNodes() + 2 * graph.numberOfEdges()),
-		  singleCommunityCleanUp(singleCommunityCleanUp) {
+		  singleCommunityCleanUp(singleCommunityCleanUp),
+		  maxCommunitySize(maxCommunitySize) {
 }
 
 void MergeCommunities::run() {
 	int iterations = 2;
 	for (count i = 0; i < iterations; ++i) {
 		createDiscardedCommunitiesGraph();
-		mergeCommunities();
+		tryToMergeCommunities();
 		checkMergedCommunities();
 	}
 	hasRun = true;
@@ -69,12 +70,12 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	});
 }
 
-void MergeCommunities::mergeCommunities() {
+void MergeCommunities::tryToMergeCommunities() {
 	mergedCommunities = Partition(discardedCommunitiesGraph.numberOfNodes());
 	mergedCommunities.allToSingletons();
 	count maxIterations = 20;
 	for (count i = 0; i < maxIterations; ++i) {
-		INFO("Merge communities iteration ", i);
+		DEBUG("Merge communities iteration ", i);
 		count nodesChanged = 0;
 		discardedCommunitiesGraph.forNodesInRandomOrder([&](node u) {
 			bool wasMoved = tryLocalMove(u);
@@ -84,6 +85,8 @@ void MergeCommunities::mergeCommunities() {
 		if (nodesChanged == 0)
 			break;
 	}
+	INFO("Merged ", mergedCommunities.numberOfElements(), " discarded communities into ",
+	     mergedCommunities.numberOfSubsets(), " communities");
 }
 
 bool MergeCommunities::tryLocalMove(node u) {
@@ -109,7 +112,7 @@ bool MergeCommunities::tryLocalMove(node u) {
 		double score = 1.;
 		count externalStubs = totalStubs - totalGroupStubs[neighborCommunity];
 		if (neighborCommunity == currentCommunity) {
-			// Calculate s-Score as if the node was not in the community
+			// Calculate r-Score as if the node was not in the community
 			numEdgesIntoCommunity -= loop;
 			stubsIntoCurrent = numEdgesIntoCommunity;
 			count outgoingFromNode = degree - 2 * loop - numEdgesIntoCommunity;
@@ -146,21 +149,28 @@ bool MergeCommunities::tryLocalMove(node u) {
 }
 
 void MergeCommunities::checkMergedCommunities() {
-	index communityId = 0;
+	index communityCount = 0;
 	// Store number of communities as this is not an O(1) lookup
 	const count numMergedCommunities = mergedCommunities.numberOfSubsets();
+	INFO("Check significance of ", numMergedCommunities, " merged communities");
+	count skippedCommunities = 0;
 	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		if (numMergedCommunities < 10 || communityId++ % (numMergedCommunities / 10) == 0) {
-			INFO("Clean merged community ", communityId, "/", numMergedCommunities);
-		}
+		DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
 		if (communitiesToMerge.size() == 1)
 			continue;
 		Community mergedCommunity;
 		for (index communityId : communitiesToMerge) {
 			auto community = coarseToFineMapping[communityId];
 			discardedCommunities.erase(community);
-			for (node u : community)
+			for (node u : community) {
 				mergedCommunity.insert(u);
+			}
+			if (mergedCommunity.size() >= maxCommunitySize)
+				break;
+		}
+		if (mergedCommunity.size() >= maxCommunitySize) {
+			++skippedCommunities;
+			continue;
 		}
 		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
 		if (cleanedCommunity.empty())
@@ -168,6 +178,7 @@ void MergeCommunities::checkMergedCommunities() {
 		else
 			cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 	}
+	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }
 
 std::vector<Community> MergeCommunities::getCleanedCommunities() {
