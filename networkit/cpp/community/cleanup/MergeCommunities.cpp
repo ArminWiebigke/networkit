@@ -59,21 +59,27 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	totalGroupStubs.clear();
 	totalGroupStubs.resize(numDiscardedCommunities);
 	totalStubs = 0;
-	graph.forEdges([&](node u, node v, edgeweight weight) {
-		auto comms1 = nodeMemberships[u];
-		auto comms2 = nodeMemberships[v];
-		for (index comm1 : comms1) {
-			for (index comm2 : comms2) {
-				discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
-				totalStubs += 2;
-				++totalGroupStubs[comm1];
-				++totalGroupStubs[comm2];
-				if (comm1 != comm2) {
-					++outgoingGroupStubs[comm1];
-					++outgoingGroupStubs[comm2];
+
+	graph.forNodes([&](node u) {
+		const auto& comms1 = nodeMemberships[u];
+		if (comms1.empty()) return;
+
+		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
+			if (u > v) return;
+			const auto& comms2 = nodeMemberships[v];
+			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
+				for (index comm1 : comms1) {
+					discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
+					totalStubs += 2;
+					++totalGroupStubs[comm1];
+					++totalGroupStubs[comm2];
+					if (comm1 != comm2) {
+						++outgoingGroupStubs[comm1];
+						++outgoingGroupStubs[comm2];
+					}
 				}
 			}
-		}
+		});
 	});
 }
 
