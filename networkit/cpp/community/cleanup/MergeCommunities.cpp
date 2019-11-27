@@ -164,9 +164,9 @@ void MergeCommunities::checkMergedCommunities() {
 		}
 		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
 		if (cleanedCommunity.empty())
-			discardedCommunities.insert(mergedCommunity);
+			discardedCommunities.emplace(std::move(mergedCommunity));
 		else
-			cleanedCommunities.push_back(cleanedCommunity);
+			cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 	}
 }
 
