@@ -97,7 +97,7 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 
 // remove the node with the worst (= highest) score from the community
 void SingleCommunityCleanUp::removeWorstNode(
-		std::vector<ScoreStruct> internalScores) {
+		const std::vector<ScoreStruct>& internalScores) {
 	assert(community.size() > 0);
 	assert(internalScores.size() > 0);
 	// TODO: Calculate the score of the nodes inside the community separately
@@ -126,8 +126,9 @@ void SingleCommunityCleanUp::removeWorstNode(
 }
 
 std::vector<SingleCommunityCleanUp::ScoreStruct>
-SingleCommunityCleanUp::calculateInternalScores() const {
+SingleCommunityCleanUp::calculateInternalScores() {
 	std::vector<ScoreStruct> internalScores;
+	internalScores.reserve(community.size());
 	for (node u : community) {
 		count degree = graph.degree(u);
 		// Calculate s-Score as if the node was not part of the community
@@ -142,7 +143,7 @@ SingleCommunityCleanUp::calculateInternalScores() const {
 
 
 std::vector<SingleCommunityCleanUp::ScoreStruct>
-SingleCommunityCleanUp::calculateCandidateScores() const {
+SingleCommunityCleanUp::calculateCandidateScores() {
 	std::vector<ScoreStruct> candidateScores;
 	for (node u : candidates) {
 		assert(!isInCommunity[u]);
@@ -180,7 +181,7 @@ double fitted_exponent(int N) {
 }
 
 std::vector<node>
-SingleCommunityCleanUp::findSignificantCandidates(std::vector<ScoreStruct> scores) const {
+SingleCommunityCleanUp::findSignificantCandidates(const std::vector<ScoreStruct>& scores) {
 	int position = 1;
 	int significantNodesCount = 0;
 	double threshold = significanceThreshold / fitted_exponent(externalNodes);
@@ -201,6 +202,7 @@ SingleCommunityCleanUp::findSignificantCandidates(std::vector<ScoreStruct> score
 	}
 
 	std::vector<node> significantNodes;
+	significantNodes.reserve(significantNodesCount);
 	for (index i = 0; i < significantNodesCount; ++i) {
 		significantNodes.push_back(scores[i].nodeId);
 	}

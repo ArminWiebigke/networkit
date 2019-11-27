@@ -68,13 +68,13 @@ private:
 	Community
 	calculateSignificantNodes(const Community &inputCommunity, bool onlyUseOriginalCommunity);
 
-	std::vector<ScoreStruct> calculateCandidateScores() const;
+	std::vector<ScoreStruct> calculateCandidateScores();
 
-	std::vector<ScoreStruct> calculateInternalScores() const;
+	std::vector<ScoreStruct> calculateInternalScores();
 
-	std::vector<node> findSignificantCandidates(std::vector<ScoreStruct> scores) const;
+	std::vector<node> findSignificantCandidates(const std::vector<ScoreStruct>& scores);
 
-	void removeWorstNode(std::vector<ScoreStruct> internalScores);
+	void removeWorstNode(const std::vector<ScoreStruct>& internalScores);
 
 	void reset();
 

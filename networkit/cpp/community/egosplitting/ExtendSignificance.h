@@ -105,7 +105,7 @@ private:
 
 	void resetData();
 
-	void setMemoizationFunction() const;
+	void setMemoizationFunction();
 };
 
 } /* namespace NetworKit */

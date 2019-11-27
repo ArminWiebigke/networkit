@@ -8,6 +8,8 @@
 #ifndef NETWORKIT_STOCHASTICSIGNIFICANCE_H
 #define NETWORKIT_STOCHASTICSIGNIFICANCE_H
 
+#include <random>
+
 #include "StochasticDistribution.h"
 #include "../../Globals.h"
 
@@ -33,7 +35,7 @@ public:
 	 * @param k Degree of the node
 	 * @return a pair (s-score, boot interval)
 	 */
-	double rScore(count k, count kIn, count cOut, count extStubs) const;
+	double rScore(count k, count kIn, count cOut, count extStubs);
 
 	/**
 	 * Calculate the order statistic (s-score)
@@ -42,12 +44,17 @@ public:
 	 * @param pos the position of the candidate
 	 * @return
 	 */
-	double orderStatistic(double rScore, count externalNodes, count pos) const;
+	double orderStatistic(double rScore, count externalNodes, count pos);
 
 private:
 	mutable StochasticDistribution dist;
+	std::mt19937_64 rng;
+	std::uniform_real_distribution<double> random_distribution;
 
-	void ensureMaxValue(count maxValue) const;
+	void ensureMaxValue(count maxValue) const {
+		if (dist.maxValue() < maxValue)
+			dist.setMaxValue(maxValue);
+	}
 };
 
 } /* namespace NetworKit */
