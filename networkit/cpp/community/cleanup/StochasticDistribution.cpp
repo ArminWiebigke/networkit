@@ -32,14 +32,6 @@ void StochasticDistribution::setMaxValue(count maxValue) {
 	assert(logSum.size() == maxValue + 1);
 }
 
-double StochasticDistribution::binomCoeff(count n, count k) const {
-	return std::exp(logBinomCoeff(n, k));
-}
-
-double StochasticDistribution::binomialDist(double p, count n, count k) const {
-	return std::exp(logBinomCoeff(n, k) + k * std::log(p) + (n - k) * std::log(1 - p));
-}
-
 // Calculates the change ratio of the binomial coefficient "n choose k" if we increment k to k+1
 // => returns ("n choose k+1") / ("n choose k")
 inline double binomialCoeffChangeForIncrement(count n, count k) {
@@ -136,13 +128,6 @@ double StochasticDistribution::leftCumulativeBinomial(double p, count n, count k
 	}
 	assert(startBinom * sum <= 1.001);
 	return startBinom * sum;
-}
-
-double StochasticDistribution::hypergeometricDist(count N, count K, count n, count k) const {
-	double logHyper = logBinomCoeff(K, k)
-	                  + logBinomCoeff(N - K, n - k)
-	                  - logBinomCoeff(N, n);
-	return std::exp(logHyper);
 }
 
 // Calculates the change ratio of a hypergeometric distribution if k is incremented (k -> k+1) or
@@ -334,10 +319,6 @@ StochasticDistribution::rightCumulativeStochastic(count kTotal, count kIn, count
 	assert(normalizedKInProbability < 1.001);
 	assert(normalizedRightCumulative < 1.001);
 	return {normalizedKInProbability, normalizedRightCumulative};
-}
-
-count StochasticDistribution::maxValue() const {
-	return logSum.size() - 1;
 }
 
 } /* namespace NetworKit */
