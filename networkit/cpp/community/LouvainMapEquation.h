@@ -4,6 +4,7 @@
  * Created on: 2019-01-28
  * Author: Armin Wiebigke
  *         Michael Hamann
+ *         Lars Gottesbüren
  */
 
 #include <vector>
@@ -58,12 +59,14 @@ private:
 	double plogpRel(count w);
 	void updatePLogPSums();
 	double mapEquation();
-	void checkUpdatedCutsAndVolumesAgainstRecomputation() const;
+	void checkUpdatedCutsAndVolumesAgainstRecomputation();
 #endif
 
 	bool tryLocalMove(node u, SparseVector<double>& neighborClusterWeights);
+	
+	void aggregateAndApplyCutAndVolumeUpdates(std::vector<node>& movedNodes, SparseVector<double>& cutUpdates, std::vector<double>& volumeUpdates);
 
-	void calculateClusterCutAndVolume();
+	void calculateInitialClusterCutAndVolume();
 
 	void runHierarchical();
 };

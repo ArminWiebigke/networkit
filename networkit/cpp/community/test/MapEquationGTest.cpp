@@ -54,7 +54,7 @@ TEST_F(MapEquationGTest, testLocalMoveSmall) {
 }
 
 TEST_F(MapEquationGTest, testLocalMove) {
-	Aux::Random::setSeed(2342556, false);
+	Aux::Random::setSeed(2342556, true);
 	ClusteredRandomGraphGenerator generator(100, 4, 0.5, 0.05);
 	Graph G = generator.generate();
 	Partition groundTruth = generator.getCommunities();
