@@ -34,14 +34,18 @@ public:
 	/**
 	 * Returns the maximal value that can be used as an input value.
 	 */
-	count maxValue() const;
+	count maxValue() const {
+		return logSum.size() - 1;
+	}
 
 	/**
 	 * Calculate the binomial coefficient "n choose k". Returns a floating point number that may
 	 * slightly differ from the exact integer result.
 	 * @return binomial coefficient
 	 */
-	double binomCoeff(count n, count k) const;
+	double binomCoeff(count n, count k) const {
+		return std::exp(logBinomCoeff(n, k));
+	}
 
 	/**
 	 * Calculate the binomial distribution for k success.
@@ -50,7 +54,9 @@ public:
 	 * @param k number of successful trials
 	 * @return probability of k successes
 	 */
-	double binomialDist(double p, count n, count k) const;
+	double binomialDist(double p, count n, count k) const {
+		return std::exp(logBinomCoeff(n, k) + k * std::log(p) + (n - k) * std::log(1 - p));
+	}
 
 	/**
 	 * Calculate the cumulative binomial distribution that there are k or more success.
@@ -78,7 +84,12 @@ public:
 	 * @param k number of successes
 	 * @return probability of k successes
 	 */
-	double hypergeometricDist(count N, count K, count n, count k) const;
+	double hypergeometricDist(count N, count K, count n, count k) const {
+		double logHyper = logBinomCoeff(K, k)
+				+ logBinomCoeff(N - K, n - k)
+				- logBinomCoeff(N, n);
+		return std::exp(logHyper);
+	}
 
 	/**
 	 * Calculate the cumulative hypergeometric distribution that there are k or more success.

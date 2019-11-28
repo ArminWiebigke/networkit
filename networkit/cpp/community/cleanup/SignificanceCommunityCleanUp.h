@@ -30,9 +30,11 @@ public:
 	 * Constructor of the algorithm.
 	 * @param	graph	input graph
 	 * @param	cover	input cover
+	 * @param       distribution The stochastic distribution object to use for stochastic calculations
 	 */
 	SignificanceCommunityCleanUp(const Graph &graph,
 	                             const Cover &cover,
+				     const StochasticDistribution& distribution,
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
 	                             double minOverlapRatio = 0.5,
@@ -56,13 +58,15 @@ private:
 	const Cover &cover;
 	Cover cleanedCommunities;
 	std::set<Community> discardedCommunities;
-	SingleCommunityCleanUp singleCommunityCleanup;
+	double significanceThreshold;
+	double scoreThreshold;
+	double minOverlapRatio;
 	const bool mergeDiscarded;
 	count maxCommunitySize;
 
-	void cleanAllCommunities();
+	const StochasticDistribution &stochasticDistribution;
 
-	Community cleanCommunity(const Community &inputCommunity);
+	void cleanAllCommunities();
 
 	void mergeDiscardedCommunities();
 

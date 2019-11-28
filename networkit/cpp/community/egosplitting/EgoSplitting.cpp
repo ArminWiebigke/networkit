@@ -41,7 +41,8 @@ EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, Cluste
 		: Algorithm(), G(G),
 		  parallelEgoNetEvaluation(parallelEgoNetEvaluation),
 		  localClusteringAlgo(std::move(localClusterAlgo)),
-		  globalClusteringAlgo(std::move(globalClusterAlgo)) {
+		  globalClusteringAlgo(std::move(globalClusterAlgo)),
+		  stochasticDistribution(0) {
 	init();
 }
 
@@ -101,6 +102,12 @@ void EgoSplitting::run() {
 	Aux::Timer timer;
 	timer.start();
 
+	if (parameters.at("Cleanup") == "Yes"
+	    || (parameters.at("Extend EgoNet Strategy") == "Edges" && parameters.at("Edges Score Strategy") == "Significance")
+	    || parameters.at("Extend EgoNet Strategy") == "Significance") {
+		stochasticDistribution.setMaxValue(2 * G.numberOfEdges() + G.numberOfNodes());
+	}
+
 	INFO("create EgoNets");
 	createEgoNets();
 	addTime(timer, "1  Create EgoNets");
@@ -146,9 +153,8 @@ void EgoSplitting::createEgoNets() {
 		SparseVector<double> nodeScores(0);
 		SparseVector<node> significantGroup(0, none);
 		SparseVector<std::vector<count>> edgesToGroups(0);
-		StochasticSignificance stochasticSignificance(0);
 		EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
-		                      significantGroup, edgesToGroups, stochasticSignificance};
+			significantGroup, edgesToGroups, StochasticSignificance(stochasticDistribution)};
 		//addTime(timer, "11    Data Setup");
 
 #pragma omp for
@@ -496,7 +502,7 @@ void EgoSplitting::setGroundTruth(const Cover &gt) {
 void EgoSplitting::cleanUpCover() {
 	if (parameters.at("Cleanup") == "Yes") {
 		discardSmallCommunities();
-		SignificanceCommunityCleanUp cleanup(G, resultCover);
+		SignificanceCommunityCleanUp cleanup(G, resultCover, stochasticDistribution);
 		cleanup.run();
 		resultCover = cleanup.getCover();
 	}

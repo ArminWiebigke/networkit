@@ -43,13 +43,13 @@ ExtendSignificance::ExtendSignificance(EgoNetData &egoNetData,
 	setMemoizationFunction();
 }
 
-void ExtendSignificance::setMemoizationFunction() const {
+void ExtendSignificance::setMemoizationFunction() {
 	if (!sigTable.valueFunctionIsSet()) {
 		double maxSig = maxSignificance;
 		// For a given number of external nodes, calculate the minimal s-score that is significant
 		// We can then simply compare the s-values instead of calculating the ordered statistics
 		// Only works if the position is known before. 1 ( = best random node) in this case.
-		const StochasticSignificance &stoch = stochasticSignificance;
+		StochasticSignificance &stoch = stochasticSignificance;
 		sigTable.setValueFunc([maxSig, &stoch](index extNodes) {
 			double minRScore = 0.125;
 			double step = 0.0625;

@@ -34,7 +34,8 @@ TEST_F(CleanupGTest, testCleanUp) {
 	cover.addSubset({1});
 	cover.addSubset({2, isolatedNode});
 
-	SignificanceCommunityCleanUp cleanUp(G, cover, 0.1, 0.1, 0.5);
+	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
+	SignificanceCommunityCleanUp cleanUp(G, cover, dist, 0.1, 0.1, 0.5);
 	cleanUp.run();
 	Cover cleanedCover = cleanUp.getCover();
 
@@ -75,7 +76,8 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 	count addWeaklyConnected = 3;
 	for (node u = excludeCliqueMembers; u < cliqueSize + addWeaklyConnected; ++u)
 		testCommunity.insert(u);
-	SingleCommunityCleanUp singleCommunityCleanUp(G);
+	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
+	SingleCommunityCleanUp singleCommunityCleanUp(G, dist);
 
 	std::set<node> cleanedCommunity = singleCommunityCleanUp.clean(testCommunity);
 
@@ -107,8 +109,8 @@ TEST_F(CleanupGTest, testMergeDiscarded) {
 	discardedCommunitites.insert({15, 16});
 	discardedCommunitites.insert({18});
 	discardedCommunitites.insert({19});
-	SingleCommunityCleanUp singleCommunityCleanUp(G);
-	MergeCommunities mergeCommunities(G, discardedCommunitites, singleCommunityCleanUp, none);
+	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
+	MergeCommunities mergeCommunities(G, discardedCommunitites, dist);
 
 	mergeCommunities.run();
 	auto cleanedCommunities = mergeCommunities.getCleanedCommunities();

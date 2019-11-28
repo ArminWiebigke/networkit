@@ -12,12 +12,12 @@
 
 namespace NetworKit {
 
-StochasticSignificance::StochasticSignificance(count maxValue) : dist(maxValue) {
+	StochasticSignificance::StochasticSignificance(const StochasticDistribution& stochasticDistribution) : dist(stochasticDistribution), rng(Aux::Random::integer()), random_distribution(-0.5, 0.5) {
 
 }
 
 double
-StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) const {
+StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) {
 	assert(kIn <= cOut);
 	count openStubs = extStubs + cOut;
 	assert(openStubs >= k);
@@ -35,7 +35,7 @@ StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) c
 		rightCum -= exactProb;
 	}
 
-	double bootRandomness = Aux::Random::real(-0.5, 0.5) * 1e-6;
+	double bootRandomness = random_distribution(rng) * 1e-6;
 	double bootInterval = (0.5 + bootRandomness) * dist.hypergeometricDist(openStubs, cOut, k, kIn);
 //	double bootInterval = (0.5 + bootRandomness) * exactProb; // TODO: Use this instead of hypergeom.
 	double score = rightCum + bootInterval;
@@ -47,15 +47,10 @@ StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) c
 	return score;
 }
 
-double StochasticSignificance::orderStatistic(double rScore, count externalNodes, count pos) const {
+double StochasticSignificance::orderStatistic(double rScore, count externalNodes, count pos) {
 	assert(pos > 0);
 	ensureMaxValue(externalNodes);
 	return dist.rightCumulativeBinomial(rScore, externalNodes, pos);
-}
-
-void StochasticSignificance::ensureMaxValue(count maxValue) const {
-	if (dist.maxValue() < maxValue)
-		dist.setMaxValue(maxValue);
 }
 
 } /* namespace NetworKit */

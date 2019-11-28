@@ -12,11 +12,18 @@ namespace NetworKit {
 using Community = MergeCommunities::Community;
 
 MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-                                   SingleCommunityCleanUp &singleCommunityCleanUp, count maxCommunitySize)
+				   const StochasticDistribution& stochasticDistribution,
+                                   double significanceThreshold,
+                                   double scoreThreshold,
+                                   double minOverlapRatio,
+                                   count maxCommunitySize)
 		: graph(graph),
 		  discardedCommunities(std::move(discardedCommunities)),
-		  stochastic(graph.numberOfNodes() + 2 * graph.numberOfEdges()),
-		  singleCommunityCleanUp(singleCommunityCleanUp),
+		  stochasticDistribution(stochasticDistribution),
+		  stochastic(stochasticDistribution),
+		  significanceThreshold(significanceThreshold),
+		  scoreThreshold(scoreThreshold),
+		  minOverlapRatio(minOverlapRatio),
 		  maxCommunitySize(maxCommunitySize) {
 }
 
@@ -52,21 +59,27 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	totalGroupStubs.clear();
 	totalGroupStubs.resize(numDiscardedCommunities);
 	totalStubs = 0;
-	graph.forEdges([&](node u, node v, edgeweight weight) {
-		auto comms1 = nodeMemberships[u];
-		auto comms2 = nodeMemberships[v];
-		for (index comm1 : comms1) {
-			for (index comm2 : comms2) {
-				discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
-				totalStubs += 2;
-				++totalGroupStubs[comm1];
-				++totalGroupStubs[comm2];
-				if (comm1 != comm2) {
-					++outgoingGroupStubs[comm1];
-					++outgoingGroupStubs[comm2];
+
+	graph.forNodes([&](node u) {
+		const auto& comms1 = nodeMemberships[u];
+		if (comms1.empty()) return;
+
+		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
+			if (u > v) return;
+			const auto& comms2 = nodeMemberships[v];
+			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
+				for (index comm1 : comms1) {
+					discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
+					totalStubs += 2;
+					++totalGroupStubs[comm1];
+					++totalGroupStubs[comm2];
+					if (comm1 != comm2) {
+						++outgoingGroupStubs[comm1];
+						++outgoingGroupStubs[comm2];
+					}
 				}
 			}
-		}
+		});
 	});
 }
 
@@ -149,34 +162,59 @@ bool MergeCommunities::tryLocalMove(node u) {
 }
 
 void MergeCommunities::checkMergedCommunities() {
-	index communityCount = 0;
 	// Store number of communities as this is not an O(1) lookup
 	const count numMergedCommunities = mergedCommunities.numberOfSubsets();
 	INFO("Check significance of ", numMergedCommunities, " merged communities");
 	count skippedCommunities = 0;
-	for (const auto &communitiesToMerge : mergedCommunities.getSubsets()) {
-		DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
-		if (communitiesToMerge.size() == 1)
-			continue;
-		Community mergedCommunity;
-		for (index communityId : communitiesToMerge) {
-			auto community = coarseToFineMapping[communityId];
-			discardedCommunities.erase(community);
-			for (node u : community) {
-				mergedCommunity.insert(u);
+
+	std::vector<index> partitionMap(mergedCommunities.upperBound(), none);
+	std::vector<std::vector<node>> mergedCommunitiesSubsets;
+	mergedCommunitiesSubsets.reserve(numMergedCommunities);
+	mergedCommunities.forEntries([&](index e, index s){
+		if (partitionMap[s] == none) {
+			partitionMap[s] = mergedCommunitiesSubsets.size();
+			mergedCommunitiesSubsets.emplace_back();
+		}
+		mergedCommunitiesSubsets[partitionMap[s]].push_back(e);
+	});
+
+	#pragma omp parallel
+	{
+		SingleCommunityCleanUp singleCommunityCleanUp(graph, stochasticDistribution, scoreThreshold, significanceThreshold, minOverlapRatio);
+#pragma omp for schedule(dynamic, 1)
+		for (omp_index i = 0; i < static_cast<omp_index>(mergedCommunitiesSubsets.size()); ++i) {
+			const std::vector<node>& communitiesToMerge(mergedCommunitiesSubsets[i]);
+
+			DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
+			if (communitiesToMerge.size() == 1)
+				continue;
+
+			Community mergedCommunity;
+
+			for (index communityId : communitiesToMerge) {
+				const auto& community = coarseToFineMapping[communityId];
+#pragma omp critical
+				discardedCommunities.erase(community);
+				for (node u : community) {
+					mergedCommunity.insert(u);
+				}
+				if (mergedCommunity.size() >= maxCommunitySize)
+					break;
 			}
-			if (mergedCommunity.size() >= maxCommunitySize)
-				break;
+			if (mergedCommunity.size() >= maxCommunitySize) {
+#pragma omp atomic update
+				++skippedCommunities;
+				continue;
+			}
+			Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
+#pragma omp critical
+			{
+				if (cleanedCommunity.empty())
+					discardedCommunities.emplace(std::move(mergedCommunity));
+				else
+					cleanedCommunities.emplace_back(std::move(cleanedCommunity));
+			}
 		}
-		if (mergedCommunity.size() >= maxCommunitySize) {
-			++skippedCommunities;
-			continue;
-		}
-		Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
-		if (cleanedCommunity.empty())
-			discardedCommunities.emplace(std::move(mergedCommunity));
-		else
-			cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 	}
 	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }
@@ -190,7 +228,7 @@ std::string MergeCommunities::toString() const {
 }
 
 bool MergeCommunities::isParallel() const {
-	return false;
+	return true;
 }
 
 } /* namespace NetworKit */
