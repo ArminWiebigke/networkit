@@ -105,7 +105,7 @@ void EgoSplitting::run() {
 	if (parameters.at("Cleanup") == "Yes"
 	    || (parameters.at("Extend EgoNet Strategy") == "Edges" && parameters.at("Edges Score Strategy") == "Significance")
 	    || parameters.at("Extend EgoNet Strategy") == "Significance") {
-		stochasticDistribution.setMaxValue(2 * G.numberOfEdges() + G.numberOfNodes());
+		stochasticDistribution.increaseMaxValueTo(2 * G.numberOfEdges() + G.numberOfNodes());
 	}
 
 	INFO("create EgoNets");
@@ -141,7 +141,7 @@ void EgoSplitting::run() {
 
 
 void EgoSplitting::createEgoNets() {
-	int maxEgoNetsPartitioned = std::stoi(parameters.at("maxEgoNetsPartitioned"));
+	const int maxEgoNetsPartitioned = std::stoi(parameters.at("maxEgoNetsPartitioned"));
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{
 		Aux::SignalHandler signalHandler;
@@ -198,7 +198,7 @@ void EgoSplitting::createEgoNets() {
 			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
 			                                            localClusteringAlgo);
 			extAndPartition.run();
-			const Partition& egoPartition = extAndPartition.getPartition();
+			const Partition &egoPartition = extAndPartition.getPartition();
 			//addTimings(extAndPartition.getTimings(), "15");
 			//addTime(timer, "15    Extend and Partition EgoNet");
 
@@ -271,8 +271,8 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	// Contract graph
 	ParallelPartitionCoarsening coarsening{egoGraph, egoPartition, false, false};
 	coarsening.run();
-	const Graph& coarseGraph = coarsening.getCoarseGraph();
-	const std::vector<node>& egoToCoarse = coarsening.getFineToCoarseNodeMapping();
+	const Graph &coarseGraph = coarsening.getCoarseGraph();
+	const std::vector<node> &egoToCoarse = coarsening.getFineToCoarseNodeMapping();
 
 	// Build a mapping from nodes in the coarse graph to partition ids in egoPartition
 	// Note that if we could assume that calling Partition::compact() twice does not modify partition ids, we might be able to omit this altogether
@@ -325,7 +325,7 @@ EgoSplitting::connectEgoPartitionPersonas(const Graph &egoGraph,
 	if (strategy == "spanning") {
 		RandomMaximumSpanningForest span{coarseGraph};
 		span.run();
-		const Graph& spanningForest = span.getMSF();
+		const Graph &spanningForest = span.getMSF();
 		spanningForest.forEdges([&](node u, node v, edgeweight w) {
 			addPersonaEdge(u, v, w);
 		});
@@ -397,20 +397,6 @@ void EgoSplitting::connectPersonas() {
 		                     weight);
 	});
 
-	ConnectedComponents compsAlgo(personaGraph);
-	compsAlgo.run();
-	std::vector<count> componentSizes(compsAlgo.numberOfComponents());
-	personaGraph.forNodes([&](node u) {
-		++componentSizes[compsAlgo.componentOfNode(u)];
-	});
-
-	personaGraph.forNodes([&](node u) {
-		const index c = compsAlgo.componentOfNode(u);
-		if (componentSizes[c] < 5) {
-			personaGraph.removeNode(u);
-		}
-	});
-
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
@@ -434,6 +420,20 @@ void EgoSplitting::connectPersonas() {
 	auto iso2 = numIsolatedNodes(personaGraph);
 	assert(iso2 == 0);
 #endif
+
+	ConnectedComponents compsAlgo(personaGraph);
+	compsAlgo.run();
+	std::vector<count> componentSizes(compsAlgo.numberOfComponents());
+	personaGraph.forNodes([&](node u) {
+		++componentSizes[compsAlgo.componentOfNode(u)];
+	});
+
+	personaGraph.forNodes([&](node u) {
+		const index c = compsAlgo.componentOfNode(u);
+		if (componentSizes[c] < 5) {
+			personaGraph.removeNode(u);
+		}
+	});
 	egoNetPartitions.clear();
 }
 

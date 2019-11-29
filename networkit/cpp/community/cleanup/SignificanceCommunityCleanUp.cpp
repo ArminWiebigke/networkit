@@ -14,7 +14,7 @@ using Community = SignificanceCommunityCleanUp::Community;
 
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
                                                            const Cover &cover,
-							   const StochasticDistribution& distribution,
+                                                           StochasticDistribution &distribution,
                                                            double significanceThreshold,
                                                            double scoreThreshold,
                                                            double minOverlapRatio,
@@ -80,7 +80,8 @@ void SignificanceCommunityCleanUp::cleanAllCommunities() {
 
 void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
 	INFO("Try to merge ", discardedCommunities.size(), " discarded communities");
-	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), stochasticDistribution, significanceThreshold, scoreThreshold, minOverlapRatio,
+	MergeCommunities mergeCommunities(graph, std::move(discardedCommunities), stochasticDistribution,
+	                                  significanceThreshold, scoreThreshold, minOverlapRatio,
 	                                  2 * maxCommunitySize);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {

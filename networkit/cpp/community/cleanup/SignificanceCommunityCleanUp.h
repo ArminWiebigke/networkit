@@ -34,7 +34,7 @@ public:
 	 */
 	SignificanceCommunityCleanUp(const Graph &graph,
 	                             const Cover &cover,
-				     const StochasticDistribution& distribution,
+	                             StochasticDistribution &distribution,
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
 	                             double minOverlapRatio = 0.5,
@@ -64,7 +64,7 @@ private:
 	const bool mergeDiscarded;
 	count maxCommunitySize;
 
-	const StochasticDistribution &stochasticDistribution;
+	StochasticDistribution &stochasticDistribution;
 
 	void cleanAllCommunities();
 

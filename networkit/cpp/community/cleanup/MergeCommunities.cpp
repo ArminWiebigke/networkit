@@ -12,7 +12,7 @@ namespace NetworKit {
 using Community = MergeCommunities::Community;
 
 MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-				   const StochasticDistribution& stochasticDistribution,
+                                   StochasticDistribution &stochasticDistribution,
                                    double significanceThreshold,
                                    double scoreThreshold,
                                    double minOverlapRatio,
@@ -61,12 +61,12 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	totalStubs = 0;
 
 	graph.forNodes([&](node u) {
-		const auto& comms1 = nodeMemberships[u];
+		const auto &comms1 = nodeMemberships[u];
 		if (comms1.empty()) return;
 
 		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
 			if (u > v) return;
-			const auto& comms2 = nodeMemberships[v];
+			const auto &comms2 = nodeMemberships[v];
 			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
 				for (index comm1 : comms1) {
 					discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
@@ -86,6 +86,8 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 void MergeCommunities::tryToMergeCommunities() {
 	mergedCommunities = Partition(discardedCommunitiesGraph.numberOfNodes());
 	mergedCommunities.allToSingletons();
+	stochasticDistribution.increaseMaxValueTo(2 * discardedCommunitiesGraph.totalEdgeWeight()
+	                                          + discardedCommunitiesGraph.numberOfNodes());
 	count maxIterations = 20;
 	for (count i = 0; i < maxIterations; ++i) {
 		DEBUG("Merge communities iteration ", i);
@@ -170,7 +172,7 @@ void MergeCommunities::checkMergedCommunities() {
 	std::vector<index> partitionMap(mergedCommunities.upperBound(), none);
 	std::vector<std::vector<node>> mergedCommunitiesSubsets;
 	mergedCommunitiesSubsets.reserve(numMergedCommunities);
-	mergedCommunities.forEntries([&](index e, index s){
+	mergedCommunities.forEntries([&](index e, index s) {
 		if (partitionMap[s] == none) {
 			partitionMap[s] = mergedCommunitiesSubsets.size();
 			mergedCommunitiesSubsets.emplace_back();
@@ -178,12 +180,14 @@ void MergeCommunities::checkMergedCommunities() {
 		mergedCommunitiesSubsets[partitionMap[s]].push_back(e);
 	});
 
-	#pragma omp parallel
+#pragma omp parallel
 	{
-		SingleCommunityCleanUp singleCommunityCleanUp(graph, stochasticDistribution, scoreThreshold, significanceThreshold, minOverlapRatio);
+		SingleCommunityCleanUp singleCommunityCleanUp(graph, stochasticDistribution, scoreThreshold,
+		                                              significanceThreshold, minOverlapRatio);
+		count communityCount = 0;
 #pragma omp for schedule(dynamic, 1)
 		for (omp_index i = 0; i < static_cast<omp_index>(mergedCommunitiesSubsets.size()); ++i) {
-			const std::vector<node>& communitiesToMerge(mergedCommunitiesSubsets[i]);
+			const std::vector<node> &communitiesToMerge(mergedCommunitiesSubsets[i]);
 
 			DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
 			if (communitiesToMerge.size() == 1)
@@ -192,7 +196,7 @@ void MergeCommunities::checkMergedCommunities() {
 			Community mergedCommunity;
 
 			for (index communityId : communitiesToMerge) {
-				const auto& community = coarseToFineMapping[communityId];
+				const auto &community = coarseToFineMapping[communityId];
 #pragma omp critical
 				discardedCommunities.erase(community);
 				for (node u : community) {
@@ -206,6 +210,7 @@ void MergeCommunities::checkMergedCommunities() {
 				++skippedCommunities;
 				continue;
 			}
+			assert(stochasticDistribution.maxValue() >= 2 * graph.totalEdgeWeight() + graph.numberOfNodes());
 			Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
 #pragma omp critical
 			{

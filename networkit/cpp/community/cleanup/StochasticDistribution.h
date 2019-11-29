@@ -32,6 +32,12 @@ public:
 	void setMaxValue(count maxValue);
 
 	/**
+	 * Set the maximal possible value that can be used as an input for the distributions.
+	 * @param maxValue new maximal value
+	 */
+	void increaseMaxValueTo(count maxValue);
+
+	/**
 	 * Returns the maximal value that can be used as an input value.
 	 */
 	count maxValue() const {

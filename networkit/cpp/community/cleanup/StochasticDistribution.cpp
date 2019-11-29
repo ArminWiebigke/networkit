@@ -32,6 +32,12 @@ void StochasticDistribution::setMaxValue(count maxValue) {
 	assert(logSum.size() == maxValue + 1);
 }
 
+void StochasticDistribution::increaseMaxValueTo(count maxValue) {
+	if (maxValue > logSum.size()) {
+		setMaxValue(maxValue);
+	}
+}
+
 // Calculates the change ratio of the binomial coefficient "n choose k" if we increment k to k+1
 // => returns ("n choose k+1") / ("n choose k")
 inline double binomialCoeffChangeForIncrement(count n, count k) {
