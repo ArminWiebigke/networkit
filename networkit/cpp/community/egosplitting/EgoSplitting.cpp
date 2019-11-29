@@ -58,6 +58,7 @@ void EgoSplitting::init() {
 	parameters["partitionFromGroundTruth"] = "No";
 	parameters["numEgoNetsStored"] = "2000";
 	parameters["Cleanup"] = "Yes";
+	parameters["CleanupMerge"] = "Yes";
 	parameters["maxEgoNetsPartitioned"] = "-1";
 
 	// Connect Personas
@@ -455,6 +456,17 @@ void EgoSplitting::createCover() {
 	});
 }
 
+void EgoSplitting::cleanUpCover() {
+	if (parameters.at("Cleanup") == "Yes") {
+		discardSmallCommunities();
+		bool mergeDiscarded = parameters.at("CleanupMerge") == "Yes";
+		SignificanceCommunityCleanUp cleanup(G, resultCover, stochasticDistribution, 0.1, 0.1, 0.5, mergeDiscarded);
+		cleanup.run();
+		resultCover = cleanup.getCover();
+	}
+	discardSmallCommunities();
+}
+
 void EgoSplitting::discardSmallCommunities() {// Discard communities of size 4 or less
 	count min_size = 5;
 	std::vector<std::vector<node>> communities{resultCover.upperBound()};
@@ -497,16 +509,6 @@ EgoSplitting::setParameters(std::map<std::string, std::string> const &new_parame
 
 void EgoSplitting::setGroundTruth(const Cover &gt) {
 	this->groundTruth = gt;
-}
-
-void EgoSplitting::cleanUpCover() {
-	if (parameters.at("Cleanup") == "Yes") {
-		discardSmallCommunities();
-		SignificanceCommunityCleanUp cleanup(G, resultCover, stochasticDistribution);
-		cleanup.run();
-		resultCover = cleanup.getCover();
-	}
-	discardSmallCommunities();
 }
 
 } /* namespace NetworKit */
