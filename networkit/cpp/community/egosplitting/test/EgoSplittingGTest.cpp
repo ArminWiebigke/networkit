@@ -19,7 +19,9 @@ namespace NetworKit {
 
 class EgoSplittingGTest : public testing::Test {
 public:
-	Graph testGraph;
+	void SetUp() {
+		Aux::Random::setSeed(435913, false);
+	}
 
 	EgoSplittingGTest() {
 		std::string inputDir = "input";
@@ -53,6 +55,8 @@ public:
 			EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
 		}
 	}
+
+	Graph testGraph;
 };
 
 TEST_F(EgoSplittingGTest, testEgoSplitting) {

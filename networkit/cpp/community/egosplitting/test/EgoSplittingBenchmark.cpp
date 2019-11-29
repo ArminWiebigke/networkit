@@ -19,7 +19,9 @@ namespace NetworKit {
 
 class EgoSplittingBenchmark : public testing::Test {
 public:
-	Graph testGraph;
+	void SetUp() {
+		Aux::Random::setSeed(435913, false);
+	}
 
 	EgoSplittingBenchmark() {
 //		Aux::Log::setLogLevel("INFO");
@@ -45,6 +47,8 @@ public:
 
 		std::cout << algo.timingsAsString() << std::endl;
 	}
+
+	Graph testGraph;
 };
 
 TEST_F(EgoSplittingBenchmark, benchNoExtend) {

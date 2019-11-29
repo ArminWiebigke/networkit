@@ -12,12 +12,15 @@
 #include "../../../io/EdgeListReader.h"
 #include "../SignificanceCommunityCleanUp.h"
 #include "../../../io/METISGraphReader.h"
-#include "../../../generators/ErdosRenyiGenerator.h"
 #include "../MergeCommunities.h"
 
 namespace NetworKit {
 
 class CleanupGTest : public testing::Test {
+public:
+	void SetUp() {
+		Aux::Random::setSeed(435913, false);
+	}
 };
 
 TEST_F(CleanupGTest, testCleanUp) {

@@ -15,6 +15,10 @@
 namespace NetworKit {
 
 class MapEquationGTest : public testing::Test {
+public:
+	void SetUp() {
+		Aux::Random::setSeed(435913, false);
+	}
 };
 
 template <class T>
