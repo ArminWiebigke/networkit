@@ -73,14 +73,17 @@ private:
 
 	std::vector<ScoreStruct> calculateInternalScores();
 
-	std::vector<node> findSignificantCandidates(const std::vector<ScoreStruct>& scores);
+	std::vector<node> findSignificantCandidates(const std::vector<ScoreStruct> &scores);
 
-	void removeWorstNode(const std::vector<ScoreStruct>& internalScores);
+	void removeWorstNode(const std::vector<ScoreStruct> &internalScores);
 
 	void reset();
 
 	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
 
+	Community firstPhase(const Community &inputCommunity);
+
+	Community secondPhase(const Community &firstPhaseResult);
 };
 
 } /* namespace NetworKit */
