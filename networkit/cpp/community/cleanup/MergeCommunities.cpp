@@ -12,7 +12,7 @@ namespace NetworKit {
 using Community = MergeCommunities::Community;
 
 MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
-				   const StochasticDistribution& stochasticDistribution,
+				   StochasticDistribution& stochasticDistribution,
                                    double significanceThreshold,
                                    double scoreThreshold,
                                    double minOverlapRatio,
@@ -81,6 +81,10 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 			}
 		});
 	});
+
+	if (totalStubs + numDiscardedCommunities > stochasticDistribution.maxValue()) {
+		stochasticDistribution.setMaxValue(totalStubs + numDiscardedCommunities);
+	}
 }
 
 void MergeCommunities::tryToMergeCommunities() {

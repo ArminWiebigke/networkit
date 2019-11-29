@@ -14,7 +14,7 @@ using Community = SignificanceCommunityCleanUp::Community;
 
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
                                                            const Cover &cover,
-							   const StochasticDistribution& distribution,
+							   StochasticDistribution& distribution,
                                                            double significanceThreshold,
                                                            double scoreThreshold,
                                                            double minOverlapRatio,

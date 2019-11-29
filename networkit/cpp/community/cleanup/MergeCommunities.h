@@ -25,7 +25,7 @@ public:
 
         MergeCommunities(const Graph &graph,
 			 std::set<Community> discardedCommunities,
-			 const StochasticDistribution& stochasticDistribution,
+			 StochasticDistribution& stochasticDistribution,
 			 double significanceThreshold = 0.1,
 			 double scoreThreshold = 0.1,
 			 double minOverlapRatio = 0.5,
@@ -42,7 +42,7 @@ public:
 private:
 	const Graph &graph;
 	std::set<Community> discardedCommunities;
-	const StochasticDistribution& stochasticDistribution;
+	StochasticDistribution& stochasticDistribution;
 	StochasticSignificance stochastic;
 	double significanceThreshold;
 	double scoreThreshold;
