@@ -66,11 +66,11 @@ void SignificanceCommunityCleanUp::cleanAllCommunities() {
 			auto cleanedCommunity = singleCommunityCleanup.clean(inputCommunity);
 			#pragma omp critical
 			{
-				if (cleanedCommunity.empty() && mergeDiscarded)
-					discardedCommunities.insert(inputCommunity);
-				else {
+				if (!cleanedCommunity.empty()) {
 					cleanedCommunities.addSubset(cleanedCommunity);
 					maxCommunitySize = std::max(maxCommunitySize, cleanedCommunity.size());
+				} else if (mergeDiscarded) {
+					discardedCommunities.insert(inputCommunity);
 				}
 			}
 		}
