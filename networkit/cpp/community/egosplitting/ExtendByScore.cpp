@@ -13,7 +13,7 @@ ExtendByScore::ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
                              const Graph &egoGraph, node egoNode)
 		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
 		  nodeScores(egoNetData.nodeScores), scoreStrategy(parameters.at("Edges Score Strategy")),
-		  significance(egoNetData.stochasticSignificance) {
+		  significanceCalculator(egoNetData.significanceCalculator) {
 	if (nodeScores.upperBound() < G.upperNodeIdBound())
 		nodeScores.setUpperBound(G.upperNodeIdBound());
 }
@@ -92,7 +92,7 @@ ExtendByScore::calculateScores() const {
 		});
 	} else if (scoreStrategy == "Significance") {
 		candidatesAndScores = calculateScoresImpl([&](node v, count numEdges) {
-			double rScore = significance.rScore(G.degree(v), numEdges, outgoingStubs, externalStubs);
+			double rScore = significanceCalculator.rScore(G.degree(v), numEdges, outgoingStubs, externalStubs);
 			return -rScore; // low r-score is better
 		});
 	} else {

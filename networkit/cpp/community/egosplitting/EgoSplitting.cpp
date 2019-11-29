@@ -154,8 +154,9 @@ void EgoSplitting::createEgoNets() {
 		SparseVector<double> nodeScores(0);
 		SparseVector<node> significantGroup(0, none);
 		SparseVector<std::vector<count>> edgesToGroups(0);
-		EgoNetData egoNetData{G, directedG, groundTruth, egoMapping, parameters, sigTable, nodeScores,
-			significantGroup, edgesToGroups, StochasticSignificance(stochasticDistribution)};
+		SignificanceCalculator significance(stochasticDistribution);
+		EgoNetData egoNetData{G, directedG, groundTruth, parameters, sigTable, egoMapping, nodeScores,
+			significantGroup, edgesToGroups, significance};
 		//addTime(timer, "11    Data Setup");
 
 #pragma omp for

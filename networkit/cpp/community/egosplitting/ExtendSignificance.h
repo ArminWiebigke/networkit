@@ -19,7 +19,7 @@
 #include "EgoSplitting.h"
 #include "ExtendEgoNetStrategy.h"
 #include "../../structures/MemoizationTable.h"
-#include "../cleanup/StochasticSignificance.h"
+#include "../cleanup/SignificanceCalculator.h"
 
 namespace NetworKit {
 
@@ -46,7 +46,7 @@ public:
 private:
 	const Partition &basePartition;
 	MemoizationTable<double> &sigTable;
-	StochasticSignificance &stochasticSignificance;
+	SignificanceCalculator &significanceCalculator;
 	Graph coarseGraph;
 	SparseVector<std::vector<count>> &edgesToGroups; // For each candidate: number of edges to the groups
 	std::map<node, std::vector<node> > coarseToEgo;

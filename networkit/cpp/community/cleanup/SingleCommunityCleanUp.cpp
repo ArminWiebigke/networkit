@@ -11,8 +11,8 @@ namespace NetworKit {
 using Community = SingleCommunityCleanUp::Community;
 
 SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph,
-					       const StochasticDistribution& stochasticDistribution,
-					       double scoreThreshold,
+                                               const StochasticDistribution &stochasticDistribution,
+                                               double scoreThreshold,
                                                double significanceThreshold, double minOverlapRatio)
 		: graph(graph),
 		  significanceThreshold(significanceThreshold),
@@ -22,7 +22,7 @@ SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph,
 		  isInCommunity(graph.upperNodeIdBound()),
 		  isInOriginalCommunity(graph.upperNodeIdBound()),
 		  isCandidate(graph.upperNodeIdBound()),
-		  stochastic(stochasticDistribution) {
+		  significanceCalculator({stochasticDistribution}) {
 }
 
 Community
@@ -146,7 +146,7 @@ SingleCommunityCleanUp::calculateInternalScores() {
 		// Calculate s-Score as if the node was not part of the community
 		count adjustedOutgoingStubs = outgoingCommunityStubs + 2 * edgesToCommunity[u] - degree;
 		count adjustedExternalStubs = externalStubs + degree;
-		double score = stochastic.rScore(
+		double score = significanceCalculator.rScore(
 				degree, edgesToCommunity[u], adjustedOutgoingStubs, adjustedExternalStubs);
 		internalScores.emplace_back(score, u);
 	}
@@ -159,7 +159,7 @@ SingleCommunityCleanUp::calculateCandidateScores() {
 	std::vector<ScoreStruct> candidateScores;
 	for (node u : candidates) {
 		assert(!isInCommunity[u]);
-		double score = stochastic.rScore(graph.degree(u), edgesToCommunity[u],
+		double score = significanceCalculator.rScore(graph.degree(u), edgesToCommunity[u],
 		                                 outgoingCommunityStubs, externalStubs);
 		if (score < scoreThreshold)
 			candidateScores.emplace_back(score, u);
@@ -200,7 +200,7 @@ SingleCommunityCleanUp::findSignificantCandidates(const std::vector<ScoreStruct>
 	for (auto scoreStruct : scores) {
 		double score = scoreStruct.rScore;
 		// significance is the probability Omega_{position}(score, externalNodes)
-		double significance = stochastic.orderStatistic(score, externalNodes, position);
+		double significance = significanceCalculator.orderStatistic(score, externalNodes, position);
 		if (significance < threshold) {
 			// The score is much better than expected in the null model, so the node is significant
 			significantNodesCount = position;

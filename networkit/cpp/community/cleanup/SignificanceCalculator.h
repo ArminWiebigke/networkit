@@ -1,12 +1,12 @@
 /*
- * StochasticSignificance.h
+ * SignificanceCalculator.h
  *
  * Created: 2019-09-13
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_STOCHASTICSIGNIFICANCE_H
-#define NETWORKIT_STOCHASTICSIGNIFICANCE_H
+#ifndef NETWORKIT_SIGNIFICANCECALCULATOR_H
+#define NETWORKIT_SIGNIFICANCECALCULATOR_H
 
 #include <random>
 
@@ -18,14 +18,14 @@ namespace NetworKit {
 /**
  * This class calculates the statistical significance of a node to a community.
  */
-class StochasticSignificance {
+class SignificanceCalculator {
 public:
 
 	/**
 	 * Constructor
 	 * @param maxValue maximum value that can be used as an argument for the calculations
 	 */
-	explicit StochasticSignificance(const StochasticDistribution& dist);
+	explicit SignificanceCalculator(const StochasticDistribution &dist);
 
 	/**
 	 * Calculate the r-score
@@ -47,7 +47,7 @@ public:
 	double orderStatistic(double rScore, count externalNodes, count pos);
 
 private:
-	const StochasticDistribution& dist;
+	const StochasticDistribution &dist;
 	std::mt19937_64 rng;
 	std::uniform_real_distribution<double> random_distribution;
 
@@ -59,4 +59,4 @@ private:
 
 } /* namespace NetworKit */
 
-#endif //NETWORKIT_STOCHASTICSIGNIFICANCE_H
+#endif //NETWORKIT_SIGNIFICANCECALCULATOR_H

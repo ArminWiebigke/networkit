@@ -24,7 +24,7 @@ ExtendSignificance::ExtendSignificance(EgoNetData &egoNetData,
 		: ExtendEgoNetStrategy(egoNetData, maxCandidates, egoGraph, egoNode),
 		  basePartition(basePartition),
 		  sigTable(egoNetData.sigTable),
-		  stochasticSignificance(egoNetData.stochasticSignificance),
+		  significanceCalculator(egoNetData.significanceCalculator),
 		  useSigMemo(parameters.at("useSigMemo") == "Yes"),
 		  mergeGroups(parameters.at("signMerge") == "Yes"),
 		  sortGroupsBySignificance(parameters.at("sortGroups") == "Significance"),
@@ -49,13 +49,13 @@ void ExtendSignificance::setMemoizationFunction() {
 		// For a given number of external nodes, calculate the minimal s-score that is significant
 		// We can then simply compare the s-values instead of calculating the ordered statistics
 		// Only works if the position is known before. 1 ( = best random node) in this case.
-		StochasticSignificance &stoch = stochasticSignificance;
-		sigTable.setValueFunc([maxSig, &stoch](index extNodes) {
+		SignificanceCalculator &calculator = significanceCalculator;
+		sigTable.setValueFunc([maxSig, &calculator](index extNodes) {
 			double minRScore = 0.125;
 			double step = 0.0625;
 			count iterations = 20;
 			for (count i = 0; i < iterations; ++i) {
-				double sig = stoch.orderStatistic(minRScore, extNodes, 1);
+				double sig = calculator.orderStatistic(minRScore, extNodes, 1);
 				if (sig < maxSig) {
 					minRScore += step;
 				} else {
@@ -429,16 +429,16 @@ ExtendSignificance::checkSignificanceToMergedGroups(
 double
 ExtendSignificance::calculateSScore(count nodeDegree, count kIn, count grOut, count groupExtStubs,
                                     count extNodes) const {
-	double rScore = stochasticSignificance.rScore(nodeDegree, kIn, grOut, groupExtStubs);
+	double rScore = significanceCalculator.rScore(nodeDegree, kIn, grOut, groupExtStubs);
 	double returnVal;
 	if (useSigMemo) {
-		double minRScore = sigTable.getValue(extNodes);
+		double minRScore = sigTable.getValue(extNodes);  // TODO: Not threadsafe
 #ifndef NDEBUG
 		if (rScore <= minRScore) {
-			assert(stochasticSignificance.orderStatistic(rScore, extNodes, 1) <=
+			assert(significanceCalculator.orderStatistic(rScore, extNodes, 1) <=
 			       1.01 * maxSignificance);
 		} else {
-			assert(stochasticSignificance.orderStatistic(rScore, extNodes, 1) >=
+			assert(significanceCalculator.orderStatistic(rScore, extNodes, 1) >=
 			       0.99 * maxSignificance);
 		}
 #endif
@@ -448,7 +448,7 @@ ExtendSignificance::calculateSScore(count nodeDegree, count kIn, count grOut, co
 			returnVal = 1.0;
 		}
 	} else {
-		returnVal = stochasticSignificance.orderStatistic(rScore, extNodes, 1);
+		returnVal = significanceCalculator.orderStatistic(rScore, extNodes, 1);
 	}
 	return returnVal;
 }

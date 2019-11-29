@@ -41,7 +41,7 @@ networkit_add_module(community
     cleanup/SignificanceCommunityCleanUp.cpp
     cleanup/SingleCommunityCleanUp.cpp
     cleanup/StochasticDistribution.cpp
-    cleanup/StochasticSignificance.cpp
+	cleanup/SignificanceCalculator.cpp
     egosplitting/EgoNetExtensionAndPartition.cpp
     egosplitting/EgoSplitting.cpp
     egosplitting/ExtendByScore.cpp

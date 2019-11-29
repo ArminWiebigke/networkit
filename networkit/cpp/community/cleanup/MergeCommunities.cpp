@@ -20,7 +20,7 @@ MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> disca
 		: graph(graph),
 		  discardedCommunities(std::move(discardedCommunities)),
 		  stochasticDistribution(stochasticDistribution),
-		  stochastic(stochasticDistribution),
+		  significanceCalculator({stochasticDistribution}),
 		  significanceThreshold(significanceThreshold),
 		  scoreThreshold(scoreThreshold),
 		  minOverlapRatio(minOverlapRatio),
@@ -66,6 +66,7 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 
 		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
 			if (u > v) return;
+			assert(weight == 1.0);
 			const auto &comms2 = nodeMemberships[v];
 			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
 				for (index comm1 : comms1) {
@@ -136,13 +137,13 @@ bool MergeCommunities::tryLocalMove(node u) {
 			externalStubs += degree;
 			bool communityIsEmpty = commOut != 0;
 			if (!communityIsEmpty) {
-				score = stochastic.rScore(degree, numEdgesIntoCommunity,
-				                          commOut, externalStubs);
+				score = significanceCalculator.rScore(degree, numEdgesIntoCommunity,
+				                                      commOut, externalStubs);
 			}
 		} else {
-			score = stochastic.rScore(degree, numEdgesIntoCommunity,
-			                          outgoingGroupStubs[neighborCommunity],
-			                          externalStubs);
+			score = significanceCalculator.rScore(degree, numEdgesIntoCommunity,
+			                                      outgoingGroupStubs[neighborCommunity],
+			                                      externalStubs);
 		}
 		if (score < bestScore) {
 			stubsIntoNew = numEdgesIntoCommunity;

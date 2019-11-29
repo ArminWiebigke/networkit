@@ -43,7 +43,7 @@ private:
 	const Graph &graph;
 	std::set<Community> discardedCommunities;
 	StochasticDistribution &stochasticDistribution;
-	StochasticSignificance stochastic;
+	SignificanceCalculator significanceCalculator;
 	double significanceThreshold;
 	double scoreThreshold;
 	double minOverlapRatio;

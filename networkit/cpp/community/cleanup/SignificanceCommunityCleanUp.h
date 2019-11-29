@@ -11,7 +11,7 @@
 #include "../../base/Algorithm.h"
 #include "../../graph/Graph.h"
 #include "../../structures/Cover.h"
-#include "StochasticSignificance.h"
+#include "SignificanceCalculator.h"
 #include "SingleCommunityCleanUp.h"
 
 namespace NetworKit {

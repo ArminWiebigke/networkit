@@ -9,7 +9,7 @@
 #define NETWORKIT_SINGLECOMMUNITYCLEANUP_H
 
 #include "../../graph/Graph.h"
-#include "StochasticSignificance.h"
+#include "SignificanceCalculator.h"
 #include "../../structures/SparseVector.h"
 
 namespace NetworKit {
@@ -22,7 +22,7 @@ public:
 	using Community = std::set<node>;
 
 	explicit SingleCommunityCleanUp(const Graph &graph,
-					const StochasticDistribution& stochasticDistribution,
+	                                const StochasticDistribution &stochasticDistribution,
 	                                double scoreThreshold = 0.1,
 	                                double significanceThreshold = 0.1,
 	                                double minOverlapRatio = 0.5);
@@ -45,7 +45,7 @@ private:
 	};
 
 	const Graph &graph;
-	StochasticSignificance stochastic;
+	SignificanceCalculator significanceCalculator;
 	// threshold to decide if a node is significant
 	const double significanceThreshold;
 	// threshold to discard candidates because they will most likely not be significant

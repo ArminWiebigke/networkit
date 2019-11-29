@@ -1,5 +1,5 @@
 /*
- * StochasticSignificance.cpp
+ * SignificanceCalculator.cpp
  *
  * Created: 2019-09-13
  * Author: Armin Wiebigke
@@ -7,17 +7,17 @@
 
 #include <algorithm>
 
-#include "StochasticSignificance.h"
+#include "SignificanceCalculator.h"
 #include "../../auxiliary/Random.h"
 
 namespace NetworKit {
 
-	StochasticSignificance::StochasticSignificance(const StochasticDistribution& stochasticDistribution) : dist(stochasticDistribution), rng(Aux::Random::integer()), random_distribution(-0.5, 0.5) {
+	SignificanceCalculator::SignificanceCalculator(const StochasticDistribution& stochasticDistribution) : dist(stochasticDistribution), rng(Aux::Random::integer()), random_distribution(-0.5, 0.5) {
 
 }
 
 double
-StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) {
+SignificanceCalculator::rScore(count k, count kIn, count cOut, count extStubs) {
 	assert(kIn <= cOut);
 	count openStubs = extStubs + cOut;
 	assert(openStubs >= k);
@@ -47,7 +47,7 @@ StochasticSignificance::rScore(count k, count kIn, count cOut, count extStubs) {
 	return score;
 }
 
-double StochasticSignificance::orderStatistic(double rScore, count externalNodes, count pos) {
+double SignificanceCalculator::orderStatistic(double rScore, count externalNodes, count pos) {
 	assert(pos > 0);
 	ensureMaxValue(externalNodes);
 	return dist.rightCumulativeBinomial(rScore, externalNodes, pos);

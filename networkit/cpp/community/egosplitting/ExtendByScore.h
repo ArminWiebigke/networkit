@@ -30,7 +30,7 @@ private:
 	using NodeAndScore = std::pair<node, double>;
 	SparseVector<double> &nodeScores;
 	std::string scoreStrategy;
-	StochasticSignificance &significance;
+	SignificanceCalculator &significanceCalculator;
 	count outgoingStubs;
 	count externalStubs;
 
