@@ -159,7 +159,7 @@ void EgoSplitting::createEgoNets() {
 			significantGroup, edgesToGroups, significance};
 		//addTime(timer, "11    Data Setup");
 
-#pragma omp for
+#pragma omp for schedule(dynamic, 10)
 		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
 			if (!signalHandler.isRunning()) continue;
 

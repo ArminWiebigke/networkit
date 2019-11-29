@@ -82,6 +82,10 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 			}
 		});
 	});
+
+	if (totalStubs + numDiscardedCommunities > stochasticDistribution.maxValue()) {
+		stochasticDistribution.setMaxValue(totalStubs + numDiscardedCommunities);
+	}
 }
 
 void MergeCommunities::tryToMergeCommunities() {
