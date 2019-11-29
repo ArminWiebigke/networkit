@@ -21,7 +21,7 @@
 #include "../../auxiliary/Timings.h"
 #include "../../structures/MemoizationTable.h"
 #include "../cleanup/StochasticDistribution.h"
-#include "../cleanup/StochasticSignificance.h"
+#include "../cleanup/SignificanceCalculator.h"
 #include "../../structures/SparseVector.h"
 #include "../../auxiliary/ParallelTimings.h"
 #include "../ClusteringFunctionFactory.h"
@@ -161,16 +161,18 @@ private:
  * For performance reasons, most of the data is persistent across the entire algorithm.
  */
 struct EgoNetData {
+	// Global data
 	const Graph &G;
 	const LowToHighDirectedGraph &directedG;
 	const Cover &groundTruth;
-	NodeMapping &egoMapping;
 	const std::unordered_map<std::string, std::string> &parameters;
 	MemoizationTable<double> &sigTable;
+	// Ego-net local data
+	NodeMapping &egoMapping;
 	SparseVector<double> &nodeScores;
 	SparseVector<node> &significantGroup;
 	SparseVector<std::vector<count>> &edgesToGroups;
-	StochasticSignificance stochasticSignificance;
+	SignificanceCalculator &significanceCalculator;
 };
 
 } /* namespace NetworKit */

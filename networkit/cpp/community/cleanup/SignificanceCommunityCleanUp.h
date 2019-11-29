@@ -11,7 +11,7 @@
 #include "../../base/Algorithm.h"
 #include "../../graph/Graph.h"
 #include "../../structures/Cover.h"
-#include "StochasticSignificance.h"
+#include "SignificanceCalculator.h"
 #include "SingleCommunityCleanUp.h"
 
 namespace NetworKit {
@@ -34,7 +34,7 @@ public:
 	 */
 	SignificanceCommunityCleanUp(const Graph &graph,
 	                             const Cover &cover,
-				     StochasticDistribution& distribution,
+	                             StochasticDistribution &distribution,
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
 	                             double minOverlapRatio = 0.5,

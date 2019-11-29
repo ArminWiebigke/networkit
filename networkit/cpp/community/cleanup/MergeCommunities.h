@@ -23,13 +23,13 @@ class MergeCommunities : public Algorithm {
 public:
 	using Community = SingleCommunityCleanUp::Community;
 
-        MergeCommunities(const Graph &graph,
-			 std::set<Community> discardedCommunities,
-			 StochasticDistribution& stochasticDistribution,
-			 double significanceThreshold = 0.1,
-			 double scoreThreshold = 0.1,
-			 double minOverlapRatio = 0.5,
-			 count maxCommunitySize = none);
+	MergeCommunities(const Graph &graph,
+	                 std::set<Community> discardedCommunities,
+	                 StochasticDistribution &stochasticDistribution,
+	                 double significanceThreshold = 0.1,
+	                 double scoreThreshold = 0.1,
+	                 double minOverlapRatio = 0.5,
+	                 count maxCommunitySize = none);
 
 	void run() override;
 
@@ -42,8 +42,8 @@ public:
 private:
 	const Graph &graph;
 	std::set<Community> discardedCommunities;
-	StochasticDistribution& stochasticDistribution;
-	StochasticSignificance stochastic;
+	StochasticDistribution &stochasticDistribution;
+	SignificanceCalculator significanceCalculator;
 	double significanceThreshold;
 	double scoreThreshold;
 	double minOverlapRatio;

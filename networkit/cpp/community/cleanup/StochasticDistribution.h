@@ -25,11 +25,20 @@ public:
 	 */
 	explicit StochasticDistribution(index maxValue);
 
+	// Deleted to prevent accidentally copy
+	StochasticDistribution(StochasticDistribution const&) = delete;
+
 	/**
 	 * Set the maximal possible value that can be used as an input for the distributions.
 	 * @param maxValue new maximal value
 	 */
 	void setMaxValue(count maxValue);
+
+	/**
+	 * Set the maximal possible value that can be used as an input for the distributions.
+	 * @param maxValue new maximal value
+	 */
+	void increaseMaxValueTo(count maxValue);
 
 	/**
 	 * Returns the maximal value that can be used as an input value.

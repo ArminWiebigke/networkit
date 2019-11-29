@@ -11,8 +11,8 @@ namespace NetworKit {
 using Community = SingleCommunityCleanUp::Community;
 
 SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph,
-					       const StochasticDistribution& stochasticDistribution,
-					       double scoreThreshold,
+                                               const StochasticDistribution &stochasticDistribution,
+                                               double scoreThreshold,
                                                double significanceThreshold, double minOverlapRatio)
 		: graph(graph),
 		  significanceThreshold(significanceThreshold),
@@ -22,17 +22,27 @@ SingleCommunityCleanUp::SingleCommunityCleanUp(const Graph &graph,
 		  isInCommunity(graph.upperNodeIdBound()),
 		  isInOriginalCommunity(graph.upperNodeIdBound()),
 		  isCandidate(graph.upperNodeIdBound()),
-		  stochastic(stochasticDistribution) {
+		  significanceCalculator({stochasticDistribution}) {
 }
 
 Community
 SingleCommunityCleanUp::clean(const Community &inputCommunity) {
-	Community firstPhaseResult = calculateSignificantNodes(inputCommunity, false);
-	Community cleanedCommunity = calculateSignificantNodes(firstPhaseResult, true);
+	Community firstPhaseResult = firstPhase(inputCommunity);
+	Community cleanedCommunity = secondPhase(firstPhaseResult);
 	bool changedDrastically = smallOverlap(inputCommunity, cleanedCommunity);
 	if (changedDrastically)
 		cleanedCommunity = {};
 	return cleanedCommunity;
+}
+
+Community
+SingleCommunityCleanUp::secondPhase(const Community &firstPhaseResult) {
+	return calculateSignificantNodes(firstPhaseResult, true);
+}
+
+Community
+SingleCommunityCleanUp::firstPhase(const Community &inputCommunity) {
+	return calculateSignificantNodes(inputCommunity, false);
 }
 
 /**
@@ -99,7 +109,7 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 
 // remove the node with the worst (= highest) score from the community
 void SingleCommunityCleanUp::removeWorstNode(
-		const std::vector<ScoreStruct>& internalScores) {
+		const std::vector<ScoreStruct> &internalScores) {
 	assert(community.size() > 0);
 	assert(internalScores.size() > 0);
 	// TODO: Calculate the score of the nodes inside the community separately
@@ -136,7 +146,7 @@ SingleCommunityCleanUp::calculateInternalScores() {
 		// Calculate s-Score as if the node was not part of the community
 		count adjustedOutgoingStubs = outgoingCommunityStubs + 2 * edgesToCommunity[u] - degree;
 		count adjustedExternalStubs = externalStubs + degree;
-		double score = stochastic.rScore(
+		double score = significanceCalculator.rScore(
 				degree, edgesToCommunity[u], adjustedOutgoingStubs, adjustedExternalStubs);
 		internalScores.emplace_back(score, u);
 	}
@@ -149,7 +159,7 @@ SingleCommunityCleanUp::calculateCandidateScores() {
 	std::vector<ScoreStruct> candidateScores;
 	for (node u : candidates) {
 		assert(!isInCommunity[u]);
-		double score = stochastic.rScore(graph.degree(u), edgesToCommunity[u],
+		double score = significanceCalculator.rScore(graph.degree(u), edgesToCommunity[u],
 		                                 outgoingCommunityStubs, externalStubs);
 		if (score < scoreThreshold)
 			candidateScores.emplace_back(score, u);
@@ -183,14 +193,14 @@ double fitted_exponent(int N) {
 }
 
 std::vector<node>
-SingleCommunityCleanUp::findSignificantCandidates(const std::vector<ScoreStruct>& scores) {
+SingleCommunityCleanUp::findSignificantCandidates(const std::vector<ScoreStruct> &scores) {
 	int position = 1;
 	int significantNodesCount = 0;
 	double threshold = significanceThreshold / fitted_exponent(externalNodes);
 	for (auto scoreStruct : scores) {
 		double score = scoreStruct.rScore;
 		// significance is the probability Omega_{position}(score, externalNodes)
-		double significance = stochastic.orderStatistic(score, externalNodes, position);
+		double significance = significanceCalculator.orderStatistic(score, externalNodes, position);
 		if (significance < threshold) {
 			// The score is much better than expected in the null model, so the node is significant
 			significantNodesCount = position;
