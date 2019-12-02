@@ -198,7 +198,7 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 			
 			// find moves
 			numUsedCaches = 0;
-			#pragma omp for
+			#pragma omp for schedule (dynamic, 500)
 			for (index j = chunkBorders[i]; j < firstInvalid; ++j) {
 				const node u = nodes[j];
 				if (numUsedCaches == neighborCaches.size()) {
