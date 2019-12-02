@@ -12,7 +12,7 @@
 #include "../../generators/ClusteredRandomGraphGenerator.h"
 #include "../egosplitting/EgoSplitting.h"
 #include "../PLM.h"
-#include "../../io/EdgeListReader.h"
+#include "../../io/SNAPGraphReader.h"
 
 namespace NetworKit {
 
@@ -48,7 +48,7 @@ TEST_F(MapEquationBenchmark, benchLargeHierachical) {
 
 	Aux::Random::setSeed(420, true);
 
-	EdgeListReader reader('\t', 0);
+	SNAPGraphReader reader;
 	Graph G = reader.read(graphPath);
 //	Cover C = CoverReader{}.read("/home/armin/graphs/com-amazon.all.dedup.cmty.txt", G);
 //	Partition groundTruth = generator.getCommunities();

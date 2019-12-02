@@ -98,7 +98,7 @@ void LouvainMapEquation::run() {
 		timer.start();
 		std::shuffle(nodes.begin(), nodes.end(), Aux::Random::getURNG());
 		timer.stop();
-		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
+		INFO("shuffle ", timer.elapsedMilliseconds(), " ms");
 
 		// chunkBorders = fixed number of nodes, or degree sum ?
 		const size_t chunkSize = std::min(static_cast<size_t>(10000 * Aux::getCurrentNumberOfThreads()), std::max(1UL, nodes.size() / 5));
@@ -167,7 +167,7 @@ void LouvainMapEquation::run() {
 			}
 		}
 		timer.stop();
-		DEBUG("Move iteration ", iteration, " took ", timer.elapsedMilliseconds(), " ms. Moved ", numberOfNodesMoved, " nodes");
+		INFO("Move iteration ", iteration, " took ", timer.elapsedMilliseconds(), " ms. Moved ", numberOfNodesMoved, " nodes");
 		
 		clusteringChanged |= numberOfNodesMoved > 0;
 		if (numberOfNodesMoved == 0) {
