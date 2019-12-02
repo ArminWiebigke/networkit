@@ -88,8 +88,8 @@ void LouvainMapEquation::run() {
 	const size_t numberOfChunks = 1 + nodes.size() / chunkSize;
 	std::vector<size_t> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(nodes.size(), numberOfChunks);
 	
-	std::vector< SparseVector<double> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads(), SparseVector<double>(graph.upperNodeIdBound(), 0.0));
-	std::vector< std::vector<bool> > ets_isNodeInCurrentChunk(Aux::getMaxNumberOfThreads(), std::vector<bool>(graph.upperNodeIdBound(), false));
+	std::vector< SparseVector<double> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads(), SparseVector<double>(5, 0.0));
+	std::vector< std::vector<bool> > ets_isNodeInCurrentChunk(Aux::getMaxNumberOfThreads(), std::vector<bool>(5, false));
 	std::vector< NeighborCaches > ets_neighborCaches(Aux::getMaxNumberOfThreads(), NeighborCaches(chunkSize + 1, NeighborCache(10)));
 	
 	for (count iteration = 0; iteration < maxIterations; ++iteration) {
@@ -113,13 +113,19 @@ void LouvainMapEquation::run() {
 			int tid = omp_get_thread_num();
 			
 			SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[tid];
-			//neighborClusterWeights.resize(graph.upperNodeIdBound(), 0.0);
 			
 			std::vector<Move> moves;
 			NeighborCaches& neighborCaches = ets_neighborCaches[tid];
 			index numUsedCaches = 0;
 			
 			std::vector<bool>& isNodeInCurrentChunk = ets_isNodeInCurrentChunk[tid];
+			
+			if (iteration == 0) {	// with thread pinning, this ensures the datastructures are allocated on the right socket
+				isNodeInCurrentChunk = std::vector<bool>(graph.upperNodeIdBound(), false);
+				neighborClusterWeights = SparseVector<double>(graph.upperNodeIdBound(), 0.0);
+				neighborCaches = NeighborCaches(chunkSize + 1 , NeighborCache(20));
+			}
+			
 			
 			for (index i = 0; i < chunkBorders.size() - 1; ++i) {
 				const index firstInvalid = chunkBorders[i + 1];
