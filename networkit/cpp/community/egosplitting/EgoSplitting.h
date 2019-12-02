@@ -141,7 +141,9 @@ private:
 
 	void createPersonaClustering();
 
-	void createCover();
+	std::vector<std::vector<node>> getCommunitiesFromPersonaClustering();
+
+	void createCover(const std::vector<std::vector<node>> &communities);
 
 	/**
 	 * Connect the personas of a node. Returns a list of edges between the persona indexes.
@@ -151,9 +153,9 @@ private:
 
 	void storeEgoNet(const Graph &egoGraph, const NodeMapping &egoMapping, node egoNode);
 
-	void cleanUpCover();
+	void cleanUpCommunities(std::vector<std::vector<node>> &communities);
 
-	void discardSmallCommunities();
+	void discardSmallCommunities(std::vector<std::vector<node>> &communities);
 };
 
 /**

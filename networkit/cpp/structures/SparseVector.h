@@ -81,6 +81,17 @@ public:
 	bool indexIsUsed(index idx);
 
 	/**
+	 * Remove all indexes for which the value is set to the emptyValue.
+	 */
+	void removeUnusedIndexes() {
+		auto new_end = std::remove_if(usedIndexes.begin(), usedIndexes.end(),
+					      [&](index i) {
+						      return data[i] == emptyValue;
+					      });
+		usedIndexes.erase(new_end, usedIndexes.end());
+	}
+
+	/**
 	 * Reset all values to the default value, so it is "empty". The upper bound is not changed.
 	 */
 	void reset();

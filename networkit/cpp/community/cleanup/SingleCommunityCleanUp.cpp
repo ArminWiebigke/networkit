@@ -31,7 +31,7 @@ SingleCommunityCleanUp::clean(const Community &inputCommunity) {
 	Community cleanedCommunity = secondPhase(firstPhaseResult);
 	bool changedDrastically = smallOverlap(inputCommunity, cleanedCommunity);
 	if (changedDrastically)
-		cleanedCommunity = {};
+		cleanedCommunity.clear();
 	return cleanedCommunity;
 }
 
@@ -53,32 +53,31 @@ SingleCommunityCleanUp::firstPhase(const Community &inputCommunity) {
 Community
 SingleCommunityCleanUp::calculateSignificantNodes(
 		const Community &inputCommunity, bool onlyUseOriginalCommunity) {
-	community = inputCommunity;
+	for (node u : inputCommunity) {
+		isInCommunity.insert(u, true);
+		isInOriginalCommunity.insert(u, true);
+	}
 	getCandidatesAndSetUpCalculation(onlyUseOriginalCommunity);
 	std::vector<node> significantNeighbors;
-	while (!community.empty()) {
-		auto internalScores = calculateInternalScores();
+	while (isInCommunity.size() > 0) {
 		auto candidateScores = calculateCandidateScores();
 		significantNeighbors = findSignificantCandidates(candidateScores);
 		bool communityIsSignificant = !significantNeighbors.empty();
 		if (communityIsSignificant)
 			break;
+		auto internalScores = calculateInternalScores();
 		removeWorstNode(internalScores);
 	}
-	Community significantNodes = community;
+	std::vector<node> result(isInCommunity.insertedIndexes());
 	for (node u : significantNeighbors) {
-		significantNodes.insert(u);
+		result.push_back(u);
 	}
 	reset();
-	return significantNodes;
+	return result;
 }
 
 void
 SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCommunity) {
-	for (node u : community) {
-		isInCommunity.insert(u, true);
-		isInOriginalCommunity.insert(u, true);
-	}
 	auto tryAddCandidate = [&](node u) {
 		if (!isInCommunity[u] && !isCandidate[u]) {
 			isCandidate.insert(u, true);
@@ -88,7 +87,7 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 	};
 	outgoingCommunityStubs = 0;
 	totalCommunityStubs = 0;
-	for (node u : community) {
+	for (node u : isInCommunity.insertedIndexes()) {
 		graph.forNeighborsOf(u, [&](node neighbor) {
 			totalCommunityStubs += 1;
 			if (!isInCommunity[neighbor])
@@ -103,7 +102,7 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 		});
 	}
 
-	externalNodes = graph.numberOfNodes() - community.size();
+	externalNodes = graph.numberOfNodes() - isInCommunity.size();
 	externalStubs = 2 * graph.numberOfEdges() - totalCommunityStubs;
 }
 
@@ -115,7 +114,6 @@ void SingleCommunityCleanUp::removeWorstNode(
 
 	auto removeNode = [&](node nodeToRemove) {
 		assert(isInCommunity[nodeToRemove]);
-		community.erase(nodeToRemove);
 		isInCommunity[nodeToRemove] = false;
 		candidates.push_back(nodeToRemove);
 		isCandidate.insert(nodeToRemove, true);
@@ -151,13 +149,15 @@ void SingleCommunityCleanUp::removeWorstNode(
 			removeNode(internalScores[i].nodeId);
 		}
 	}
+
+	isInCommunity.removeUnusedIndexes();
 }
 
 std::vector<SingleCommunityCleanUp::ScoreStruct>
 SingleCommunityCleanUp::calculateInternalScores() {
 	std::vector<ScoreStruct> internalScores;
-	internalScores.reserve(community.size());
-	for (node u : community) {
+	internalScores.reserve(isInCommunity.size());
+	for (node u : isInCommunity.insertedIndexes()) {
 		count degree = graph.degree(u);
 		// Calculate s-Score as if the node was not part of the community
 		count adjustedOutgoingStubs = outgoingCommunityStubs + 2 * edgesToCommunity[u] - degree;
@@ -252,20 +252,27 @@ SingleCommunityCleanUp::reset() {
 		assert(edgesToCommunity[i] == 0);
 	}
 #endif
-	community.clear();
 	candidates.clear();
 }
 
 bool SingleCommunityCleanUp::smallOverlap(const Community &inputCommunity,
-                                          const Community &cleanedCommunity) const {
-	std::vector<node> overlap;
-	std::set_intersection(inputCommunity.begin(), inputCommunity.end(),
-	                      cleanedCommunity.begin(), cleanedCommunity.end(),
-	                      std::back_inserter(overlap));
+                                          const Community &cleanedCommunity) {
+	for (node u : inputCommunity) {
+		isInCommunity.insert(u, true);
+	}
+
+	count overlap = 0;
+	for (node u : cleanedCommunity) {
+		overlap += isInCommunity.indexIsUsed(u);
+	}
+
 	count largerSize = std::max(inputCommunity.size(), cleanedCommunity.size());
-	double overlapRatio = (double) overlap.size() / largerSize;
+	double overlapRatio = (double) overlap / largerSize;
 //	std::cout << inputCommunity.size() << " -> " << cleanedCommunity.size()
 //	          << (overlapRatio < minOverlapRatio ? " -> bad" : "") << std::endl;
+
+	isInCommunity.reset();
+
 	return overlapRatio < minOverlapRatio;
 }
 

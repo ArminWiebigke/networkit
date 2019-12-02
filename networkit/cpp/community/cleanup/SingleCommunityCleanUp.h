@@ -19,7 +19,7 @@ namespace NetworKit {
  */
 class SingleCommunityCleanUp {
 public:
-	using Community = std::set<node>;
+	using Community = std::vector<node>;
 
 	explicit SingleCommunityCleanUp(const Graph &graph,
 	                                const StochasticDistribution &stochasticDistribution,
@@ -53,7 +53,6 @@ private:
 	// threshold to discard communities if they changed too much
 	const double minOverlapRatio;
 
-	Community community;
 	std::vector<node> candidates;
 	SparseVector<count> edgesToCommunity;
 	SparseVector<int> isInCommunity;
@@ -75,11 +74,11 @@ private:
 
 	std::vector<node> findSignificantCandidates(const std::vector<ScoreStruct> &scores);
 
-	void removeWorstNode(const std::vector<ScoreStruct> &internalScores);
+	void removeWorstNode(std::vector<ScoreStruct> &internalScores);
 
 	void reset();
 
-	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity) const;
+	bool smallOverlap(const Community &inputCommunity, const Community &cleanedCommunity);
 
 	Community firstPhase(const Community &inputCommunity);
 

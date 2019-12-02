@@ -39,14 +39,20 @@ public:
 		INFO("Read cover...");
 		CoverReader coverReader;
 		Cover cover = coverReader.read(coverFile, G);
+		std::vector<std::vector<node>> communities(cover.upperBound());
+		cover.forEntries([&](node u, const std::set<index>& coms) {
+			for (index s : coms) {
+				communities[s].push_back(u);
+			}
+		});
+
 		INFO("Start Cleanup...");
 
 		Aux::Timer timer;
 		timer.start();
 		StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
-		SignificanceCommunityCleanUp cleanUp(G, cover, dist, 0.1, 0.1, 0.5, mergeDiscarded);
+		SignificanceCommunityCleanUp cleanUp(G, communities, dist, 0.1, 0.1, 0.5, mergeDiscarded);
 		cleanUp.run();
-		Cover cleanedCover = cleanUp.getCover();
 		timer.stop();
 		std::cout << "Cleanup took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 	}
@@ -63,14 +69,19 @@ TEST_F(CleanUpBenchmark, benchCommunityCleanup) {
 	EgoSplitting algo(G);
 	algo.run();
 	Cover cover = algo.getCover();
+	std::vector<std::vector<node>> communities(cover.upperBound());
+	cover.forEntries([&](node u, const std::set<index>& coms) {
+		for (index s : coms) {
+			communities[s].push_back(u);
+		}
+	});
 	timer.stop();
 	std::cout << "egosplitting took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 
 	timer.start();
 	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
-	SignificanceCommunityCleanUp cleanUp(G, cover, dist, 0.1, 0.1, 0.5);
+	SignificanceCommunityCleanUp cleanUp(G, communities, dist, 0.1, 0.1, 0.5);
 	cleanUp.run();
-	Cover cleanedCover = cleanUp.getCover();
 	timer.stop();
 	std::cout << "Cleanup took " << timer.elapsedMilliseconds() << "ms" << std::endl;
 
