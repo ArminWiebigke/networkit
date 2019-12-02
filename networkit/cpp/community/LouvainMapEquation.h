@@ -38,6 +38,30 @@ public:
 	std::string toString() const override;
 
 private:
+	struct Move {
+		node movedNode;
+		double volume;
+		index cacheID, originCluster, targetCluster;
+		double cutUpdateToOriginCluster, cutUpdateToTargetCluster;
+		
+		Move(const node n = none, double vol = 0.0, index c = none, index cc = none, index tc = none, double cuptoc = 0.0, double cupttc = 0.0) :
+				movedNode(n), volume(vol), cacheID(c), originCluster(cc), targetCluster(tc), cutUpdateToOriginCluster(cuptoc), cutUpdateToTargetCluster(cupttc) { }
+	};
+	
+	struct NeighborInChunk {
+		node neighbor;
+		index oldCluster;
+		double weightToNeighbor;
+		NeighborInChunk(node n = none, index oc = none, double wtn = 0.0) : neighbor(n), oldCluster(oc), weightToNeighbor(wtn) { }
+	};
+	
+	static_assert(std::is_trivially_destructible<Move>::value);
+	static_assert(std::is_trivially_destructible<NeighborInChunk>::value);
+	
+	using NeighborCache = std::vector<NeighborInChunk>;
+	using NeighborCaches = std::vector<NeighborCache>;
+	
+	
 	const Graph& graph;
 	bool hierarchical;
 	count maxIterations;
@@ -62,9 +86,9 @@ private:
 	void checkUpdatedCutsAndVolumesAgainstRecomputation();
 #endif
 
-	bool tryLocalMove(node u, SparseVector<double>& neighborClusterWeights);
+	bool tryLocalMove(node u, index& cacheID, std::vector<NeighborInChunk>& cachedNeighbors, SparseVector<double>& neighborClusterWeights, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk);
 	
-	void aggregateAndApplyCutAndVolumeUpdates(std::vector<node>& movedNodes, SparseVector<double>& cutUpdates, std::vector<double>& volumeUpdates);
+	void aggregateAndApplyCutAndVolumeUpdates(std::vector<Move>& moves, NeighborCaches& neighborCaches);
 
 	void calculateInitialClusterCutAndVolume();
 
