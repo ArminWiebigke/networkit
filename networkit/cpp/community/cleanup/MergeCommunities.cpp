@@ -5,6 +5,7 @@
  * Author: Armin Wiebigke
  */
 
+#include "../../auxiliary/Timer.h"
 #include "MergeCommunities.h"
 
 namespace NetworKit {
@@ -29,10 +30,20 @@ MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> disca
 
 void MergeCommunities::run() {
 	int iterations = 2;
+	Aux::Timer timer{};
+	timer.start();
+	auto printTime = [&](std::string name) {
+		timer.stop();
+		INFO(name, " took ", (double) timer.elapsedMilliseconds() / 1000, "s");
+		timer.start();
+	};
 	for (count i = 0; i < iterations; ++i) {
 		createDiscardedCommunitiesGraph();
+		printTime("Creating the discarded communities graph");
 		tryToMergeCommunities();
+		printTime("Local move");
 		checkMergedCommunities();
+		printTime("Clean merged communities");
 	}
 	hasRun = true;
 }
@@ -204,11 +215,11 @@ void MergeCommunities::checkMergedCommunities() {
 				const auto &community = coarseToFineMapping[communityId];
 #pragma omp critical
 				discardedCommunities.erase(community);
+				if (mergedCommunity.size() >= maxCommunitySize)
+					continue;
 				for (node u : community) {
 					mergedCommunity.insert(u);
 				}
-				if (mergedCommunity.size() >= maxCommunitySize)
-					break;
 			}
 			if (mergedCommunity.size() >= maxCommunitySize) {
 #pragma omp atomic update
