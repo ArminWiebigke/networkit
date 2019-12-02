@@ -101,8 +101,8 @@ void LouvainMapEquation::run() {
 		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
 
 		// chunkBorders = fixed number of nodes, or degree sum ?
-		const size_t numberOfChunks = 5;
-		const size_t chunkSize = std::max(size_t(1), nodes.size() / numberOfChunks);
+		const size_t chunkSize = std::min(static_cast<size_t>(10000 * Aux::getCurrentNumberOfThreads()), std::max(1UL, nodes.size() / 5));
+		const size_t numberOfChunks = 1 + nodes.size() / chunkSize;
 		std::vector<size_t> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(nodes.size(), numberOfChunks);
 		
 		count numberOfNodesMoved = 0;
@@ -184,6 +184,7 @@ void LouvainMapEquation::run() {
 
 void LouvainMapEquation::aggregateAndApplyCutAndVolumeUpdates(std::vector<Move>& moves, NeighborCaches& neighborCaches) {
 	// can get rid of atomic updates by aggregating everything in clearlists
+	
 	for (Move& move : moves) {
 		const index originCluster = move.originCluster;
 		const index targetCluster = move.targetCluster;
@@ -316,6 +317,8 @@ void LouvainMapEquation::runHierarchical() {
 	const Graph& metaGraph = coarsening.getCoarseGraph();
 	const auto& fineToCoarseMapping = coarsening.getFineToCoarseNodeMapping();
 
+	assert(metaGraph.numberOfNodes() < graph.numberOfNodes());
+	
 	INFO("Run hierarchical with ", metaGraph.numberOfNodes(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 
 	LouvainMapEquation recursion(metaGraph, true, maxIterations);
