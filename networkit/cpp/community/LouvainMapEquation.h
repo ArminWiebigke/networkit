@@ -46,7 +46,7 @@ private:
 	enum class ParallelizationType : uint8_t { RelaxMap, SynchronousLocalMoving };
 public:
 	explicit LouvainMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256,
-								bool parallel = false, ParallelizationType parallelizationType = ParallelizationType::RelaxMap,
+								bool parallel = false, ParallelizationType parallelizationType = ParallelizationType::SynchronousLocalMoving,
 								double additionalCut = 0.0, double additionalVolume = 0.0);
 
 	void run() override;
