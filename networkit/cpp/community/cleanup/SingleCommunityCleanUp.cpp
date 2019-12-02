@@ -109,32 +109,48 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 
 // remove the node with the worst (= highest) score from the community
 void SingleCommunityCleanUp::removeWorstNode(
-		const std::vector<ScoreStruct> &internalScores) {
+		std::vector<ScoreStruct> &internalScores) {
 	assert(community.size() > 0);
 	assert(internalScores.size() > 0);
-	// TODO: Calculate the score of the nodes inside the community separately
-	auto worstNodeIt = std::max_element(internalScores.begin(), internalScores.end(),
-	                                    [](const ScoreStruct &a, const ScoreStruct &b) {
-		                                    return a.rScore < b.rScore;
-	                                    });
-	node worstNode = worstNodeIt->nodeId;
-	assert(isInCommunity[worstNode]);
-	community.erase(worstNode);
-	isInCommunity[worstNode] = false;
-	candidates.push_back(worstNode);
-	isCandidate.insert(worstNode, true);
-	externalNodes += 1;
-	assert(externalNodes == graph.numberOfNodes() - community.size());
-	count degree = graph.degree(worstNode);
-	outgoingCommunityStubs += 2 * edgesToCommunity[worstNode] - degree;
-	totalCommunityStubs -= degree;
-	externalStubs += degree;
-	graph.forNeighborsOf(worstNode, [&](node u) {
-		if (isCandidate[u] || isInCommunity[u]) {
-			assert(edgesToCommunity[u] > 0);
-			edgesToCommunity[u] -= 1;
+
+	auto removeNode = [&](node nodeToRemove) {
+		assert(isInCommunity[nodeToRemove]);
+		community.erase(nodeToRemove);
+		isInCommunity[nodeToRemove] = false;
+		candidates.push_back(nodeToRemove);
+		isCandidate.insert(nodeToRemove, true);
+		externalNodes += 1;
+		assert(externalNodes == graph.numberOfNodes() - community.size());
+		count degree = graph.degree(nodeToRemove);
+		outgoingCommunityStubs += 2 * edgesToCommunity[nodeToRemove] - degree;
+		totalCommunityStubs -= degree;
+		externalStubs += degree;
+		graph.forNeighborsOf(nodeToRemove, [&](node u) {
+			if (isCandidate[u] || isInCommunity[u]) {
+				assert(edgesToCommunity[u] > 0);
+				edgesToCommunity[u] -= 1;
+			}
+		});
+	};
+
+	if (internalScores.size() < 20) {
+		// TODO: Calculate the score of the nodes inside the community separately
+		auto worstNodeIt = std::max_element(internalScores.begin(), internalScores.end(),
+						    [](const ScoreStruct &a, const ScoreStruct &b) {
+							    return a.rScore < b.rScore;
+						    });
+		node worstNode = worstNodeIt->nodeId;
+		removeNode(worstNode);
+	} else {
+		count nodesToRemove = internalScores.size() / 10;
+		std::partial_sort(internalScores.begin(), internalScores.begin() + nodesToRemove, internalScores.end(),
+						    [](const ScoreStruct &a, const ScoreStruct &b) {
+							    return a.rScore > b.rScore;
+						    });
+		for (count i = 0; i < nodesToRemove; ++i) {
+			removeNode(internalScores[i].nodeId);
 		}
-	});
+	}
 }
 
 std::vector<SingleCommunityCleanUp::ScoreStruct>
