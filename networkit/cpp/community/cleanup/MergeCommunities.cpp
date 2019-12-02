@@ -7,6 +7,7 @@
 
 #include "../../auxiliary/Timer.h"
 #include "MergeCommunities.h"
+#include "../../graph/GraphBuilder.h"
 
 namespace NetworKit {
 
@@ -32,7 +33,7 @@ void MergeCommunities::run() {
 	int iterations = 2;
 	Aux::Timer timer{};
 	timer.start();
-	auto printTime = [&](std::string name) {
+	auto printTime = [&](const std::string &name) {
 		timer.stop();
 		INFO(name, " took ", (double) timer.elapsedMilliseconds() / 1000, "s");
 		timer.start();
@@ -50,7 +51,6 @@ void MergeCommunities::run() {
 
 void MergeCommunities::createDiscardedCommunitiesGraph() {
 	count numDiscardedCommunities = discardedCommunities.size();
-	discardedCommunitiesGraph = Graph(numDiscardedCommunities, true, false);
 
 	// Get node memberships
 	std::vector<std::vector<index>> nodeMemberships(graph.upperNodeIdBound());
@@ -71,39 +71,53 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	totalGroupStubs.resize(numDiscardedCommunities);
 	totalStubs = 0;
 
+	std::vector<std::vector<node>> edgesBetweenCommunities(numDiscardedCommunities);
 	graph.forNodes([&](node u) {
 		const auto &comms1 = nodeMemberships[u];
 		if (comms1.empty()) return;
 
 		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
-			if (u > v) return;
+//			if (u > v) return;
 			assert(weight == 1.0);
 			const auto &comms2 = nodeMemberships[v];
 			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
 				for (index comm1 : comms1) {
-					discardedCommunitiesGraph.increaseWeight(comm1, comm2, weight);
-					totalStubs += 2;
+					edgesBetweenCommunities[comm1].push_back(comm2);
+					totalStubs += 1;
 					++totalGroupStubs[comm1];
-					++totalGroupStubs[comm2];
 					if (comm1 != comm2) {
 						++outgoingGroupStubs[comm1];
-						++outgoingGroupStubs[comm2];
+					} else {
+						++totalStubs;
+						++totalGroupStubs[comm1];
 					}
 				}
 			}
 		});
 	});
 
-	if (totalStubs + numDiscardedCommunities > stochasticDistribution.maxValue()) {
-		stochasticDistribution.setMaxValue(totalStubs + numDiscardedCommunities);
+	INFO("Total stubs of discarded graph: ", totalStubs, ", number of edges in original: ", graph.numberOfEdges());
+	GraphBuilder builder(numDiscardedCommunities, true, false);
+	SparseVector<edgeweight> outgoingWeights(numDiscardedCommunities, -1.);
+	for (index comm = 0; comm < numDiscardedCommunities; ++comm) {
+		for (const auto &otherComm : edgesBetweenCommunities[comm]) {
+			if (!outgoingWeights.indexIsUsed(otherComm)) {
+				outgoingWeights.insert(otherComm, 0);
+			}
+			outgoingWeights[otherComm] += 1;
+		}
+		for (node otherComm : outgoingWeights.insertedIndexes()) {
+			builder.addHalfEdge(comm, otherComm, outgoingWeights[otherComm]);
+		}
+		outgoingWeights.reset();
 	}
+	discardedCommunitiesGraph = builder.toGraph(false);
+	stochasticDistribution.increaseMaxValueTo(totalStubs + numDiscardedCommunities);
 }
 
 void MergeCommunities::tryToMergeCommunities() {
 	mergedCommunities = Partition(discardedCommunitiesGraph.numberOfNodes());
 	mergedCommunities.allToSingletons();
-	stochasticDistribution.increaseMaxValueTo(2 * discardedCommunitiesGraph.totalEdgeWeight()
-	                                          + discardedCommunitiesGraph.numberOfNodes());
 	count maxIterations = 20;
 	for (count i = 0; i < maxIterations; ++i) {
 		DEBUG("Merge communities iteration ", i);
