@@ -24,8 +24,6 @@ namespace NetworKit {
  */
 class SignificanceCommunityCleanUp : public Algorithm {
 public:
-	using Community = SingleCommunityCleanUp::Community;
-
 	/**
 	 * Constructor of the algorithm.
 	 * @param	graph	input graph
@@ -33,7 +31,7 @@ public:
 	 * @param       distribution The stochastic distribution object to use for stochastic calculations
 	 */
 	SignificanceCommunityCleanUp(const Graph &graph,
-	                             const Cover &cover,
+	                             std::vector<std::vector<node>> &communities,
 	                             StochasticDistribution &distribution,
 	                             double significanceThreshold = 0.1,
 	                             double scoreThreshold = 0.1,
@@ -42,12 +40,6 @@ public:
 
 	void run() override;
 
-	/**
-	 * Get the result cover.
-	 * @return A cover containing the cleaned communities
-	 */
-	Cover getCover();
-
 	std::string toString() const override;
 
 	bool isParallel() const override;
@@ -55,9 +47,8 @@ public:
 private:
 
 	const Graph &graph;
-	const Cover &cover;
-	Cover cleanedCommunities;
-	std::set<Community> discardedCommunities;
+	std::vector<std::vector<node>> &communities;
+	std::vector<std::vector<node>> discardedCommunities;
 	double significanceThreshold;
 	double scoreThreshold;
 	double minOverlapRatio;

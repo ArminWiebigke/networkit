@@ -21,10 +21,8 @@ namespace NetworKit {
  */
 class MergeCommunities : public Algorithm {
 public:
-	using Community = SingleCommunityCleanUp::Community;
-
 	MergeCommunities(const Graph &graph,
-	                 std::set<Community> discardedCommunities,
+	                 std::vector<std::vector<node>> discardedCommunities,
 	                 StochasticDistribution &stochasticDistribution,
 	                 double significanceThreshold = 0.1,
 	                 double scoreThreshold = 0.1,
@@ -33,7 +31,7 @@ public:
 
 	void run() override;
 
-	std::vector<Community> getCleanedCommunities();
+	const std::vector<std::vector<node>>& getCleanedCommunities();
 
 	std::string toString() const override;
 
@@ -41,16 +39,15 @@ public:
 
 private:
 	const Graph &graph;
-	std::set<Community> discardedCommunities;
+	std::vector<std::vector<node>> discardedCommunities;
 	StochasticDistribution &stochasticDistribution;
 	SignificanceCalculator significanceCalculator;
 	double significanceThreshold;
 	double scoreThreshold;
 	double minOverlapRatio;
-	std::vector<Community> cleanedCommunities;
+	std::vector<std::vector<node>> cleanedCommunities;
 	Graph discardedCommunitiesGraph;
 	Partition mergedCommunities;
-	std::vector<std::set<node>> coarseToFineMapping;
 	std::vector<count> outgoingGroupStubs;
 	std::vector<count> totalGroupStubs;
 	count totalStubs;

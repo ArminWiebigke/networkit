@@ -37,24 +37,32 @@ TEST_F(CleanupGTest, testCleanUp) {
 	cover.addSubset({1});
 	cover.addSubset({2, isolatedNode});
 
-	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
-	SignificanceCommunityCleanUp cleanUp(G, cover, dist, 0.1, 0.1, 0.5);
-	cleanUp.run();
-	Cover cleanedCover = cleanUp.getCover();
+	std::vector<std::vector<node>> communities(cover.upperBound());
+	cover.forEntries([&](node u, const std::set<index>& coms) {
+		for (index s : coms) {
+			communities[s].push_back(u);
+		}
+	});
 
-	EXPECT_TRUE(cleanedCover.numberOfSubsets() <= cover.numberOfSubsets());
-	const std::vector<count> &comms = cleanedCover.subsetSizes();
+	count numCommunitiesInput = communities.size();
+
+	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
+	SignificanceCommunityCleanUp cleanUp(G, communities, dist, 0.1, 0.1, 0.5);
+	cleanUp.run();
+
+	EXPECT_TRUE(communities.size() <= numCommunitiesInput);
 	// Communities of size 1 should be discarded
-	for (count s : comms) {
-		EXPECT_GT(s, 1);
+	for (const auto& c : communities) {
+		EXPECT_GT(c.size(), 1);
 	}
 	count notEmptyComms = 0;
-	for (count s : comms) {
-		notEmptyComms += (s > 1);
+	for (const auto& c : communities) {
+		notEmptyComms += (c.size() > 1);
 	}
 	EXPECT_GE(notEmptyComms, 9);
-	std::set<index> badComm = {2, isolatedNode};
-	for (const auto &comm : cleanedCover.getSubsets()) {
+	std::vector<index> badComm = {2, isolatedNode};
+	for (auto &comm : communities) {
+		std::sort(comm.begin(), comm.end());
 		EXPECT_NE(comm, badComm);
 	}
 }
@@ -70,19 +78,20 @@ TEST_F(CleanupGTest, testSingleCommunityCleanUp) {
 				G.addEdge(u, v, defaultEdgeWeight);
 		}
 	}
-	std::set<node> expectedCommunity;
+	std::vector<node> expectedCommunity;
 	for (node u = 0; u < cliqueSize; ++u)
-		expectedCommunity.insert(u);
+		expectedCommunity.push_back(u);
 	// Create a community for the clique, but exclude a node and include weakly connected ones
-	std::set<node> testCommunity;
+	std::vector<node> testCommunity;
 	count excludeCliqueMembers = 1;
 	count addWeaklyConnected = 3;
 	for (node u = excludeCliqueMembers; u < cliqueSize + addWeaklyConnected; ++u)
-		testCommunity.insert(u);
+		testCommunity.push_back(u);
 	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
 	SingleCommunityCleanUp singleCommunityCleanUp(G, dist);
 
-	std::set<node> cleanedCommunity = singleCommunityCleanUp.clean(testCommunity);
+	std::vector<node> cleanedCommunity = singleCommunityCleanUp.clean(testCommunity);
+	std::sort(cleanedCommunity.begin(), cleanedCommunity.end());
 
 	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
@@ -98,20 +107,20 @@ TEST_F(CleanupGTest, testMergeDiscarded) {
 				G.addEdge(u, v, defaultEdgeWeight);
 		}
 	}
-	std::set<node> expectedCommunity;
+	std::vector<node> expectedCommunity;
 	for (node u = 0; u < cliqueSize; ++u)
-		expectedCommunity.insert(u);
-	std::set<std::set<node>> discardedCommunitites;
+		expectedCommunity.push_back(u);
+	std::vector<std::vector<node>> discardedCommunitites;
 	// Break clique into 4 discarded communities
-	discardedCommunitites.insert({0, 1});
-	discardedCommunitites.insert({2, 3});
-	discardedCommunitites.insert({4, 5});
-	discardedCommunitites.insert({6, 7});
+	discardedCommunitites.push_back({0, 1});
+	discardedCommunitites.push_back({2, 3});
+	discardedCommunitites.push_back({4, 5});
+	discardedCommunitites.push_back({6, 7});
 	// Add some bad communities
-	discardedCommunitites.insert({10, 11, 12, 13});
-	discardedCommunitites.insert({15, 16});
-	discardedCommunitites.insert({18});
-	discardedCommunitites.insert({19});
+	discardedCommunitites.push_back({10, 11, 12, 13});
+	discardedCommunitites.push_back({15, 16});
+	discardedCommunitites.push_back({18});
+	discardedCommunitites.push_back({19});
 	StochasticDistribution dist(2 * G.numberOfEdges() + G.numberOfNodes());
 	MergeCommunities mergeCommunities(G, discardedCommunitites, dist);
 
@@ -120,6 +129,7 @@ TEST_F(CleanupGTest, testMergeDiscarded) {
 
 	EXPECT_EQ(cleanedCommunities.size(), 1);
 	auto cleanedCommunity = cleanedCommunities.front();
+	std::sort(cleanedCommunity.begin(), cleanedCommunity.end());
 	EXPECT_EQ(cleanedCommunity, expectedCommunity);
 }
 

@@ -12,9 +12,7 @@
 
 namespace NetworKit {
 
-using Community = MergeCommunities::Community;
-
-MergeCommunities::MergeCommunities(const Graph &graph, std::set<Community> discardedCommunities,
+MergeCommunities::MergeCommunities(const Graph &graph, std::vector<std::vector<node>> discardedCommunities,
                                    StochasticDistribution &stochasticDistribution,
                                    double significanceThreshold,
                                    double scoreThreshold,
@@ -55,14 +53,10 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 
 	// Get node memberships
 	std::vector<std::vector<index>> nodeMemberships(graph.upperNodeIdBound());
-	index commId = 0;
-	coarseToFineMapping.resize(numDiscardedCommunities);
-	for (const auto &community : discardedCommunities) {
-		for (node u : community) {
-			nodeMemberships[u].push_back(commId);
-			coarseToFineMapping[commId].insert(u);
+	for (index comId = 0; comId < discardedCommunities.size(); ++comId) {
+		for (node u : discardedCommunities[comId]) {
+			nodeMemberships[u].push_back(comId);
 		}
-		++commId;
 	}
 
 	// Count edges between communities
@@ -209,47 +203,53 @@ void MergeCommunities::checkMergedCommunities() {
 	{
 		SingleCommunityCleanUp singleCommunityCleanUp(graph, stochasticDistribution, scoreThreshold,
 		                                              significanceThreshold, minOverlapRatio);
-		count communityCount = 0;
+		SparseVector<bool> mergedCommunity(graph.upperNodeIdBound());
 #pragma omp for schedule(dynamic, 1)
 		for (omp_index i = 0; i < static_cast<omp_index>(mergedCommunitiesSubsets.size()); ++i) {
 			const std::vector<node> &communitiesToMerge(mergedCommunitiesSubsets[i]);
 
-			DEBUG("Clean merged community ", ++communityCount, "/", numMergedCommunities);
+			DEBUG("Clean merged community ", i, "/", numMergedCommunities);
 			if (communitiesToMerge.size() == 1)
 				continue;
 
-			Community mergedCommunity;
-
 			for (index communityId : communitiesToMerge) {
-				const auto &community = coarseToFineMapping[communityId];
-#pragma omp critical
-				discardedCommunities.erase(community);
-				if (mergedCommunity.size() >= maxCommunitySize)
+				const auto &community = discardedCommunities[communityId];
+				if (mergedCommunity.size() >= maxCommunitySize) {
+					discardedCommunities[communityId].clear();
 					continue;
-				for (node u : community) {
-					mergedCommunity.insert(u);
 				}
+				for (node u : community) {
+					if (!mergedCommunity.indexIsUsed(u)) {
+						mergedCommunity.insert(u, true);
+					}
+				}
+				discardedCommunities[communityId].clear();
 			}
 			if (mergedCommunity.size() >= maxCommunitySize) {
 #pragma omp atomic update
 				++skippedCommunities;
+				mergedCommunity.reset();
 				continue;
 			}
 			assert(stochasticDistribution.maxValue() >= 2 * graph.totalEdgeWeight() + graph.numberOfNodes());
-			Community cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity);
+			std::vector<node> cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity.insertedIndexes());
+			if (cleanedCommunity.empty()) {
+				discardedCommunities[communitiesToMerge.front()] = std::move(mergedCommunity.insertedIndexes());
+			} else {
 #pragma omp critical
-			{
-				if (cleanedCommunity.empty())
-					discardedCommunities.emplace(std::move(mergedCommunity));
-				else
-					cleanedCommunities.emplace_back(std::move(cleanedCommunity));
+				cleanedCommunities.emplace_back(std::move(cleanedCommunity));
 			}
+
+			mergedCommunity.reset();
 		}
 	}
+
+	auto new_end = std::remove_if(cleanedCommunities.begin(), cleanedCommunities.end(), [](const std::vector<node>& c) { return c.empty(); });
+	cleanedCommunities.erase(new_end, cleanedCommunities.end());
 	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }
 
-std::vector<Community> MergeCommunities::getCleanedCommunities() {
+const std::vector<std::vector<node>>& MergeCommunities::getCleanedCommunities() {
 	return cleanedCommunities;
 }
 

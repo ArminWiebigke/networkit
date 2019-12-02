@@ -129,13 +129,17 @@ void EgoSplitting::run() {
 	addTime(timer, "4  Persona Clustering");
 	handler.assureRunning();
 
-	INFO("create Cover");
-	createCover();
-	addTime(timer, "5  Create Cover");
+	INFO("create Communities");
+	std::vector<std::vector<node>> communities = getCommunitiesFromPersonaClustering();
+	addTime(timer, "5  Create Communities");
 
-	INFO("clean up Cover");
-	cleanUpCover();
-	addTime(timer, "6  Cleanup Cover");
+	INFO("clean up Communities");
+	cleanUpCommunities(communities);
+	addTime(timer, "6  Cleanup Communities");
+
+	INFO("create Cover");
+	createCover(communities);
+	addTime(timer, "7  Create Cover");
 
 	hasRun = true;
 }
@@ -443,44 +447,51 @@ void EgoSplitting::createPersonaClustering() {
 	personaPartition = globalClusteringAlgo(personaGraph);
 }
 
-void EgoSplitting::createCover() {
-	// Create cover from persona partition
-	resultCover = Cover(G.upperNodeIdBound());
+
+std::vector<std::vector<node>> EgoSplitting::getCommunitiesFromPersonaClustering() {
 	personaPartition.compact();
-	resultCover.setUpperBound(personaPartition.upperBound());
+	std::vector<std::vector<node>> result(personaPartition.upperBound());
 	G.forNodes([&](node u) {
 		for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
 			if (personaGraph.hasNode(i)) {
-				resultCover.addToSubset(personaPartition.subsetOf(i), u);
+				result[personaPartition.subsetOf(i)].push_back(u);
 			}
 		}
 	});
+
+	return result;
 }
 
-void EgoSplitting::cleanUpCover() {
-	if (parameters.at("Cleanup") == "Yes") {
-		discardSmallCommunities();
-		bool mergeDiscarded = parameters.at("CleanupMerge") == "Yes";
-		SignificanceCommunityCleanUp cleanup(G, resultCover, stochasticDistribution, 0.1, 0.1, 0.5, mergeDiscarded);
-		cleanup.run();
-		resultCover = cleanup.getCover();
-	}
-	discardSmallCommunities();
-}
-
-void EgoSplitting::discardSmallCommunities() {// Discard communities of size 4 or less
-	count min_size = 5;
-	std::vector<std::vector<node>> communities{resultCover.upperBound()};
-	G.forNodes([&](node u) {
-		for (index c : resultCover.subsetsOf(u)) {
-			if (communities[c].size() < min_size)
-				communities[c].push_back(u);
+void EgoSplitting::createCover(const std::vector<std::vector<node>> &communities) {
+	// Create cover from given communities
+	resultCover = Cover(G.upperNodeIdBound());
+	resultCover.setUpperBound(communities.size());
+	for (index com_id = 0; com_id < communities.size(); ++com_id) {
+		for (node u : communities[com_id]) {
+			resultCover.addToSubset(com_id, u);
 		}
-	});
-	for (index c = 0; c < communities.size(); ++c) {
-		if (communities[c].size() < min_size) {
-			for (node u : communities[c])
-				resultCover.removeFromSubset(c, u);
+	}
+}
+
+void EgoSplitting::cleanUpCommunities(std::vector<std::vector<node>> &communities) {
+	if (parameters.at("Cleanup") == "Yes") {
+		discardSmallCommunities(communities);
+		bool mergeDiscarded = parameters.at("CleanupMerge") == "Yes";
+		SignificanceCommunityCleanUp cleanup(G, communities, stochasticDistribution, 0.1, 0.1, 0.5, mergeDiscarded);
+		cleanup.run();
+	}
+	discardSmallCommunities(communities);
+}
+
+void EgoSplitting::discardSmallCommunities(std::vector<std::vector<node>> &communities) {// Discard communities of size 4 or less
+	count min_size = 5;
+
+	for (index c = 0; c < communities.size(); ) {
+		if (communities[c].size() < 5) {
+			std::swap(communities[c], communities.back());
+			communities.pop_back();
+		} else {
+			++c;
 		}
 	}
 }

@@ -10,17 +10,15 @@
 
 namespace NetworKit {
 
-using Community = SignificanceCommunityCleanUp::Community;
-
 SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
-                                                           const Cover &cover,
+                                                           std::vector<std::vector<node>> &communities,
                                                            StochasticDistribution &distribution,
                                                            double significanceThreshold,
                                                            double scoreThreshold,
                                                            double minOverlapRatio,
                                                            bool mergeDiscarded)
 		: graph(graph),
-		  cover(cover),
+		  communities(communities),
 		  significanceThreshold(significanceThreshold),
 		  scoreThreshold(scoreThreshold),
 		  minOverlapRatio(minOverlapRatio),
@@ -31,18 +29,11 @@ SignificanceCommunityCleanUp::SignificanceCommunityCleanUp(const Graph &graph,
 
 void SignificanceCommunityCleanUp::run() {
 	hasRun = false;
-	cleanedCommunities = Cover(graph.upperNodeIdBound());
 	cleanAllCommunities();
 	if (mergeDiscarded) {
 		mergeDiscardedCommunities();
 	}
 	hasRun = true;
-}
-
-Cover SignificanceCommunityCleanUp::getCover() {
-	if (!hasFinished())
-		throw std::runtime_error("Run the algorithm first!");
-	return cleanedCommunities;
 }
 
 std::string SignificanceCommunityCleanUp::toString() const {
@@ -54,27 +45,40 @@ bool SignificanceCommunityCleanUp::isParallel() const {
 }
 
 void SignificanceCommunityCleanUp::cleanAllCommunities() {
-	auto inputCommunities = cover.getSubsets();
-	INFO("Clean ", inputCommunities.size(), " communities");
+	INFO("Clean ", communities.size(), " communities");
 	#pragma omp parallel
 	{
 		SingleCommunityCleanUp singleCommunityCleanup(graph, stochasticDistribution, scoreThreshold, significanceThreshold, minOverlapRatio);
 #pragma omp for schedule(dynamic, 1)
-		for (omp_index i = 0; i < static_cast<omp_index>(inputCommunities.size()); ++i) {
-			const Community& inputCommunity = inputCommunities[i];
+		for (omp_index i = 0; i < static_cast<omp_index>(communities.size()); ++i) {
+			const std::vector<node>& inputCommunity = communities[i];
 			DEBUG("Clean community ", i, "/", inputCommunities.size(), " with size ", inputCommunity.size());
-			auto cleanedCommunity = singleCommunityCleanup.clean(inputCommunity);
-			#pragma omp critical
-			{
-				if (!cleanedCommunity.empty()) {
-					cleanedCommunities.addSubset(cleanedCommunity);
-					maxCommunitySize = std::max(maxCommunitySize, cleanedCommunity.size());
-				} else if (mergeDiscarded) {
-					discardedCommunities.insert(inputCommunity);
+			std::vector<node> cleanedCommunity = singleCommunityCleanup.clean(inputCommunity);
+
+			if (!cleanedCommunity.empty()) {
+				communities[i] = std::move(cleanedCommunity);
+			} else {
+				if (mergeDiscarded) {
+					#pragma omp critical
+					{
+						discardedCommunities.emplace_back(std::move(communities[i]));
+					}
 				}
+				communities[i].clear();
 			}
 		}
 	}
+
+	auto new_end = std::remove_if(communities.begin(), communities.end(),
+				      [](const std::vector<node>& c) {
+					      return c.empty();
+				      });
+	communities.erase(new_end, communities.end());
+
+	maxCommunitySize = std::max_element(communities.begin(), communities.end(),
+					    [](const std::vector<node> &c1, const std::vector<node> &c2) {
+						    return c1.size() < c2.size();
+					    })->size();
 }
 
 
@@ -85,7 +89,7 @@ void SignificanceCommunityCleanUp::mergeDiscardedCommunities() {
 	                                  2 * maxCommunitySize);
 	mergeCommunities.run();
 	for (const auto &community : mergeCommunities.getCleanedCommunities()) {
-		cleanedCommunities.addSubset(community);
+		communities.push_back(community);
 	}
 }
 
