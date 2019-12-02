@@ -117,10 +117,11 @@ private:
 	
 	count synchronousLocalMoving(std::vector<node>& nodes, count iteration);
 	
-	template<bool parallel, bool synchronous>
-	bool tryLocalMove(node u, SparseVector<double>& neighborClusterWeights, index& cacheID, std::vector<NeighborInChunk>& cachedNeighbors, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk);
+	bool tryLocalMove(node u, SparseVector<double>& neighborClusterWeights);
 	
-	template<bool parallel>
+	bool tryLocalMoveSLM(node u, SparseVector<double>& neighborClusterWeights, index& cacheID, std::vector<NeighborInChunk>& cachedNeighbors, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk);
+	
+	
 	bool performMove(node u, double degree, double loopWeight, node currentCluster, node targetCluster, double weightToTarget, double weightToCurrent);
 	
 	void aggregateAndApplyCutAndVolumeUpdates(std::vector<Move>& moves, NeighborCaches& neighborCaches);

@@ -142,7 +142,7 @@ count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iterati
 			
 			#pragma omp for schedule(guided)
 			for (index i = 0; i < nodes.size(); ++i) {
-				if (tryLocalMove<true, false>(nodes[i], neighborClusterWeights, /* dummies */ dummyCacheID, dummyCachedNeighbors, dummyMoves, dummyIsNodeInCurrentChunk)) {
+				if (tryLocalMove(nodes[i], neighborClusterWeights)) {
 					nm += 1;
 				}
 			}
@@ -153,7 +153,7 @@ count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iterati
 	} else {
 		SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[0];
 		for (node u : nodes) {
-			if (tryLocalMove<false, false>(u, neighborClusterWeights, /* dummies */ dummyCacheID, dummyCachedNeighbors, dummyMoves, dummyIsNodeInCurrentChunk)) {
+			if (tryLocalMove(u, neighborClusterWeights)) {
 				nodesMoved += 1;
 			}
 		}
@@ -204,7 +204,7 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 				if (numUsedCaches == neighborCaches.size()) {
 					neighborCaches.emplace_back(10);	// construct neighbor cache with space for 10 entries
 				}
-				tryLocalMove<true, true>(u, neighborClusterWeights, numUsedCaches /* by reference, updated in function */, neighborCaches[numUsedCaches], moves, isNodeInCurrentChunk);
+				tryLocalMoveSLM(u, neighborClusterWeights, numUsedCaches /* by reference, updated in function */, neighborCaches[numUsedCaches], moves, isNodeInCurrentChunk);
 			}
 			// implicit barrier at the end of the loop
 			
@@ -219,12 +219,12 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 			#pragma omp barrier
 			
 			#ifndef NDEBUG
-			#pragma omp single
-			{
-				checkUpdatedCutsAndVolumesAgainstRecomputation();
-			}
-			// don't start the next round of moves, before the old ones were validated
-			#pragma omp barrier
+				#pragma omp single
+				{
+					checkUpdatedCutsAndVolumesAgainstRecomputation();
+				}
+				// don't start the next round of moves, before the old ones were validated
+				#pragma omp barrier
 			#endif
 			
 		}
@@ -282,43 +282,30 @@ void LouvainMapEquation::aggregateAndApplyCutAndVolumeUpdates(std::vector<Move>&
 		#pragma omp atomic update
 		totalCut += originClusterCutUpdate + targetClusterCutUpdate;
 		
-		
 		// write new partition
 		partition[u] = targetCluster;
 	}
 }
 
-
-
-
-
-// for every node. store its neighbors that are in the current chunk, and their old cluster IDs, and edge weights
-
-template<bool parallel, bool synchronous>
-bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClusterWeights,
-												 /* SLM specifics */
-												 index& cacheID, NeighborCache& cachedNeighbors, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk) {
+bool LouvainMapEquation::tryLocalMoveSLM(node u, SparseVector<double>& neighborClusterWeights,
+										 index& cacheID, NeighborCache& cachedNeighbors, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk) {
 	// Find neighbor clusters
 	double vol = 0;
 	double loop = 0;
 	double weightToCurrent = 0;
 	const index currentCluster = partition[u];
 	
-	if /* constexpr */ (synchronous) {
-		cachedNeighbors.clear();
-	}
+	cachedNeighbors.clear();
 	
 	graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
 		vol += weight;
 		if (u != v) {
 			const index neighborCluster = partition[v];
 			
-			if /* constexpr */ (synchronous) {
-				if (u < v && isNodeInCurrentChunk[v]) {
-					cachedNeighbors.emplace_back(v, neighborCluster, weight);
-				}
+			if (u < v && isNodeInCurrentChunk[v]) {
+				cachedNeighbors.emplace_back(v, neighborCluster, weight);
 			}
-			
+		
 			if (neighborCluster == currentCluster) {
 				weightToCurrent += weight;
 			} else {
@@ -352,24 +339,69 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClus
 		neighborClusterWeights.reset();
 		
 		if (targetCluster != currentCluster) {
-			if /* constexpr */ (synchronous) {
-				assert(parallel);
 				// save move
 				const double cutUpdateToCurrentCluster = -vol + 2 * weightToCurrent + 2 * loop;
 				const double cutUpdateToTargetCluster = vol - 2 * weightToTargetCluster - 2 * loop;
 				moves.emplace_back(u, vol, cacheID++, currentCluster, targetCluster, cutUpdateToCurrentCluster, cutUpdateToTargetCluster);
 				nextPartition[u] = targetCluster;
 				return true;
+		}
+		
+	}
+	return false;
+}
+
+bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClusterWeights) {
+	// Find neighbor clusters
+	double vol = 0;
+	double loop = 0;
+	double weightToCurrent = 0;
+	const index currentCluster = partition[u];
+	
+	graph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
+		vol += weight;
+		if (u != v) {
+			const index neighborCluster = partition[v];
+			
+			if (neighborCluster == currentCluster) {
+				weightToCurrent += weight;
 			} else {
-				// perform move directly
-				return performMove<parallel>(u, vol, loop, currentCluster, targetCluster, weightToTargetCluster, weightToCurrent);
+				if (!neighborClusterWeights.indexIsUsed(neighborCluster))
+					neighborClusterWeights.insert(neighborCluster, 0);
+				neighborClusterWeights[neighborCluster] += weight;
 			}
+		} else {
+			loop += weight;
+			vol += weight;
+		}
+	});
+	
+	assert(vol == graph.weightedDegree(u));
+	
+	if (neighborClusterWeights.size() > 0) {
+		// Calculate best cluster
+		index targetCluster = currentCluster;
+		double weightToTargetCluster = weightToCurrent;
+		double bestChange = fitnessChange(u, vol, loop, currentCluster, currentCluster, weightToCurrent, weightToCurrent, totalCut);
+		for (index neighborCluster : neighborClusterWeights.insertedIndexes()) {
+			const double neighborClusterWeight = neighborClusterWeights[neighborCluster];
+			const double change = fitnessChange(u, vol, loop, currentCluster, neighborCluster, neighborClusterWeight, weightToCurrent, totalCut);
+			if (change < bestChange || (change == bestChange && neighborCluster < targetCluster && targetCluster != currentCluster)) {
+				bestChange = change;
+				targetCluster = neighborCluster;
+				weightToTargetCluster = neighborClusterWeight;
+			}
+		}
+		
+		neighborClusterWeights.reset();
+		
+		if (targetCluster != currentCluster) {
+			return performMove(u, vol, loop, currentCluster, targetCluster, weightToTargetCluster, weightToCurrent);
 		}
 	}
 	return false;
 }
 
-template<bool parallel>
 bool LouvainMapEquation::performMove(node u, double degree, double loopWeight, node currentCluster, node targetCluster, double weightToTarget, double weightToCurrent) {
 	bool moved = true;
 	if /* constexpr */ (parallel) {
