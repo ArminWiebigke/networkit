@@ -78,14 +78,19 @@ void LouvainMapEquation::run() {
 				});
 	}
 #endif
-
+	
 	bool clusteringChanged = false;
+
 	std::vector<node> nodes = graph.nodes();
-	std::vector< SparseVector<double> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads());
 	
-	std::vector< std::vector<double> > ets_volumeUpdates(Aux::getMaxNumberOfThreads());
-	std::vector< SparseVector<double> > ets_cutUpdates(Aux::getMaxNumberOfThreads(), SparseVector<double>(0, std::numeric_limits<double>::infinity()));
+	// chunkBorders = fixed number of nodes, or degree sum ?
+	const size_t chunkSize = std::min(static_cast<size_t>(10000 * Aux::getCurrentNumberOfThreads()), std::max(1UL, nodes.size() / 5));
+	const size_t numberOfChunks = 1 + nodes.size() / chunkSize;
+	std::vector<size_t> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(nodes.size(), numberOfChunks);
 	
+	std::vector< SparseVector<double> > ets_neighborClusterWeights(Aux::getMaxNumberOfThreads(), SparseVector<double>(graph.upperNodeIdBound(), 0.0));
+	std::vector< std::vector<bool> > ets_isNodeInCurrentChunk(Aux::getMaxNumberOfThreads(), std::vector<bool>(graph.upperNodeIdBound(), false));
+	std::vector< NeighborCaches > ets_neighborCaches(Aux::getMaxNumberOfThreads(), NeighborCaches(chunkSize + 1, NeighborCache(10)));
 	
 	for (count iteration = 0; iteration < maxIterations; ++iteration) {
 		handler.assureRunning();
@@ -100,11 +105,6 @@ void LouvainMapEquation::run() {
 		timer.stop();
 		DEBUG("shuffle ", timer.elapsedMilliseconds(), " ms");
 
-		// chunkBorders = fixed number of nodes, or degree sum ?
-		const size_t chunkSize = std::min(static_cast<size_t>(10000 * Aux::getCurrentNumberOfThreads()), std::max(1UL, nodes.size() / 5));
-		const size_t numberOfChunks = 1 + nodes.size() / chunkSize;
-		std::vector<size_t> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(nodes.size(), numberOfChunks);
-		
 		count numberOfNodesMoved = 0;
 		
 		timer.start();
@@ -113,18 +113,13 @@ void LouvainMapEquation::run() {
 			int tid = omp_get_thread_num();
 			
 			SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[tid];
-			neighborClusterWeights.resize(graph.upperNodeIdBound(), 0.0);
-			std::vector<double>& volumeUpdates = ets_volumeUpdates[tid];
-			volumeUpdates.resize(graph.upperNodeIdBound(), 0.0);	// allocation happens once. not every iteration. and then it's local to the socket. with thread pinning it remains local.
-			SparseVector<double>& cutUpdates = ets_cutUpdates[tid];
-			cutUpdates.resize(graph.upperNodeIdBound(), std::numeric_limits<double>::infinity());
+			//neighborClusterWeights.resize(graph.upperNodeIdBound(), 0.0);
 			
 			std::vector<Move> moves;
-			
-			std::vector< std::vector<NeighborInChunk> > neighborCaches(chunkSize + 1, NeighborCache(10));	// TODO make ets, don't let the outer vector change its size
+			NeighborCaches& neighborCaches = ets_neighborCaches[tid];
 			index numUsedCaches = 0;
 			
-			std::vector<bool> isNodeInCurrentChunk(graph.upperNodeIdBound(), false);
+			std::vector<bool>& isNodeInCurrentChunk = ets_isNodeInCurrentChunk[tid];
 			
 			for (index i = 0; i < chunkBorders.size() - 1; ++i) {
 				const index firstInvalid = chunkBorders[i + 1];
