@@ -108,7 +108,7 @@ void LouvainMapEquation::run() {
 			numberOfNodesMoved = synchronousLocalMoving(nodes, iteration);
 		}
 		else {
-			numberOfNodesMoved = localMoving(nodes);
+			numberOfNodesMoved = localMoving(nodes, iteration);
 		}
 		timer.stop();
 		INFO("Move iteration ", iteration, " took ", timer.elapsedMilliseconds(), " ms. Moved ", numberOfNodesMoved, " nodes");
@@ -123,7 +123,13 @@ void LouvainMapEquation::run() {
 	hasRun = true;
 }
 
-count LouvainMapEquation::localMoving(std::vector<node>& nodes) {
+count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iteration */) {
+	
+	// dummies, since SLM implementation needs more datastructures
+	index dummyCacheID;
+	std::vector<NeighborInChunk> dummyCachedNeighbors;
+	std::vector<Move> dummyMoves;
+	std::vector<bool> dummyIsNodeInCurrentChunk;
 	
 	count nodesMoved = 0;
 	if (parallel) {
@@ -192,7 +198,7 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 			
 			// find moves
 			numUsedCaches = 0;
-			#pragma omp for //schedule (dynamic, 500)		// TODO schedule!
+			#pragma omp for //schedule (dynamic, 500)
 			for (index j = chunkBorders[i]; j < firstInvalid; ++j) {
 				const node u = nodes[j];
 				if (numUsedCaches == neighborCaches.size()) {

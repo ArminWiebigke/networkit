@@ -113,7 +113,7 @@ private:
 	void checkUpdatedCutsAndVolumesAgainstRecomputation();
 #endif
 	
-	count localMoving(std::vector<node>& nodes);
+	count localMoving(std::vector<node>& nodes, count iteration);
 	
 	count synchronousLocalMoving(std::vector<node>& nodes, count iteration);
 	
