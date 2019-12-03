@@ -198,7 +198,7 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 			
 			// find moves
 			numUsedCaches = 0;
-			#pragma omp for //schedule (dynamic, 500)
+			#pragma omp for schedule (guided)
 			for (index j = chunkBorders[i]; j < firstInvalid; ++j) {
 				const node u = nodes[j];
 				if (numUsedCaches == neighborCaches.size()) {
@@ -444,7 +444,7 @@ void LouvainMapEquation::runHierarchical() {
 	INFO("Run hierarchical with ", metaGraph.numberOfNodes(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 
 	constexpr bool forceParallelism = false;	// for tests only
-	LouvainMapEquation recursion(metaGraph, true, maxIterations, parallel && (forceParallelism || metaGraph.numberOfNodes() > 1e5), parallelizationType, additionalCut, additionalVolume);
+	LouvainMapEquation recursion(metaGraph, true, maxIterations, parallel && (forceParallelism || metaGraph.numberOfNodes() > 1e4), parallelizationType, additionalCut, additionalVolume);
 	recursion.run();
 	const Partition& metaPartition = recursion.getPartition();
 
