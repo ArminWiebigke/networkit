@@ -45,10 +45,7 @@ Graph::Graph(count n, bool weighted, bool directed)
 		  outEdgeWeights(weighted ? n : 0), inEdgeIds(), outEdgeIds() {
 
 	// set name from global id
-	id = getNextGraphId();
-	std::stringstream sstm;
-	sstm << "G#" << id;
-	name = sstm.str();
+	id = 1;
 }
 
 Graph::Graph(std::initializer_list<WeightedEdge> edges) : Graph(0, true) {
