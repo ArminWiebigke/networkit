@@ -455,7 +455,10 @@ std::vector<std::vector<node>> EgoSplitting::getCommunitiesFromPersonaClustering
 	G.forNodes([&](node u) {
 		for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
 			if (personaGraph.hasNode(i)) {
-				result[personaPartition.subsetOf(i)].push_back(u);
+				index part = personaPartition.subsetOf(i);
+				if (result[part].empty() || result[part].back() != u) {
+					result[part].push_back(u);
+				}
 			}
 		}
 	});
