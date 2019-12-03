@@ -66,53 +66,67 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 	totalGroupStubs.resize(numDiscardedCommunities);
 	totalStubs = 0;
 
-	std::vector<std::unordered_map<node, double>> edgesBetweenCommunities(numDiscardedCommunities);
-	graph.forNodes([&](node u) {
-		const auto &comms1 = nodeMemberships[u];
-		if (comms1.empty()) return;
-
-		graph.forNeighborsOf(u, [&](node, node v, edgeweight weight) {
-//			if (u > v) return;
-			assert(weight == 1.0);
-			const auto &comms2 = nodeMemberships[v];
-			for (index comm2 : comms2) { // comms2 might be empty, but we have already checked comms1
-				for (index comm1 : comms1) {
-					edgesBetweenCommunities[comm1][comm2] += 1;
-					totalStubs += 1;
-					++totalGroupStubs[comm1];
-					if (comm1 != comm2) {
-						++outgoingGroupStubs[comm1];
-					} else {
-						++totalStubs;
-						++totalGroupStubs[comm1];
-					}
-				}
-			}
-		});
-	});
-
-	INFO("Total stubs of discarded graph: ", totalStubs, ", number of edges in original: ", graph.numberOfEdges());
 	GraphBuilder builder(numDiscardedCommunities, true, false);
 
-#pragma omp parallel for
-	for (index comm = 0; comm < numDiscardedCommunities; ++comm) {
-		for (auto const &commAndNumEdges : edgesBetweenCommunities[comm]) {
-			builder.addHalfEdge(comm, commAndNumEdges.first, commAndNumEdges.second);
+	// Get node memberships
+	#pragma omp parallel
+	{
+		count localStubs = 0;
+
+		SparseVector<count> neighborComs(graph.upperNodeIdBound(), 0);
+
+		#pragma omp for schedule(dynamic, 10) nowait
+		for (omp_index comId = 0; comId < static_cast<omp_index>(discardedCommunities.size()); ++comId) {
+			for (node u : discardedCommunities[comId]) {
+				graph.forNeighborsOf(u, [&](node v) {
+					for (index comm2 : nodeMemberships[v]) {
+						if (neighborComs.indexIsUsed(comm2)) {
+							neighborComs[comm2] += 1;
+						} else {
+							neighborComs.insert(comm2, 1);
+						}
+					}
+				});
+			}
+
+			for (index comm2 : neighborComs.insertedIndexes()) {
+				count weight = neighborComs[comm2];
+				totalGroupStubs[comId] += weight;
+				if (comId != comm2) {
+					outgoingGroupStubs[comId] += weight;
+				} else {
+					// count loops twice
+					totalGroupStubs[comId] += weight;
+				}
+				builder.addHalfEdge(comId, comm2, weight);
+			}
+
+			localStubs += totalGroupStubs[comId];
+
+			neighborComs.reset();
 		}
+
+		#pragma omp atomic update
+		totalStubs += localStubs;
 	}
+
+	INFO("Total stubs of discarded graph: ", totalStubs, ", number of edges in original: ", graph.numberOfEdges());
+
 	discardedCommunitiesGraph = builder.toGraph(false);
 	stochasticDistribution.increaseMaxValueTo(totalStubs + numDiscardedCommunities);
 }
 
 void MergeCommunities::tryToMergeCommunities() {
-	mergedCommunities = Partition(discardedCommunitiesGraph.numberOfNodes());
+	mergedCommunities = Partition(discardedCommunitiesGraph.upperNodeIdBound());
 	mergedCommunities.allToSingletons();
+	SparseVector<edgeweight> neighborWeights(discardedCommunitiesGraph.upperNodeIdBound(), 0.0);
+
 	count maxIterations = 20;
 	for (count i = 0; i < maxIterations; ++i) {
 		DEBUG("Merge communities iteration ", i);
 		count nodesChanged = 0;
 		discardedCommunitiesGraph.forNodesInRandomOrder([&](node u) {
-			bool wasMoved = tryLocalMove(u);
+			bool wasMoved = tryLocalMove(u, neighborWeights);
 			if (wasMoved)
 				++nodesChanged;
 		});
@@ -123,26 +137,33 @@ void MergeCommunities::tryToMergeCommunities() {
 	     mergedCommunities.numberOfSubsets(), " communities");
 }
 
-bool MergeCommunities::tryLocalMove(node u) {
-	std::map<index, double> edgesToCommunities;
+bool MergeCommunities::tryLocalMove(node u, SparseVector<edgeweight> &neighborWeights) {
+
+	edgeweight loop = 0;
+	edgeweight degree = 0;
 	discardedCommunitiesGraph.forEdgesOf(u, [&](node, node v, edgeweight weight) {
 		auto neighborCommunity = mergedCommunities.subsetOf(v);
-		edgesToCommunities[neighborCommunity] += weight;
+		degree += weight;
+		if (v == u) { // count loops twice
+			degree += weight;
+			loop += weight;
+		}
+		if (neighborWeights.indexIsUsed(neighborCommunity)) {
+			neighborWeights[neighborCommunity] += weight;
+		} else {
+			neighborWeights.insert(neighborCommunity, weight);
+		}
 	});
 
 	index currentCommunity = mergedCommunities.subsetOf(u);
-	edgeweight loop = discardedCommunitiesGraph.weight(u, u);
-	count degree = discardedCommunitiesGraph.weightedDegree(u);
 	count degreeWithoutLoop = degree - 2 * loop;
 
 	index bestNeighborCommunity = currentCommunity;
 	double bestScore = 1.;
 	count stubsIntoCurrent = 0;
 	count stubsIntoNew = 0;
-	for (const auto &edgesToCommunity : edgesToCommunities) {
-		count numEdgesIntoCommunity;
-		index neighborCommunity;
-		std::tie(neighborCommunity, numEdgesIntoCommunity) = edgesToCommunity;
+	for (index neighborCommunity : neighborWeights.insertedIndexes()) {
+		double numEdgesIntoCommunity = neighborWeights[neighborCommunity];
 		double score = 1.;
 		count externalStubs = totalStubs - totalGroupStubs[neighborCommunity];
 		if (neighborCommunity == currentCommunity) {
@@ -169,6 +190,8 @@ bool MergeCommunities::tryLocalMove(node u) {
 			bestNeighborCommunity = neighborCommunity;
 		}
 	}
+
+	neighborWeights.reset();
 
 	if (bestNeighborCommunity != currentCommunity) {
 		// Move node into new community

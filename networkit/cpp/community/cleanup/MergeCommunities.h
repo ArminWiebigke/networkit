@@ -59,7 +59,7 @@ private:
 
 	void checkMergedCommunities();
 
-	bool tryLocalMove(node u);
+	bool tryLocalMove(node u, SparseVector<edgeweight> &neighborWeights);
 };
 
 
