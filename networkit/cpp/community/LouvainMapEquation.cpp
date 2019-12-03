@@ -64,7 +64,9 @@ void LouvainMapEquation::run() {
 		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
 			if (!graph.hasNode(u)) {
 				partition.remove(u);
-				nextPartition.remove(u);
+				if (nextPartition.numberOfElements()) {
+					nextPartition.remove(u);
+				}
 			}
 		}
 	}
