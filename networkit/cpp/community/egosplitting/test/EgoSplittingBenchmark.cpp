@@ -33,14 +33,14 @@ public:
 		std::string graphPath;
 		std::cout << "[INPUT] graph file path (edge list tab 0, like SNAP) > " << std::endl;
 		std::getline(std::cin, graphPath);
-		EdgeListReader reader('\t', 0);
-		//SNAPGraphReader reader;
+		//EdgeListReader reader('\t', 0);
+		SNAPGraphReader reader;
 		testGraph = reader.read(graphPath);
 	}
 
 	void benchEgoSplitting(const std::map<std::string, std::string> &parameters) {
 		Aux::Random::setSeed(3450441, false);
-		bool egoNetsParallel = false;
+		bool egoNetsParallel = true;
 		EgoSplitting algo(testGraph, egoNetsParallel);
 		algo.setParameters(parameters);
 

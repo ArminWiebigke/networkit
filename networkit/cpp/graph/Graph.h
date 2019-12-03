@@ -541,6 +541,8 @@ public:
 	 */
 	void setName(std::string name) { this->name = name; }
 
+	void setNumberOfEdges(count m) { this->m = m; }
+	
 	/*
 	 * Returns the name of the graph.
 	 * @return The name of the graph.
