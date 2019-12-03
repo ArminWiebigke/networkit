@@ -64,12 +64,14 @@ void LouvainMapEquation::run() {
 		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
 			if (!graph.hasNode(u)) {
 				partition.remove(u);
-				nextPartition.remove(u);
+				if (parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving) {
+					nextPartition.remove(u);
+				}
 			}
 		}
 	}
 	handler.assureRunning();
-
+	
 	calculateInitialClusterCutAndVolume();
 	timer.stop();
 	DEBUG("init ", timer.elapsedMilliseconds(), " ms");
@@ -106,8 +108,7 @@ void LouvainMapEquation::run() {
 		timer.start();
 		if (parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving) {
 			numberOfNodesMoved = synchronousLocalMoving(nodes, iteration);
-		}
-		else {
+		} else {
 			numberOfNodesMoved = localMoving(nodes, iteration);
 		}
 		timer.stop();
