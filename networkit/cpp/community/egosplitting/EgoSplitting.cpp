@@ -486,14 +486,11 @@ void EgoSplitting::cleanUpCommunities(std::vector<std::vector<node>> &communitie
 void EgoSplitting::discardSmallCommunities(std::vector<std::vector<node>> &communities) {// Discard communities of size 4 or less
 	count min_size = 5;
 
-	for (index c = 0; c < communities.size(); ) {
-		if (communities[c].size() < 5) {
-			std::swap(communities[c], communities.back());
-			communities.pop_back();
-		} else {
-			++c;
-		}
-	}
+	auto new_end = std::remove_if(communities.begin(), communities.end(),
+				      [min_size](const std::vector<node> &c) {
+					      return c.size() < min_size;
+				      });
+	communities.erase(new_end, communities.end());
 }
 
 Cover EgoSplitting::getCover() {
