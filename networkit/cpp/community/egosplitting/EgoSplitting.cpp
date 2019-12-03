@@ -131,6 +131,7 @@ void EgoSplitting::run() {
 
 	INFO("create Communities");
 	std::vector<std::vector<node>> communities = getCommunitiesFromPersonaClustering();
+	personaGraph = Graph(); // deallocate persona graph
 	addTime(timer, "5  Create Communities");
 
 	INFO("clean up Communities");
