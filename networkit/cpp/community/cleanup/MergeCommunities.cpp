@@ -110,9 +110,9 @@ void MergeCommunities::createDiscardedCommunitiesGraph() {
 		totalStubs += localStubs;
 	}
 
-	INFO("Total stubs of discarded graph: ", totalStubs, ", number of edges in original: ", graph.numberOfEdges());
-
 	discardedCommunitiesGraph = builder.toGraph(false);
+
+	INFO("Total stubs of discarded graph: ", totalStubs, ", number of edges in discarded graph: ", discardedCommunitiesGraph.numberOfEdges(), ", number of edges in original: ", graph.numberOfEdges());
 	stochasticDistribution.increaseMaxValueTo(totalStubs + numDiscardedCommunities);
 }
 
