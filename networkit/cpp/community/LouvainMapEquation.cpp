@@ -163,7 +163,7 @@ count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iterati
 
 
 count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& nodes, count iteration) {
-	// chunkBorders = fixed number of nodes, or degree sum ?
+	// Estimate the number of nodes that will be moved in this iteration and make chunkSize dependent on that! Or implement active nodesets
 	const size_t chunkSize = std::min(static_cast<size_t>(10000 * Aux::getCurrentNumberOfThreads()), std::max(1UL, nodes.size() / 5));
 	const size_t numberOfChunks = 1 + nodes.size() / chunkSize;
 	std::vector<size_t> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(nodes.size(), numberOfChunks);
@@ -198,7 +198,7 @@ count LouvainMapEquation::synchronousLocalMoving(std::vector<NetworKit::node>& n
 			
 			// find moves
 			numUsedCaches = 0;
-			#pragma omp for //schedule (dynamic, 500)
+			#pragma omp for schedule (guided)
 			for (index j = chunkBorders[i]; j < firstInvalid; ++j) {
 				const node u = nodes[j];
 				if (numUsedCaches == neighborCaches.size()) {
@@ -444,7 +444,7 @@ void LouvainMapEquation::runHierarchical() {
 	INFO("Run hierarchical with ", metaGraph.numberOfNodes(), " clusters (from ", graph.numberOfNodes(), " nodes)");
 
 	constexpr bool forceParallelism = false;	// for tests only
-	LouvainMapEquation recursion(metaGraph, true, maxIterations, parallel && (forceParallelism || metaGraph.numberOfNodes() > 5e5), parallelizationType, additionalCut, additionalVolume);
+	LouvainMapEquation recursion(metaGraph, true, maxIterations, parallel && (forceParallelism || metaGraph.numberOfNodes() > 1e4), parallelizationType, additionalCut, additionalVolume);
 	recursion.run();
 	const Partition& metaPartition = recursion.getPartition();
 
