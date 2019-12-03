@@ -267,8 +267,8 @@ void MergeCommunities::checkMergedCommunities() {
 		}
 	}
 
-	auto new_end = std::remove_if(cleanedCommunities.begin(), cleanedCommunities.end(), [](const std::vector<node>& c) { return c.empty(); });
-	cleanedCommunities.erase(new_end, cleanedCommunities.end());
+	auto new_end = std::remove_if(discardedCommunities.begin(), discardedCommunities.end(), [](const std::vector<node>& c) { return c.empty(); });
+	discardedCommunities.erase(new_end, discardedCommunities.end());
 	INFO("Skipped ", skippedCommunities, " large communities (max size ", maxCommunitySize, ")");
 }
 
