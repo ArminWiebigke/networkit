@@ -575,15 +575,23 @@ void LouvainMapEquation::checkUpdatedCutsAndVolumesAgainstRecomputation() {
 
 #endif
 
-LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations)
-		: hierarchical(hierarchical), maxIterations(maxIterations) {
+LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations, std::string parallelization)
+		: hierarchical(hierarchical), maxIterations(maxIterations), parallelization(std::move(parallelization)) {
 }
 
 ClusteringFunction LouvainMapEquationFactory::getFunction() const {
 	bool hierarchicalCopy = hierarchical;
 	count maxIterationsCopy = maxIterations;
-	return [hierarchicalCopy, maxIterationsCopy](const Graph &graph) {
-		LouvainMapEquation algo(graph, hierarchicalCopy, maxIterationsCopy);
+	
+	// Unknown parallelization options default to no parallelism!
+	bool parallel = parallelization == "SynchronousLocalMoving" || parallelization == "RelaxMap";
+	LouvainMapEquation::ParallelizationType parallelizationType = LouvainMapEquation::ParallelizationType::RelaxMap;
+	if (parallelization == "SynchronousLocalMoving") {
+		parallelizationType = LouvainMapEquation::ParallelizationType::SynchronousLocalMoving;
+	}
+	
+	return [hierarchicalCopy, maxIterationsCopy, parallel, parallelizationType](const Graph &graph) {
+		LouvainMapEquation algo(graph, hierarchicalCopy, maxIterationsCopy, parallel, parallelizationType);
 		algo.run();
 		return algo.getPartition();
 	};
