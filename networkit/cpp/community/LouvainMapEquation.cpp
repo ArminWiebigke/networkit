@@ -64,14 +64,14 @@ void LouvainMapEquation::run() {
 		for (node u = 0; u < graph.upperNodeIdBound(); ++u) {
 			if (!graph.hasNode(u)) {
 				partition.remove(u);
-				if (nextPartition.numberOfElements()) {
+				if (parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving) {
 					nextPartition.remove(u);
 				}
 			}
 		}
 	}
 	handler.assureRunning();
-
+	
 	calculateInitialClusterCutAndVolume();
 	timer.stop();
 	DEBUG("init ", timer.elapsedMilliseconds(), " ms");
@@ -108,8 +108,7 @@ void LouvainMapEquation::run() {
 		timer.start();
 		if (parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving) {
 			numberOfNodesMoved = synchronousLocalMoving(nodes, iteration);
-		}
-		else {
+		} else {
 			numberOfNodesMoved = localMoving(nodes, iteration);
 		}
 		timer.stop();
@@ -576,15 +575,23 @@ void LouvainMapEquation::checkUpdatedCutsAndVolumesAgainstRecomputation() {
 
 #endif
 
-LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations)
-		: hierarchical(hierarchical), maxIterations(maxIterations) {
+LouvainMapEquationFactory::LouvainMapEquationFactory(bool hierarchical, count maxIterations, std::string parallelization)
+		: hierarchical(hierarchical), maxIterations(maxIterations), parallelization(std::move(parallelization)) {
 }
 
 ClusteringFunction LouvainMapEquationFactory::getFunction() const {
 	bool hierarchicalCopy = hierarchical;
 	count maxIterationsCopy = maxIterations;
-	return [hierarchicalCopy, maxIterationsCopy](const Graph &graph) {
-		LouvainMapEquation algo(graph, hierarchicalCopy, maxIterationsCopy);
+	
+	// Unknown parallelization options default to no parallelism!
+	bool parallel = parallelization == "SynchronousLocalMoving" || parallelization == "RelaxMap";
+	LouvainMapEquation::ParallelizationType parallelizationType = LouvainMapEquation::ParallelizationType::RelaxMap;
+	if (parallelization == "SynchronousLocalMoving") {
+		parallelizationType = LouvainMapEquation::ParallelizationType::SynchronousLocalMoving;
+	}
+	
+	return [hierarchicalCopy, maxIterationsCopy, parallel, parallelizationType](const Graph &graph) {
+		LouvainMapEquation algo(graph, hierarchicalCopy, maxIterationsCopy, parallel, parallelizationType);
 		algo.run();
 		return algo.getPartition();
 	};

@@ -14,6 +14,7 @@
 #include "../../../structures/Partition.h"
 #include "../../../io/METISGraphReader.h"
 #include "../../../io/EdgeListReader.h"
+#include "../../../io/SNAPGraphReader.h"
 
 namespace NetworKit {
 
@@ -33,6 +34,7 @@ public:
 		std::cout << "[INPUT] graph file path (edge list tab 0, like SNAP) > " << std::endl;
 		std::getline(std::cin, graphPath);
 		EdgeListReader reader('\t', 0);
+		//SNAPGraphReader reader;
 		testGraph = reader.read(graphPath);
 	}
 

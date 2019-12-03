@@ -43,6 +43,7 @@ private:
 
 class LouvainMapEquation : public Algorithm {
 private:
+	friend class LouvainMapEquationFactory;
 	enum class ParallelizationType : uint8_t { RelaxMap, SynchronousLocalMoving };
 public:
 	explicit LouvainMapEquation(const Graph &graph, bool hierarchical = false, count maxIterations = 256,
@@ -179,13 +180,14 @@ private:
 
 class LouvainMapEquationFactory : public ClusteringFunctionFactory {
 public:
-	explicit LouvainMapEquationFactory(bool hierarchical = false, count maxIterations = 256);
+	explicit LouvainMapEquationFactory(bool hierarchical = false, count maxIterations = 256, std::string parallelization = "none");
 
 	ClusteringFunction getFunction() const override;
 
 private:
 	bool hierarchical;
 	count maxIterations;
+	std::string parallelization;
 };
 
 }

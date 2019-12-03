@@ -27,7 +27,7 @@ namespace NetworKit {
 EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation)
 		: EgoSplitting(G, parallelEgoNetEvaluation,
 		               PLMFactory(true, 1.0, "none randomized").getFunction(),
-		               LouvainMapEquationFactory(true, 16).getFunction()
+		               LouvainMapEquationFactory(true, 16, "RelaxMap").getFunction()
 ) {
 	INFO("Default EgoSplitting");
 }
