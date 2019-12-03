@@ -21,6 +21,7 @@
 #include "EgoNetExtensionAndPartition.h"
 #include "../LouvainMapEquation.h"
 #include "../cleanup/SignificanceCommunityCleanUp.h"
+#include "../../auxiliary/Parallelism.h"
 
 namespace NetworKit {
 
@@ -49,7 +50,6 @@ EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, Cluste
 void EgoSplitting::init() {
 	personaEdges.resize(G.upperNodeIdBound());
 	egoNetPartitions.resize(G.upperNodeIdBound());
-	egoNetExtendedPartitions.resize(G.upperNodeIdBound());
 	egoNetPartitionCounts.resize(G.upperNodeIdBound(), 0);
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 	directedG = LowToHighDirectedGraph(G);
@@ -107,6 +107,10 @@ void EgoSplitting::run() {
 	    || (parameters.at("Extend EgoNet Strategy") == "Edges" && parameters.at("Edges Score Strategy") == "Significance")
 	    || parameters.at("Extend EgoNet Strategy") == "Significance") {
 		stochasticDistribution.increaseMaxValueTo(2 * G.numberOfEdges() + G.numberOfNodes());
+	}
+	
+	if (parameters.at("storeEgoNet") == "Yes") {
+		egoNetExtendedPartitions.resize(G.upperNodeIdBound());
 	}
 
 	INFO("create EgoNets");
@@ -373,8 +377,7 @@ void EgoSplitting::splitIntoPersonas() {
 	count sum = 0;
 	G.forNodes([&](node u) {
 		personaOffsets[u] = sum;
-		count numPersonas = egoNetPartitionCounts[u];
-		sum += numPersonas;
+		sum += egoNetPartitionCounts[u];
 	});
 	personaOffsets[G.upperNodeIdBound()] = sum;
 	personaGraph = Graph(sum, (parameters.at("normalizePersonaWeights") != "unweighted" || G.isWeighted()));
@@ -387,23 +390,46 @@ void EgoSplitting::connectPersonas() {
 	};
 
 	// Connect personas of each node
-	G.forNodes([&](node u) {
-		for (auto edge : personaEdges[u]) {
-			personaGraph.addEdge(getPersona(u, edge.u), getPersona(u, edge.v),
-			                     edge.weight);
+	G.balancedParallelForNodes([&](node u) {
+		for (const WeightedEdge& edge : personaEdges[u]) {
+			personaGraph.addEdge(getPersona(u, edge.u), getPersona(u, edge.v), edge.weight);
 		}
-	});
-
+	}, true);
+	
 	// Connect personas of different nodes
-	G.forEdges([&](node u, node v, edgeweight weight) {
-		if (G.degree(u) < 2 || G.degree(v) < 2) return;
-		auto idx_u = egoNetPartitions[u].find(v);
-		auto idx_v = egoNetPartitions[v].find(u);
-		assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
-		personaGraph.addEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second),
-		                     weight);
-	});
-
+	count twiceNumberOfInterEgoEdges = 2 * G.numberOfEdges();
+	#pragma omp parallel
+	{
+		count update = 0;
+		#pragma omp for schedule (dynamic, 1000)
+		for (node u = 0; u < G.upperNodeIdBound(); ++u) {
+			if (G.hasNode(u)) {
+				if (G.degree(u) >= 2) {
+					G.forEdgesOf(u, [&](node , node v, edgeweight weight) {
+						if (G.degree(v) >= 2) {
+							auto idx_u = egoNetPartitions[u].find(v);
+							auto idx_v = egoNetPartitions[v].find(u);
+							assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
+							personaGraph.addHalfEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second), weight);
+						} else {
+							update++;
+						}
+					});
+				} else {
+					update += G.degree(u);
+				}
+				
+			}
+		}
+		
+		#pragma omp atomic update
+			twiceNumberOfInterEgoEdges -= update;
+	}
+	
+	if (twiceNumberOfInterEgoEdges % 2 != 0)
+		throw std::runtime_error("edge count accumulation failed");
+	personaGraph.setNumberOfEdges(twiceNumberOfInterEgoEdges / 2 + personaGraph.numberOfEdges());
+	
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
@@ -441,7 +467,10 @@ void EgoSplitting::connectPersonas() {
 			personaGraph.removeNode(u);
 		}
 	});
+	
 	egoNetPartitions.clear();
+	egoNetPartitions.shrink_to_fit();
+	
 }
 
 void EgoSplitting::createPersonaClustering() {
@@ -470,6 +499,7 @@ void EgoSplitting::createCover(const std::vector<std::vector<node>> &communities
 	// Create cover from given communities
 	resultCover = Cover(G.upperNodeIdBound());
 	resultCover.setUpperBound(communities.size());
+	#pragma omp parallel for schedule (static)
 	for (index com_id = 0; com_id < communities.size(); ++com_id) {
 		for (node u : communities[com_id]) {
 			resultCover.addToSubset(com_id, u);
