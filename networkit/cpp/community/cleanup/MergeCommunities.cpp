@@ -257,7 +257,7 @@ void MergeCommunities::checkMergedCommunities() {
 			assert(stochasticDistribution.maxValue() >= 2 * graph.totalEdgeWeight() + graph.numberOfNodes());
 			std::vector<node> cleanedCommunity = singleCommunityCleanUp.clean(mergedCommunity.insertedIndexes());
 			if (cleanedCommunity.empty()) {
-				discardedCommunities[communitiesToMerge.front()] = std::move(mergedCommunity.insertedIndexes());
+				discardedCommunities[communitiesToMerge.front()] = mergedCommunity.insertedIndexes();
 			} else {
 #pragma omp critical
 				cleanedCommunities.emplace_back(std::move(cleanedCommunity));
