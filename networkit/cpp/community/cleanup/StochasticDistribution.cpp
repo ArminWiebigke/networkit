@@ -25,9 +25,14 @@ void StochasticDistribution::setMaxValue(count maxValue) {
 		logSum.push_back(0.0);
 	size_t old_size = logSum.size();
 	double currentValue = logSum.back();
+	logSum.resize(maxValue + 1);
+	#pragma omp parallel for simd
+	for (omp_index i = old_size; i <= static_cast<omp_index>(maxValue); ++i) {
+		logSum[i] = std::log(i);
+	}
 	for (index i = old_size; i <= maxValue; ++i) {
-		currentValue += std::log(i);
-		logSum.push_back(currentValue);
+		currentValue += logSum[i];
+		logSum[i] = currentValue;
 	}
 	assert(logSum.size() == maxValue + 1);
 }
