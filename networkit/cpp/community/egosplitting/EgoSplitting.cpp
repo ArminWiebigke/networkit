@@ -546,7 +546,6 @@ void EgoSplitting::createCover(const std::vector<std::vector<node>> &communities
 	// Create cover from given communities
 	resultCover = Cover(G.upperNodeIdBound());
 	resultCover.setUpperBound(communities.size());
-	#pragma omp parallel for schedule (static)
 	for (index com_id = 0; com_id < communities.size(); ++com_id) {
 		for (node u : communities[com_id]) {
 			resultCover.addToSubset(com_id, u);
