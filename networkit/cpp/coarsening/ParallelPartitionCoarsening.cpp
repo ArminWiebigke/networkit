@@ -11,8 +11,6 @@
 
 #include "ParallelPartitionCoarsening.h"
 #include <omp.h>
-#include "../graph/GraphBuilder.h"
-#include "../auxiliary/Timer.h"
 #include "../auxiliary/Log.h"
 
 namespace NetworKit {
