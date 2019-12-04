@@ -526,7 +526,7 @@ void EgoSplitting::createPersonaClustering() {
 
 
 std::vector<std::vector<node>> EgoSplitting::getCommunitiesFromPersonaClustering() {
-	personaPartition.compact();
+	personaPartition.compact(personaPartition.upperBound() < 2 * personaGraph.numberOfNodes());
 	std::vector<std::vector<node>> result(personaPartition.upperBound());
 	G.forNodes([&](node u) {
 		for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
