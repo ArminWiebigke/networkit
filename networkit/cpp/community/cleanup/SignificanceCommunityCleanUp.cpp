@@ -52,7 +52,7 @@ void SignificanceCommunityCleanUp::cleanAllCommunities() {
 #pragma omp for schedule(dynamic, 1)
 		for (omp_index i = 0; i < static_cast<omp_index>(communities.size()); ++i) {
 			const std::vector<node>& inputCommunity = communities[i];
-			DEBUG("Clean community ", i, "/", inputCommunities.size(), " with size ", inputCommunity.size());
+			DEBUG("Clean community ", i, "/", communities.size(), " with size ", inputCommunity.size());
 			std::vector<node> cleanedCommunity = singleCommunityCleanup.clean(inputCommunity);
 
 			if (!cleanedCommunity.empty()) {

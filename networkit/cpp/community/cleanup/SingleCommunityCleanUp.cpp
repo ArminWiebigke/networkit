@@ -109,7 +109,7 @@ SingleCommunityCleanUp::getCandidatesAndSetUpCalculation(bool onlyUseOriginalCom
 // remove the node with the worst (= highest) score from the community
 void SingleCommunityCleanUp::removeWorstNode(
 		std::vector<ScoreStruct> &internalScores) {
-	assert(community.size() > 0);
+	assert(isInCommunity.size() > 0);
 	assert(internalScores.size() > 0);
 
 	auto removeNode = [&](node nodeToRemove) {
@@ -118,7 +118,6 @@ void SingleCommunityCleanUp::removeWorstNode(
 		candidates.push_back(nodeToRemove);
 		isCandidate.insert(nodeToRemove, true);
 		externalNodes += 1;
-		assert(externalNodes == graph.numberOfNodes() - community.size());
 		count degree = graph.degree(nodeToRemove);
 		outgoingCommunityStubs += 2 * edgesToCommunity[nodeToRemove] - degree;
 		totalCommunityStubs -= degree;
@@ -151,6 +150,7 @@ void SingleCommunityCleanUp::removeWorstNode(
 	}
 
 	isInCommunity.removeUnusedIndexes();
+	assert(externalNodes == graph.numberOfNodes() - isInCommunity.size());
 }
 
 std::vector<SingleCommunityCleanUp::ScoreStruct>
