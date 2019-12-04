@@ -67,6 +67,9 @@ void ParallelPartitionCoarsening::run() {
 				numSelfLoops += 1;
 				numEdges -= 1;
 			}
+
+			Gcoarsened.preallocateUndirected(su, incidentParts.size());
+
 			for (node sv : incidentParts) {
 				Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
 				incidentPartWeights[sv] = 0.0;
@@ -110,6 +113,9 @@ void ParallelPartitionCoarsening::run() {
 					numSelfLoops[tid] += 1;
 					numEdges[tid] -= 1;
 				}
+
+				Gcoarsened.preallocateUndirected(su, incidentParts.size());
+
 				for (node sv : incidentParts) {
 					Gcoarsened.addHalfEdge(su, sv, incidentPartWeights[sv]);
 					incidentPartWeights[sv] = 0.0;
