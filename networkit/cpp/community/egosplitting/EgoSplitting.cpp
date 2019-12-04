@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <tlx/unused.hpp>
+
 #include "EgoSplitting.h"
 #include "../../structures/Partition.h"
 #include "../../components/ConnectedComponents.h"
@@ -183,6 +185,8 @@ void EgoSplitting::createEgoNets() {
 				continue;
 			}
 
+			egoMapping.reset();
+
 			DEBUG("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
 			// Find neighbors == nodes of the ego-net
 			G.forEdgesOf(egoNode, [&](node, node v) {
@@ -190,6 +194,9 @@ void EgoSplitting::createEgoNets() {
 					egoMapping.addNode(v);
 				}
 			});
+
+			const count originalEgoNetSize = egoMapping.nodeCount();
+			tlx::unused(originalEgoNetSize);
 
 			Graph egoGraph(egoMapping.nodeCount(), G.isWeighted());
 
@@ -203,6 +210,23 @@ void EgoSplitting::createEgoNets() {
 					}
 				});
 			});
+
+			// Handle some more trivial cases: egonet is a clique or just two unconnected nodes
+			{
+				// egoNode has only degree-1-neighbors
+				if (egoGraph.numberOfNodes() == 0) continue;
+
+				// Test if the egonet is a clique, if yes, do not split the egonet
+				count cliqueEdges = egoGraph.numberOfNodes() * (egoGraph.numberOfNodes() - 1) / 2;
+				if (egoGraph.numberOfEdges() == cliqueEdges) {
+					egoNetPartitionCounts[egoNode] = 1;
+					for (node neighbor : egoMapping.globalNodes()) {
+						egoNetPartitions[egoNode].emplace(neighbor, 0);
+					}
+					continue;
+				}
+			}
+
 			//addTime(timer, "13    Build EgoNet");
 
 			DEBUG("Extend and partition");
@@ -238,13 +262,16 @@ void EgoSplitting::createEgoNets() {
 				const node i = egoMapping.toGlobal(localI);
 				egoNetPartitions[egoNode].emplace(i, directNeighborPartition[localI]);
 			});
+
+			assert(G.degree(egoNode) >= originalEgoNetSize);
+			assert(egoNetPartitions[egoNode].size() == originalEgoNetSize);
+			assert(egoGraph.numberOfNodes() == originalEgoNetSize);
 			//addTime(timer, "19    Store EgoNet Partition");
 
 			if (parameters.at("connectPersonas") == "Yes")
 				personaEdges[egoNode] = connectEgoPartitionPersonas(egoGraph, directNeighborPartition);
 			//addTime(timer, "16    Connect Ego-Personas");
 
-			egoMapping.reset();
 			//addTime(timer, "1x    Clean up");
 		}
 		//addTime(totalTimer, "10    EgoNet Sum");
