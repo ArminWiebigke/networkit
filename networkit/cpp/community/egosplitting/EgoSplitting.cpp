@@ -390,53 +390,74 @@ void EgoSplitting::connectPersonas() {
 	};
 
 	// Connect personas of each node
-	G.balancedParallelForNodes([&](node u) {
-		for (const WeightedEdge& edge : personaEdges[u]) {
-			personaGraph.addEdge(getPersona(u, edge.u), getPersona(u, edge.v), edge.weight);
-		}
-	}, true);
-	
 	// Connect personas of different nodes
-	count twiceNumberOfInterEgoEdges = 2 * G.numberOfEdges();
+	count twiceNumberOfEdges = 0;
 	#pragma omp parallel
 	{
-		count update = 0;
-		#pragma omp for schedule (dynamic, 1000)
+		count localTwiceNumberOfEdges = 0;
+
+		#pragma omp for schedule (dynamic, 1000) nowait
 		for (node u = 0; u < G.upperNodeIdBound(); ++u) {
 			if (G.hasNode(u)) {
 				if (G.degree(u) >= 2) {
+					for (const WeightedEdge& edge : personaEdges[u]) {
+						node pu = getPersona(u, edge.u);
+						node pv = getPersona(u, edge.v);
+						assert(pu != pv);
+						personaGraph.addHalfEdge(pu, pv, edge.weight);
+						personaGraph.addHalfEdge(pv, pu, edge.weight);
+						localTwiceNumberOfEdges += 2;
+					}
+
 					G.forEdgesOf(u, [&](node , node v, edgeweight weight) {
 						if (G.degree(v) >= 2) {
 							auto idx_u = egoNetPartitions[u].find(v);
 							auto idx_v = egoNetPartitions[v].find(u);
 							assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
-							personaGraph.addHalfEdge(getPersona(u, idx_u->second), getPersona(v, idx_v->second), weight);
-						} else {
-							update++;
+							const node pu = getPersona(u, idx_u->second);
+							const node pv = getPersona(v, idx_v->second);
+							assert(pu != pv);
+							personaGraph.addHalfEdge(pu, pv, weight);
+							++localTwiceNumberOfEdges;
 						}
 					});
-				} else {
-					update += G.degree(u);
 				}
-				
 			}
 		}
 		
 		#pragma omp atomic update
-			twiceNumberOfInterEgoEdges -= update;
+		twiceNumberOfEdges += localTwiceNumberOfEdges;
 	}
 	
-	if (twiceNumberOfInterEgoEdges % 2 != 0)
+	if (twiceNumberOfEdges % 2 != 0)
 		throw std::runtime_error("edge count accumulation failed");
-	personaGraph.setNumberOfEdges(twiceNumberOfInterEgoEdges / 2 + personaGraph.numberOfEdges());
+	personaGraph.setNumberOfEdges(twiceNumberOfEdges / 2);
 	
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
 		internalPersonaEdges += edges.size();
-	count degreeOneNodes = 0;
-	G.forNodes([&](node v) { degreeOneNodes += (G.degree(v) == 1); });
-	assert(personaGraph.numberOfEdges() + degreeOneNodes == G.numberOfEdges() + internalPersonaEdges);
+	count removedEdges = 0;
+	G.forNodes([&](node v) {
+		if (G.degree(v) == 1) {
+			node neighbor = none;
+			G.forNeighborsOf(v, [&](node x) { neighbor = x; });
+			assert(neighbor != none);
+			if (G.degree(neighbor) > 1 || v < neighbor) {
+				++removedEdges;
+			}
+		}
+	});
+	assert(personaGraph.numberOfEdges() + removedEdges == G.numberOfEdges() + internalPersonaEdges);
+
+	personaGraph.forNodes([&](node u) {
+		assert(personaGraph.degree(u) >= 1);
+		if (personaGraph.degree(u) == 1) {
+			node neighbor = none;
+			personaGraph.forNeighborsOf(u, [&](node x) { neighbor = x; });
+			assert(neighbor != u);
+		}
+	});
 	// check that no isolated nodes were added
 	auto numIsolatedNodes = [](const Graph &graph) {
 		ConnectedComponents compsAlgo(graph);
