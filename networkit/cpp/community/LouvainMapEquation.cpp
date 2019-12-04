@@ -134,22 +134,21 @@ count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iterati
 	
 	count nodesMoved = 0;
 	if (parallel) {
-		std::vector<count> ets_nodesMoved(Aux::getMaxNumberOfThreads(), 0);
 		#pragma omp parallel
 		{
+			count nm = 0;
 			int tid = omp_get_thread_num();
-			count& nm = ets_nodesMoved[tid];
 			SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[tid];
 			
-			#pragma omp for schedule(guided)
+			#pragma omp for schedule(guided) nowait
 			for (index i = 0; i < nodes.size(); ++i) {
 				if (tryLocalMove<true, false>(nodes[i], neighborClusterWeights, /* dummies */ dummyCacheID, dummyCachedNeighbors, dummyMoves, dummyIsNodeInCurrentChunk)) {
 					nm += 1;
 				}
 			}
-		}
-		for (count x : ets_nodesMoved) {
-			nodesMoved += x;
+
+			#pragma omp atomic update
+			nodesMoved += nm;
 		}
 	} else {
 		SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[0];
