@@ -31,18 +31,19 @@ LouvainMapEquation::LouvainMapEquation(const Graph &graph, bool hierarchical, co
 									   double additionalCut, double additionalVolume)
 		: parallel(parallel), parallelizationType(parallelizationType),
 		  graph(graph), hierarchical(hierarchical), maxIterations(maxIterations),
+		  partition(graph.upperNodeIdBound()),
 		  clusterCut(graph.upperNodeIdBound()),
 		  clusterVolume(graph.upperNodeIdBound()),
 		  additionalCut(additionalCut),
 		  additionalVolume(additionalVolume),
 		  totalCut(additionalCut),
 		  totalVolume(additionalVolume),
-		  partition(graph.upperNodeIdBound()),
-		  nextPartition(parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving ? graph.upperNodeIdBound() : 0),
 		  locks(parallel && parallelizationType == ParallelizationType::RelaxMap ? graph.upperNodeIdBound() : 0),
-		  ets_neighborClusterWeights(parallel ? Aux::getMaxNumberOfThreads() : 1, SparseVector<double>(graph.upperNodeIdBound(), 0.0)),
-		  ets_isNodeInCurrentChunk(parallel & parallelizationType == ParallelizationType::SynchronousLocalMoving ? Aux::getMaxNumberOfThreads() : 0, std::vector<bool>(graph.upperNodeIdBound(), false)),
-		  ets_neighborCaches(parallel & parallelizationType == ParallelizationType::SynchronousLocalMoving? Aux::getMaxNumberOfThreads() : 0, NeighborCaches())
+		  nextPartition(parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving ? graph.upperNodeIdBound() : 0),
+		  // parallel variants initialize the inner vectors in parallel
+		  ets_neighborClusterWeights(parallel ? Aux::getMaxNumberOfThreads() : 1, SparseVector<double>(parallel ? 0 : graph.upperNodeIdBound(), 0.0)),
+		  ets_isNodeInCurrentChunk(parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving ? Aux::getMaxNumberOfThreads() : 0),
+		  ets_neighborCaches(parallel && parallelizationType == ParallelizationType::SynchronousLocalMoving? Aux::getMaxNumberOfThreads() : 0)
 {
 
 }
@@ -124,7 +125,7 @@ void LouvainMapEquation::run() {
 	hasRun = true;
 }
 
-count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iteration */) {
+count LouvainMapEquation::localMoving(std::vector<node>& nodes, count iteration) {
 	
 	// dummies, since SLM implementation needs more datastructures
 	index dummyCacheID;
@@ -139,6 +140,10 @@ count LouvainMapEquation::localMoving(std::vector<node>& nodes, count /* iterati
 			count nm = 0;
 			int tid = omp_get_thread_num();
 			SparseVector<double>& neighborClusterWeights = ets_neighborClusterWeights[tid];
+
+			if (iteration == 0) {
+				neighborClusterWeights = SparseVector<double>(graph.upperNodeIdBound(), 0.0);
+			}
 			
 			#pragma omp for schedule(guided) nowait
 			for (index i = 0; i < nodes.size(); ++i) {
