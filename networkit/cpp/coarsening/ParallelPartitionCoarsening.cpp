@@ -81,19 +81,19 @@ void ParallelPartitionCoarsening::run() {
 		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
 
 	} else {
-		int t = omp_get_max_threads();
-		std::vector<count> numEdges(t, 0);
-		std::vector<count> numSelfLoops(t, 0);
-		
-		
+		count numEdges = 0;
+		count numSelfLoops = 0;
+
 		#pragma omp parallel
 		{
 			std::vector<edgeweight> incidentPartWeights(numParts, 0.0);
 			std::vector<node> incidentParts;
 			incidentParts.reserve(numParts);
-			int tid = omp_get_thread_num();
 
-			#pragma omp for schedule(guided)
+			count localEdges = 0;
+			count localSelfLoops = 0;
+
+			#pragma omp for schedule(guided) nowait
 			for (node su = 0; su < numParts; ++su) {
 				for (index i = partBegin[su]; i < partBegin[su+1]; ++i) {
 					node u = nodesSortedByPart[i];
@@ -108,10 +108,10 @@ void ParallelPartitionCoarsening::run() {
 					});
 				}
 				
-				numEdges[tid] += incidentParts.size();
+				localEdges += incidentParts.size();
 				if (incidentPartWeights[su] != 0.0) {
-					numSelfLoops[tid] += 1;
-					numEdges[tid] -= 1;
+					localSelfLoops += 1;
+					localEdges -= 1;
 				}
 
 				Gcoarsened.preallocateUndirected(su, incidentParts.size());
@@ -123,16 +123,16 @@ void ParallelPartitionCoarsening::run() {
 		
 				incidentParts.clear();
 			}
-			
+
+			#pragma omp atomic update
+			numEdges += localEdges;
+
+			#pragma omp atomic update
+			numSelfLoops += localSelfLoops;
 		}
 		
-		Gcoarsened.m = 0;
-		Gcoarsened.storedNumberOfSelfLoops = 0;
-		for (size_t tid = 0; tid < numEdges.size(); ++tid) {
-			Gcoarsened.m += numEdges[tid];
-			Gcoarsened.storedNumberOfSelfLoops += numSelfLoops[tid];
-		}
-		Gcoarsened.m =  Gcoarsened.m / 2 + Gcoarsened.storedNumberOfSelfLoops;
+		Gcoarsened.storedNumberOfSelfLoops = numSelfLoops;
+		Gcoarsened.m = numEdges / 2 + numSelfLoops;
 	}
 
 	this->nodeMapping = nodeMapping.moveVector();
