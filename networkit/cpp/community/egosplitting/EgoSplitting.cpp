@@ -63,6 +63,7 @@ void EgoSplitting::init() {
 	parameters["Cleanup"] = "Yes";
 	parameters["CleanupMerge"] = "Yes";
 	parameters["maxEgoNetsPartitioned"] = "-1";
+	parameters["CleanupMinOverlap"] = "0.5";
 
 	// Connect Personas
 	parameters["connectPersonas"] = "Yes";
@@ -563,10 +564,13 @@ void EgoSplitting::cleanUpCommunities(std::vector<std::vector<node>> &communitie
 	if (parameters.at("Cleanup") == "Yes") {
 		discardSmallCommunities(communities);
 		bool mergeDiscarded = parameters.at("CleanupMerge") == "Yes";
-		SignificanceCommunityCleanUp cleanup(G, communities, stochasticDistribution, 0.1, 0.1, 0.5, mergeDiscarded);
+		double minOverlap = Aux::stringToDouble(parameters.at("CleanupMinOverlap"));
+		SignificanceCommunityCleanUp cleanup(G, communities, stochasticDistribution, 0.1, 0.1, minOverlap, mergeDiscarded);
 		cleanup.run();
 	}
 	discardSmallCommunities(communities);
+
+	INFO("Got ", communities.size(), " communities after cleanup");
 }
 
 void EgoSplitting::discardSmallCommunities(std::vector<std::vector<node>> &communities) {// Discard communities of size 4 or less
