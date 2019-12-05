@@ -38,15 +38,12 @@ def create_column_if_missing(data, column):
 		elif column == 'Running Time / Average Degree':
 			data[column] = (data['Running Time'] /
 			                (data['Number of Edges'] / data['Number of Nodes'])).astype('float64')
-		elif column == 'time / (n + m)':
-			data[column] = 1e6 * (data['Running Time'] /
-			                (data['Number of Edges'] + data['Number of Nodes'])).astype('float64')
 		elif column == 'Running Time / (n + m)':
-			data[column] = 1000 * (data['Running Time'] /
-			                (data['Number of Edges'] + data['Number of Nodes'])).astype('float64')
+			data[column] = 1e6 * (data['Running Time'] /
+			                       (data['Number of Edges'] + data['Number of Nodes'])).astype('float64')
 		elif column == 'Communities per Node':
 			data[column] = (data['om'] - 1) * (data['on'] / data['N']) + 1
 		elif column == 'Mixing Factor':
 			data[column] = data['mu']
 		else:
-			raise ValueError('Unknown column \'{}\'')
+			raise ValueError('Unknown column \'{}\''.format(column))

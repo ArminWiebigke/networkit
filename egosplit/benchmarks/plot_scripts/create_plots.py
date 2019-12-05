@@ -59,7 +59,7 @@ def metric_plots(plots_config, **kwargs):
 		metric_plots_config = {
 			'plot_subdir': 'metrics/',
 			'data': kwargs['data']['metrics'],
-			'file_name': '{}_{}_{}'.format(metric, kwargs['graph_set_name'],
+			'file_name': '{}_{}_{}'.format(metric_config[metric]['file_name'], kwargs['graph_set_name'],
 			                               kwargs['algo_set_name']),
 			'y': metric_config[metric]['y_val'],
 			'ax_set': {

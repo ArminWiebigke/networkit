@@ -109,7 +109,7 @@ def cleanUpOslom(G, cover, tolerance=0.1):
 		graph_filename = os.path.join(tempdir, 'network.dat')
 		graphio.writeGraph(G, graph_filename, fileformat=graphio.Format.EdgeListTabZero)
 		cover_filename = os.path.join(tempdir, 'cover.dat')
-		graphio.CoverWriter().write(cover, cover_filename)
+		graphio.CoverWriter().write(cover, cover_filename)  # TODO: This may write empty lines, which OSLOM can not handle
 		params = [code_path + '/OSLOM2/oslom_undir', '-r', '0', '-hr', '0', '-uw',
 		          '-singlet',
 		          '-f', graph_filename, '-hint', cover_filename,

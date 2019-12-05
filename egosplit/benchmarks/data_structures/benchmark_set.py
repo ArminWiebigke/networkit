@@ -15,15 +15,15 @@ class BenchmarkSet:
 		self.result_dir = None  # suffix of the direction where the results are stored
 		self.plot_dir = None  # the subdirectory in the plots folder where plots will be created
 		self.store_ego_nets = False  # if True, store the ego-nets and calculate metrics for them
-		self.score_per_egonet = False  # if True, store the metrics for each ego-net, else only the average over all ego-nets is stored
+		self.score_per_egonet = False  # store the metrics for each ego-net, else only the average over all ego-nets is stored
 		self[EgoSplitClusteringAlgorithmsConfig] = None  # clustering algorithms for EgoSplitting
 		self[EgoSplitParameterConfig] = None  # parameters of EgoSplitting
 		self[GraphSetsConfig] = None  # input graphs used in the benchmarks
 		self[CleanUpConfig] = 'No Cleanup'  # clean up the result of EgoSplitting
 		self.stream_to_gephi = False  # stream the results to Gephi for visualization
 		self[OtherAlgorithms] = None  # additionally executed algorithms (not EgoSplitting)
-		self.calc_f1_per_comm = False
-		self.iterations = 10
+		self.calc_f1_per_comm = False  # calculate the F1 Score for each detected community (may be expensive on large graphs)
+		self.iterations = 10  # number of iterations each benchmark is executed
 		self.time_limit = 3600  # time limit in seconds
 		# Plot configuration
 		self.remove_algo_parts = []  # remove parts of the algorithm name when displayed in the plots

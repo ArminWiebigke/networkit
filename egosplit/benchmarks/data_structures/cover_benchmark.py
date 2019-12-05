@@ -1,10 +1,7 @@
 from collections import defaultdict
 
-from egosplit.benchmarks.data_structures.timelimit import run_with_limited_time
-from networkit.structures import Cover
 from egosplit.benchmarks.data_structures.algorithms import EgoSplitAlgorithm
 from egosplit.benchmarks.data_structures.graph import LFRGraph
-from egosplit.benchmarks.data_structures.timeout import time_limit, TimeoutException
 
 
 # class BenchmarkResult:

@@ -54,10 +54,10 @@ def facebook_graphs():
 def snap_graphs():
 	graphs = []
 	graphs.append(ReadGraph(lambda: getAmazonGraph(clean=False), 'Amazon'))
-	# graphs.append(ReadGraph(lambda: getDBLPGraph(clean=False), 'DBLP'))
-	# graphs.append(ReadGraph(lambda: getLiveJournalGraph(clean=False), 'LiveJournal'))
-	# graphs.append(ReadGraph(lambda: getOrkutGraph(clean=False), 'Orkut'))
-	# graphs.append(ReadGraph(lambda: getFriendsterGraph(clean=False), 'Orkut'))
+	graphs.append(ReadGraph(lambda: getDBLPGraph(clean=False), 'DBLP'))
+	graphs.append(ReadGraph(lambda: getLiveJournalGraph(clean=False), 'LiveJournal'))
+	graphs.append(ReadGraph(lambda: getOrkutGraph(clean=False), 'Orkut'))
+	graphs.append(ReadGraph(lambda: getFriendsterGraph(clean=False), 'Orkut'))
 	return graphs
 
 

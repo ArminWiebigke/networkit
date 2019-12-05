@@ -28,13 +28,13 @@ def get_benchmark_configs():
 		# NewCleanUp(),
 		# CleanUpSnap(),
 		# CompareOther(),
+		# EgoSnap(),
 
 		LocalClusteringBest(),
 		GlobalClusteringBest(),
 		OptimizationSteps(),
-		EgoSnap(),
-		AlgorithmsLFR(),
 		AlgorithmsSnap(),
+		AlgorithmsLFR(),
 	]
 	# TODO: Wonanders hin?
 	# To enforce a specific order of the algorithms, numbers are added to algorithm names.
@@ -53,20 +53,17 @@ class Scratchpad(BenchmarkSet):
 		'plot_dir':
 			'test/',
 		'time_limit':
-			1,
+			1000,
+		'iterations': 1,
 		EgoSplitClusteringAlgorithmsConfig:
 			'test',
 		EgoSplitParameterConfig:
-			['no-extend'],
+			['test'],
 		CleanUpConfig: 'No Cleanup',
 		# 'stream_to_gephi':
 		# 	True,
 		# 'store_ego_nets':
 		# 	True,
-		'other_algos': [
-			# 'Moses',
-			# 'Oslom',
-		],
 		GraphSetsConfig: [
 			# 'om',
 			# 'mu',
@@ -74,11 +71,12 @@ class Scratchpad(BenchmarkSet):
 			# 'overlap',
 			# large_graphs,
 			'test',
+			# 'snap',
 		],
 		PlotGraphSetConfig: [
 			# 'om',
 			# 'facebook_bar',
-			'facebook',
+			# 'facebook',
 		],
 		PlotSetConfig: [
 			'metrics',
@@ -263,6 +261,8 @@ class AlgorithmsLFR(BenchmarkSet):
 			'other_algos_lfr',
 		'plot_dir':
 			'other_algos_lfr/',
+		'time_limit':
+			1800,
 		OtherAlgorithms: [
 			'Ego-original',
 			'Ego-optimized',
@@ -286,8 +286,6 @@ class AlgorithmsLFR(BenchmarkSet):
 		PlotAlgoSetConfig: [
 			'all'
 		],
-		'remove_algo_parts':
-			[],
 		'replace_legend':
 			{'Ego-original': 'Ego', 'Ego-optimized': 'Ego+'},
 	}
@@ -301,7 +299,10 @@ class AlgorithmsSnap(BenchmarkSet):
 			'other_algos_snap',
 		'plot_dir':
 			'other_algos_snap/',
-		'iterations': 1,
+		'iterations':
+			1,
+		'time_limit':
+			7200,
 		OtherAlgorithms: [
 			'Ego-original',
 			'Ego-optimized',
@@ -322,10 +323,8 @@ class AlgorithmsSnap(BenchmarkSet):
 		PlotAlgoSetConfig: [
 			'all'
 		],
-		'remove_algo_parts':
-			['Ego', ' | '],
 		'replace_legend':
-			{},
+			{'Ego-original': 'Ego', 'Ego-optimized': 'Ego+'},
 	}
 
 
@@ -343,6 +342,8 @@ class EdgesScore(BenchmarkSet):
 			['no-extend', 'edges-score'],
 		'store_ego_nets':
 			True,
+		'iterations':
+			1,
 		GraphSetsConfig: [
 			'om',
 		],

@@ -5084,39 +5084,39 @@ cdef class EgoSplitting(Algorithm):
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
 
 
-cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
-	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
-		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
-			double scoreThreshold, double minOverlapRatio) except +
-		_Cover getCover() except +
-
-
-cdef class SignificanceCommunityCleanUp(Algorithm):
-	"""
-	Constructor to the Ego-Splitting community detection algorithm.
-
-	Parameters
-	----------
-	G : networkit.Graph
-		The graph on which the algorithm has to run.
-	cover
-	"""
-
-	cdef Graph _G
-	cdef Cover _C
-
-	def __cinit__(self, Graph G not None, Cover C not None, double significanceThreshold,
-			double scoreThreshold, double minOverlapRatio):
-		self._G = G
-		self._C = C
-		self._this = new _SignificanceCommunityCleanUp(G._this, C._this, significanceThreshold,
-			scoreThreshold, minOverlapRatio)
-
-	"""
-	Get the result of the algorithm.
-	"""
-	def getCover(self):
-		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
+#cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
+#	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
+#		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
+#			double scoreThreshold, double minOverlapRatio) except +
+#		_Cover getCover() except +
+#
+#
+#cdef class SignificanceCommunityCleanUp(Algorithm):
+#	"""
+#	Constructor to the Ego-Splitting community detection algorithm.
+#
+#	Parameters
+#	----------
+#	G : networkit.Graph
+#		The graph on which the algorithm has to run.
+#	cover
+#	"""
+#
+#	cdef Graph _G
+#	cdef Cover _C
+#
+#	def __cinit__(self, Graph G not None, Cover C not None, double significanceThreshold,
+#			double scoreThreshold, double minOverlapRatio):
+#		self._G = G
+#		self._C = C
+#		self._this = new _SignificanceCommunityCleanUp(G._this, C._this, significanceThreshold,
+#			scoreThreshold, minOverlapRatio)
+#
+#	"""
+#	Get the result of the algorithm.
+#	"""
+#	def getCover(self):
+#		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
 
 
 cdef extern from "cpp/community/SLPA.h":

@@ -53,21 +53,7 @@ class EgoSplitClusteringAlgorithmsConfig:
 			                                lambda g: PLM(g, True, 1.0,
 			                                              'none').run().getPartition()]
 		if ego_part_algos == 'test':
-			partition_algos['PLP + LM-Map'] = [PLPFactory(1, 20), LouvainMapEquationFactory(True)]
-			# def error_func(g):
-			# 	raise RuntimeError("Expected error")
-			# partition_algos['error'] = [error_func, error_func]
-			# partition_algos['default'] = []
-			partition_algos['PLM (fac)'] = [PLMFactory(True, 1.0, 'none')]
-			partition_algos['PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-			partition_algos['PLM + PLM (both fac)'] = [PLMFactory(True, 1.0, 'none'),
-			                                           PLMFactory(True, 1.0, 'none')]
-		# partition_algos['PLM + PLM'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition(),
-		#                                 lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-		# partition_algos['PLM(fac) + PLM'] = [PLMFactory(True, 1.0, 'none'),
-		#                                      lambda g: PLM(g, True, 1.0, 'none').run().getPartition()]
-		# partition_algos['PLM + PLM(fac)'] = [lambda g: PLM(g, True, 1.0, 'none').run().getPartition(),
-		#                                      PLMFactory(True, 1.0, 'none')]
+			partition_algos['PLM + LM-Map'] = [PLMFactory(True, 1.0, 'none'), LouvainMapEquationFactory(True)]
 
 		return partition_algos
 
@@ -85,9 +71,7 @@ class EgoSplitParameterConfig:
 			'connectPersonas': 'Yes',
 			'normalizePersonaCut': 'No',
 			'connectPersonasStrat': 'spanning',
-			'maxPersonaEdges': 1,
 			'normalizePersonaWeights': 'unweighted',
-			'iterationWeight': 'No',
 		}
 		extend_standard = {
 			**standard,
@@ -95,7 +79,6 @@ class EgoSplitParameterConfig:
 			'Maximum Extend Factor': 5,
 			'addNodesExponent': 0.5,
 			'minNodeDegree': 2,
-			'keepOnlyTriangles': 'No',
 		}
 		edge_scores_standard = {
 			**extend_standard,
@@ -215,9 +198,7 @@ class EgoSplitParameterConfig:
 				'connectPersonas': 'Yes',
 				'connectPersonasStrat': 'spanning',
 				'normalizePersonaCut': 'No',
-				'maxPersonaEdges': 1,
 				'normalizePersonaWeights': 'unweighted',
-				'iterationWeight': 'No',
 			}
 			ego_parameters['EdgesScore | All Density Max Weight 1'] = {
 				**edge_scores_standard,
@@ -261,8 +242,15 @@ class EgoSplitParameterConfig:
 			}
 
 		if 'test' in ego_parameter_config:
-			ego_parameters['EdgesScore'] = {
+			ego_parameters['NoMerge'] = {
 				**edge_scores_standard,
+				'Cleanup': 'Yes',
+				'CleanupMerge': 'No',
+			}
+			ego_parameters['Merge'] = {
+				**edge_scores_standard,
+				'Cleanup': 'Yes',
+				'CleanupMerge': 'Yes',
 			}
 
 		return ego_parameters
@@ -378,29 +366,19 @@ def egosplit_partition_algorithms(ego_part_algos):
 
 def original_ego_parameters():
 	return {
-		'weightFactor': 0,
-		'weightOffset': 1,
-		'storeEgoNet': 'No',
 		'Extend EgoNet Strategy': 'None',
-		'Extend and Partition Iterations': 1,
-		'Maximum Extend Factor': 0,
-		'addNodesExponent': 0,
-		'partitionFromGroundTruth': 'No',
 		'connectPersonas': 'No',
-		'numEgoNetsStored': 2000,
+		'Cleanup': 'No',
 	}
 
 
 def optimized_ego_parameters():
 	return {
 		'partitionFromGroundTruth': 'No',
-		'numEgoNetsStored': 2000,
 		'connectPersonas': 'Yes',
 		'normalizePersonaCut': 'No',
 		'connectPersonasStrat': 'spanning',
-		'maxPersonaEdges': 1,
 		'normalizePersonaWeights': 'unweighted',
-		'iterationWeight': 'No',
 		#
 		'Extend EgoNet Strategy': 'Edges',
 		'Edges Score Strategy': 'Edges pow 2 div Degree',
@@ -408,9 +386,9 @@ def optimized_ego_parameters():
 		'Maximum Extend Factor': 5,
 		'addNodesExponent': 0.5,
 		'minNodeDegree': 2,
-		'keepOnlyTriangles': 'No',
 		#
 		'Cleanup': 'Yes',
+		'CleanupMerge': 'Yes',
 	}
 
 

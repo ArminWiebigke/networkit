@@ -170,6 +170,7 @@ timings = [
 metrics = [
 	NMI.get_name(),
 	Time.get_name(),
+	'Running Time relative',
 	F1.get_name(),
 	F1_rev.get_name(),
 ]
@@ -195,8 +196,14 @@ metric_config = {
 	},
 	Time.get_name(): {
 		'ylabel': r'Running Time / (n + m) [\SI{}{\micro\second}]',
-		'y_val': 'time / (n + m)',
+		'y_val': 'Running Time / (n + m)',
 		'file_name': 'time',
+		'ylim': 0,
+	},
+	'Running Time relative': {
+		'ylabel': r'Running Time [\SI{}{\second}]',
+		'y_val': 'Running Time',
+		'file_name': 'time_rel',
 		'ylim': 0,
 	},
 }
