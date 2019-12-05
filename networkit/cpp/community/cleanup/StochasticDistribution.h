@@ -9,6 +9,7 @@
 #define NETWORKIT_STOCHASTICDISTRIBUTION_H
 
 #include <vector>
+#include <cassert>
 
 #include "../../Globals.h"
 
@@ -140,6 +141,7 @@ private:
      * @return natural logarithm of the binomial coefficient "n choose k"
      */
 	inline double logBinomCoeff(count n, count k) const {
+		assert(n >= k);
 		return logSum[n] - logSum[n - k] - logSum[k];
 	};
 };
