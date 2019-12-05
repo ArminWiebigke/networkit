@@ -68,14 +68,13 @@ void EgoSplitting::init() {
 	parameters["normalizePersonaCut"] = "No";
 	parameters["connectPersonasStrat"] = "spanning";
 	parameters["normalizePersonaWeights"] = "unweighted";
-	parameters["iterationWeight"] = "No";
 
 	// Parameters for ego-net extension
+	parameters["Extend EgoNet Strategy"] = "Edges";
 	parameters["Maximum Extend Factor"] = "5";
 	parameters["addNodesExponent"] = "0.5";
 	parameters["minNodeDegree"] = "2";
 	parameters["Extend and Partition Iterations"] = "1";
-	parameters["Extend EgoNet Strategy"] = "Edges";
 
 	// Parameters for Edges
 	parameters["Edges Score Strategy"] = "Edges pow 2 div Degree";
