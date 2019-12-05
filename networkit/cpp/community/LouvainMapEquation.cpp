@@ -299,7 +299,7 @@ void LouvainMapEquation::aggregateAndApplyCutAndVolumeUpdates(std::vector<Move>&
 
 // for every node. store its neighbors that are in the current chunk, and their old cluster IDs, and edge weights
 
-template<bool parallel, bool synchronous>
+template<bool pparallel, bool synchronous>
 bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClusterWeights,
 												 /* SLM specifics */
 												 index& cacheID, NeighborCache& cachedNeighbors, std::vector<Move>& moves, std::vector<bool>& isNodeInCurrentChunk) {
@@ -367,7 +367,7 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClus
 				return true;
 			} else {
 				// perform move directly
-				return performMove<parallel>(u, vol, loop, currentCluster, targetCluster, weightToTargetCluster, weightToCurrent);
+				return performMove<pparallel>(u, vol, loop, currentCluster, targetCluster, weightToTargetCluster, weightToCurrent);
 			}
 		}
 	}
