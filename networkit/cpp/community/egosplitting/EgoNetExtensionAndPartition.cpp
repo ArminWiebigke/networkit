@@ -178,7 +178,7 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	}
 
 	count minDegree = std::stoi(parameters.at("minNodeDegree"));
-	if (!(extendStrategy == "Edges" && minDegree > 3))
+	if (extendStrategy != "Edges" || minDegree > 3)
 		removeLowDegreeNodes(minDegree, directNeighborsBound);
 	//addTime(timer, "3a    Add candidates to ego-net");
 }
