@@ -134,6 +134,7 @@ private:
 	void init();
 
 	void createEgoNets();
+	void createEgoNetsSimple();
 
 	void splitIntoPersonas();
 

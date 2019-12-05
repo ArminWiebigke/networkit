@@ -76,7 +76,11 @@ void EgoSplitting::init() {
 	parameters["Maximum Extend Factor"] = "5";
 	parameters["addNodesExponent"] = "0.5";
 	parameters["minNodeDegree"] = "2";
+	parameters["minNeighbors"] = "3";
+	parameters["limitExtensionByConductance"] = "Yes";
 	parameters["Extend and Partition Iterations"] = "1";
+	// Simple extension only supports "Edges" as strategy with "Edges pow 2 div Degreee" weighting and uses the extended ego net to construct the spanning tree
+	parameters["SimpleExtension"] = "Yes";
 
 	// Parameters for Edges
 	parameters["Edges Score Strategy"] = "Edges pow 2 div Degree";
@@ -117,7 +121,11 @@ void EgoSplitting::run() {
 	}
 
 	INFO("create EgoNets");
-	createEgoNets();
+	if (parameters.at("SimpleExtension") == "Yes") {
+		createEgoNetsSimple();
+	} else {
+		createEgoNets();
+	}
 	addTime(timer, "1  Create EgoNets");
 	handler.assureRunning();
 
@@ -152,6 +160,198 @@ void EgoSplitting::run() {
 	hasRun = true;
 }
 
+void EgoSplitting::createEgoNetsSimple() {
+	const double addNodesFactor = Aux::stringToDouble(parameters.at("Maximum Extend Factor"));
+	const double addNodesExponent = Aux::stringToDouble(parameters.at("addNodesExponent"));
+	const bool storeEgoNets = parameters.at("storeEgoNet") == "Yes";
+	const bool connectPersonas = parameters.at("connectPersonas") == "Yes";
+	const count minNeighbors = std::stoi(parameters.at("minNeighbors"));
+	const bool conductanceCutOff = parameters.at("limitExtensionByConductance") == "Yes";
+#pragma omp parallel if (parallelEgoNetEvaluation)
+	{
+		Aux::SignalHandler signalHandler;
+		NodeMapping egoMapping(G); // Assign local IDs to the neighbors
+		SparseVector<double> weightToOriginalEgoNet(G.upperNodeIdBound());
+		std::vector<std::pair<node, double>> candidatesAndScores;
+
+#pragma omp for schedule(dynamic, 10)
+		for (omp_index egoNode = 0; egoNode < static_cast<omp_index>(G.upperNodeIdBound()); ++egoNode) {
+			if (!signalHandler.isRunning()) continue;
+
+			if (!G.hasNode(egoNode) || G.degree(egoNode) < 2)
+				continue;
+
+			egoMapping.reset();
+
+			DEBUG("Create EgoNet for Node ", egoNode, "/", G.upperNodeIdBound());
+			// Find neighbors == nodes of the ego-net
+			G.forEdgesOf(egoNode, [&](node, node v) {
+				if (G.degree(v) > 1) {
+					egoMapping.addNode(v);
+				}
+			});
+
+			const count originalEgoNetSize = egoMapping.nodeCount();
+
+			// egoNode has only degree-1-neighbors
+			if (originalEgoNetSize == 0) continue;
+
+			weightToOriginalEgoNet.reset();
+
+			double egonetVolume = 0;
+			double egonetCut = 0;
+
+			// Calculate number of neighbors in egoNet for all neighbors of the egonet
+			for (node u : egoMapping.globalNodes()) {
+				G.forEdgesOf(u, [&](node, node neighbor, edgeweight weight) {
+					egonetVolume += weight;
+					if (neighbor != egoNode && !egoMapping.isMapped(neighbor)) {
+						egonetCut += weight;
+						if (!weightToOriginalEgoNet.indexIsUsed(neighbor)) {
+							weightToOriginalEgoNet.insert(neighbor, weight);
+						} else {
+							weightToOriginalEgoNet[neighbor] += weight;
+						}
+					}
+				});
+			}
+
+			candidatesAndScores.clear();
+			for (node candidate : weightToOriginalEgoNet.insertedIndexes()) {
+				double neighborSum = weightToOriginalEgoNet[candidate];
+				if (neighborSum >= minNeighbors) {
+					double score = neighborSum * neighborSum / G.degree(candidate);
+					candidatesAndScores.emplace_back(candidate, score);
+				}
+			}
+
+			count extendNodeCnt = std::ceil(
+				addNodesFactor *
+				std::pow(egoMapping.nodeCount(), addNodesExponent));
+
+
+			// Select best candidates
+			if (candidatesAndScores.size() > extendNodeCnt) {
+				std::nth_element(candidatesAndScores.begin(),
+						candidatesAndScores.begin() + extendNodeCnt,
+						candidatesAndScores.end(),
+						 [](const std::pair<node, double>& a, const std::pair<node, double>& b) {
+						return a.second > b.second;
+					});
+				candidatesAndScores.resize(extendNodeCnt);
+			}
+
+			if (conductanceCutOff) {
+				std::sort(candidatesAndScores.begin(), candidatesAndScores.end(),
+					[](const std::pair<node, double>& a, const std::pair<node, double>& b) {
+						return a.second > b.second;
+					});
+
+
+				// Add candidates to mapping
+				for (const std::pair<node, double> &cs : candidatesAndScores) {
+					node c = cs.first;
+					double candidateDegree = G.degree(c);
+					double edgesToEgoNet = weightToOriginalEgoNet[c];
+
+					double newVolume = egonetVolume + candidateDegree;
+					double newCut = egonetCut - 2 * edgesToEgoNet + candidateDegree;
+
+					if (egonetCut / egonetVolume >= newCut / newVolume) {
+						egoMapping.addNode(cs.first);
+						egonetCut = newCut;
+						egonetVolume = newVolume;
+					}
+				}
+			} else {
+				// Add candidates to mapping
+				for (const std::pair<node, double> &cs : candidatesAndScores) {
+					egoMapping.addNode(cs.first);
+				}
+			}
+
+                        Graph egoGraph(egoMapping.nodeCount(), G.isWeighted());
+
+			// Find all triangles and add the edges to the egoGraph
+			egoGraph.forNodes([&](const node localV) {
+				const node globalV = egoMapping.toGlobal(localV);
+				directedG.forEdgesOf(globalV, [&](node, node w, edgeweight weight2) {
+					if (egoMapping.isMapped(w)) {
+						// we have found a triangle u-v-w
+						egoGraph.addEdge(localV, egoMapping.toLocal(w), weight2);
+					}
+				});
+			});
+
+			// partition egonet
+			Partition egoPartition(localClusteringAlgo(egoGraph));
+			if (egoPartition.upperBound() > egoGraph.numberOfNodes()) { // compact if necessary
+				egoPartition.compact(egoPartition.upperBound() > 2 * egoGraph.numberOfNodes());
+			}
+
+			// Map parts that contain nodes of the original egoNet to persona indexes
+			std::vector<index> partToPersona(egoPartition.upperBound(), none);
+
+			index numPersonas = 0;
+			for (node u = 0; u < originalEgoNetSize; ++u) {
+				index p = egoPartition[u];
+				if (partToPersona[p] == none) {
+					partToPersona[p] = numPersonas;
+					++numPersonas;
+				}
+
+				const node globalU = egoMapping.toGlobal(u);
+				egoNetPartitions[egoNode].emplace(globalU, partToPersona[p]);
+			}
+
+			egoNetPartitionCounts[egoNode] = numPersonas;
+
+			if (storeEgoNets) { // only for analysis
+				storeEgoNet(egoGraph, egoMapping, egoNode);
+				// Store ego-net partition with extended nodes
+				egoGraph.forNodes([&](node i) {
+					egoNetExtendedPartitions[egoNode].emplace(egoMapping.toGlobal(i),
+					                                          egoPartition.subsetOf(i));
+				});
+				DEBUG("Store ego-net");
+			}
+
+			assert(G.degree(egoNode) >= originalEgoNetSize);
+			assert(egoNetPartitions[egoNode].size() == originalEgoNetSize);
+			assert(egoGraph.numberOfNodes() >= originalEgoNetSize);
+
+			if (connectPersonas) {
+				ParallelPartitionCoarsening coarsening(egoGraph, egoPartition, false, false);
+				coarsening.run();
+				const Graph &coarseGraph = coarsening.getCoarseGraph();
+				const std::vector<node> &egoToCoarse = coarsening.getFineToCoarseNodeMapping();
+
+				// Build a mapping from nodes in the coarse graph to partition ids in egoPartition
+				std::vector<node> personaIndex(coarseGraph.upperNodeIdBound(), none);
+				for (node u = 0; u < originalEgoNetSize; ++u) {
+					personaIndex[egoToCoarse[u]] = partToPersona[egoPartition[u]];
+					assert(personaIndex[egoToCoarse[u]] != none);
+				}
+
+				// Insert edges between the personas
+				RandomMaximumSpanningForest span{coarseGraph};
+				span.run();
+				const Graph &spanningForest = span.getMSF();
+
+				std::vector<WeightedEdge> edges;
+				personaEdges.reserve(std::min(spanningForest.numberOfEdges(), numPersonas - 1));
+				spanningForest.forEdges([&](node u, node v) {
+					index p_u = personaIndex[u];
+					index p_v = personaIndex[v];
+					if (p_u != p_v && p_u != none && p_v != none)
+						edges.emplace_back(p_u, p_v, 1);
+				});
+
+				personaEdges[egoNode] = std::move(edges);
+			}
+		}
+	}
+}
 
 void EgoSplitting::createEgoNets() {
 	const double addNodesFactor = Aux::stringToDouble(parameters.at("Maximum Extend Factor"));
