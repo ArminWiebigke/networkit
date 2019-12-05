@@ -24,6 +24,7 @@
 #include "../LouvainMapEquation.h"
 #include "../cleanup/SignificanceCommunityCleanUp.h"
 #include "../../auxiliary/Parallelism.h"
+#include "../../auxiliary/ParseString.h"
 
 namespace NetworKit {
 
@@ -152,6 +153,10 @@ void EgoSplitting::run() {
 
 
 void EgoSplitting::createEgoNets() {
+	const double addNodesFactor = Aux::stringToDouble(parameters.at("Maximum Extend Factor"));
+	const double addNodesExponent = Aux::stringToDouble(parameters.at("addNodesExponent"));
+	const count minExtendDeg = std::stoi(parameters.at("minNodeDegree"));
+
 	const int maxEgoNetsPartitioned = std::stoi(parameters.at("maxEgoNetsPartitioned"));
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{
@@ -230,7 +235,8 @@ void EgoSplitting::createEgoNets() {
 
 			DEBUG("Extend and partition");
 			EgoNetExtensionAndPartition extAndPartition(egoNetData, egoNode, egoGraph,
-			                                            localClusteringAlgo);
+			                                            localClusteringAlgo,
+								    addNodesFactor, addNodesExponent, minExtendDeg);
 			extAndPartition.run();
 			const Partition &egoPartition = extAndPartition.getPartition();
 			//addTimings(extAndPartition.getTimings(), "15");

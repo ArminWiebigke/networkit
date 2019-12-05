@@ -32,7 +32,9 @@ class EgoNetExtensionAndPartition : public CommunityDetectionAlgorithm, public P
 
 public:
 	EgoNetExtensionAndPartition(EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-	                            PartitionFunction partitionFunction);
+	                            PartitionFunction partitionFunction,
+				    double addNodesFactor, double addNodesExponent,
+				    count minDegree);
 
 	void run() override;
 
@@ -55,6 +57,9 @@ private:
 	const std::unordered_map<std::string, std::string> &parameters;
 	const Cover &groundTruth;
 	EgoNetData &egoNetData;
+	double addNodesFactor;
+	double addNodesExponent;
+	count minDegree;
 
 	void extendAndPartition();
 

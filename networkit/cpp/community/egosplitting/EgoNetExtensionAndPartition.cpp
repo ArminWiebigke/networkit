@@ -13,12 +13,11 @@
 #include "../../structures/NodeMapping.h"
 #include "ExtendSignificance.h"
 #include "ExtendByScore.h"
-#include "../../auxiliary/ParseString.h"
 
 namespace NetworKit {
 
 EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-                                                         PartitionFunction partitionFunction)
+                                                         PartitionFunction partitionFunction, double addNodesFactor, double addNodesExponent, count minDegree)
 		: CommunityDetectionAlgorithm(egoNetData.G),
 		  directedG(egoNetData.directedG),
 		  egoGraph(std::move(egoGraph)),
@@ -27,7 +26,10 @@ EgoNetExtensionAndPartition::EgoNetExtensionAndPartition(EgoNetData &egoNetData,
 		  partitionFunction(std::move(partitionFunction)),
 		  parameters(egoNetData.parameters),
 		  groundTruth(egoNetData.groundTruth),
-		  egoNetData(egoNetData) {
+		  egoNetData(egoNetData),
+		  addNodesFactor(addNodesFactor),
+		  addNodesExponent(addNodesExponent),
+		  minDegree(minDegree) {
 	assert(egoGraph.numberOfNodes() > 0);
 }
 
@@ -121,8 +123,6 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 	count directNeighborsBound = egoGraph.upperNodeIdBound();
 
 	// Get node candidates with scores
-	double addNodesFactor = Aux::stringToDouble(parameters.at("Maximum Extend Factor"));
-	double addNodesExponent = Aux::stringToDouble(parameters.at("addNodesExponent"));
 	count extendNodeCnt = std::ceil(
 			addNodesFactor * std::pow(egoGraph.numberOfNodes(), addNodesExponent));
 	std::vector<node> extendNodes; // nodes and their scores
@@ -177,7 +177,6 @@ EgoNetExtensionAndPartition::extendEgoNet(const std::string &extendStrategy) {
 		});
 	}
 
-	count minDegree = std::stoi(parameters.at("minNodeDegree"));
 	if (extendStrategy != "Edges" || minDegree > 3)
 		removeLowDegreeNodes(minDegree, directNeighborsBound);
 	//addTime(timer, "3a    Add candidates to ego-net");
