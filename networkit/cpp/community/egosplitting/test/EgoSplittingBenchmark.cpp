@@ -66,6 +66,14 @@ TEST_F(EgoSplittingBenchmark, benchEdges) {
 	benchEgoSplitting(parameters);
 }
 
+TEST_F(EgoSplittingBenchmark, benchEdgesNoMerge) {
+	std::map<std::string, std::string> parameters;
+	parameters["Extend EgoNet Strategy"] = "Edges";
+	parameters["Edges Score Strategy"] = "Edges pow 2 div Degree";
+	parameters["CleanupMerge"] = "No";
+	benchEgoSplitting(parameters);
+}
+
 TEST_F(EgoSplittingBenchmark, benchSignificance) {
 	std::map<std::string, std::string> parameters;
 	parameters["Extend EgoNet Strategy"] = "Significance";
