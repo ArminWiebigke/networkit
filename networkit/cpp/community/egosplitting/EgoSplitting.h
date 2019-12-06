@@ -113,7 +113,9 @@ private:
 	const Graph &G;
 	bool parallelEgoNetEvaluation;
 	ClusteringFunction localClusteringAlgo, globalClusteringAlgo;
-	std::vector<std::unordered_map<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
+
+	std::vector<index> egoNetPartitionsOffset; // for each node: current offset in egoNetPartitions
+	std::vector<std::pair<node, index>> egoNetPartitions; // for each node: (global node ID, set ID in ego-net)
 	// for each node: (global node ID, set ID in ego-net).
 	// Includes nodes of the extended ego-net. These partitions are not by the algorithm itself,
 	// as we only need the nodes of the original ego-net. The partitions are only useful for

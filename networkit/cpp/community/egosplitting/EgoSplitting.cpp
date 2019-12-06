@@ -52,7 +52,8 @@ EgoSplitting::EgoSplitting(const Graph &G, bool parallelEgoNetEvaluation, Cluste
 
 void EgoSplitting::init() {
 	personaEdges.resize(G.upperNodeIdBound());
-	egoNetPartitions.resize(G.upperNodeIdBound());
+	egoNetPartitionsOffset.resize(G.upperNodeIdBound() + 1);
+	egoNetPartitions.resize(2*G.numberOfEdges(), std::make_pair(none, none));
 	egoNetPartitionCounts.resize(G.upperNodeIdBound(), 0);
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 	directedG = LowToHighDirectedGraph(G);
@@ -121,6 +122,17 @@ void EgoSplitting::run() {
 	}
 
 	INFO("create EgoNets");
+
+	// initialize egoNetPartitionsOffset
+	// FIXME: this belongs in createEgoNets, but is here as it is the same for both implementations
+	index sum = 0;
+	for (node u = 0; u < egoNetPartitionsOffset.size(); ++u) {
+		egoNetPartitionsOffset[u] = sum;
+		if (G.hasNode(u)) {
+			sum += G.degree(u);
+		}
+	}
+
 	if (parameters.at("SimpleExtension") == "Yes") {
 		createEgoNetsSimple();
 	} else {
@@ -292,6 +304,7 @@ void EgoSplitting::createEgoNetsSimple() {
 			// Map parts that contain nodes of the original egoNet to persona indexes
 			std::vector<index> partToPersona(egoPartition.upperBound(), none);
 
+			const index egoPartsOffset = egoNetPartitionsOffset[egoNode];
 			index numPersonas = 0;
 			for (node u = 0; u < originalEgoNetSize; ++u) {
 				index p = egoPartition[u];
@@ -301,8 +314,10 @@ void EgoSplitting::createEgoNetsSimple() {
 				}
 
 				const node globalU = egoMapping.toGlobal(u);
-				egoNetPartitions[egoNode].emplace(globalU, partToPersona[p]);
+				egoNetPartitions[egoPartsOffset + u] = std::make_pair(globalU, partToPersona[p]);
 			}
+
+			std::sort(egoNetPartitions.begin() + egoPartsOffset, egoNetPartitions.begin() + egoPartsOffset + originalEgoNetSize);
 
 			egoNetPartitionCounts[egoNode] = numPersonas;
 
@@ -317,7 +332,6 @@ void EgoSplitting::createEgoNetsSimple() {
 			}
 
 			assert(G.degree(egoNode) >= originalEgoNetSize);
-			assert(egoNetPartitions[egoNode].size() == originalEgoNetSize);
 			assert(egoGraph.numberOfNodes() >= originalEgoNetSize);
 
 			if (connectPersonas) {
@@ -384,9 +398,16 @@ void EgoSplitting::createEgoNets() {
 
 			if (maxEgoNetsPartitioned != -1 && egoNode > maxEgoNetsPartitioned) {
 				egoNetPartitionCounts[egoNode] = 1;
+				const index egoPartsOffset = egoNetPartitionsOffset[egoNode];
+				index x = 0;
 				G.forNeighborsOf(egoNode, [&](node neighbor) {
-					egoNetPartitions[egoNode].emplace(neighbor, 0);
+					if (G.degree(neighbor) > 1) {
+						egoNetPartitions[egoPartsOffset + x] = std::make_pair(neighbor, 0);
+						++x;
+					}
 				});
+
+				std::sort(egoNetPartitions.begin() + egoPartsOffset, egoNetPartitions.begin() + egoPartsOffset + x);
 				continue;
 			}
 
@@ -425,9 +446,13 @@ void EgoSplitting::createEgoNets() {
 				count cliqueEdges = egoGraph.numberOfNodes() * (egoGraph.numberOfNodes() - 1) / 2;
 				if (egoGraph.numberOfEdges() == cliqueEdges) {
 					egoNetPartitionCounts[egoNode] = 1;
+					const index egoPartsOffset = egoNetPartitionsOffset[egoNode];
+					index x = 0;
 					for (node neighbor : egoMapping.globalNodes()) {
-						egoNetPartitions[egoNode].emplace(neighbor, 0);
+						egoNetPartitions[egoPartsOffset + x] = std::make_pair(neighbor, 0);
+						++x;
 					}
+					std::sort(egoNetPartitions.begin() + egoPartsOffset, egoNetPartitions.begin() + egoPartsOffset + originalEgoNetSize);
 					continue;
 				}
 			}
@@ -464,13 +489,16 @@ void EgoSplitting::createEgoNets() {
 			directNeighborPartition.compact(true);
 			egoNetPartitionCounts[egoNode] = directNeighborPartition.upperBound();
 			assert(egoNetPartitionCounts[egoNode] == directNeighborPartition.numberOfSubsets());
+
+			const index egoPartsOffset = egoNetPartitionsOffset[egoNode];
 			egoGraph.forNodes([&](const node localI) {
 				const node i = egoMapping.toGlobal(localI);
-				egoNetPartitions[egoNode].emplace(i, directNeighborPartition[localI]);
+				egoNetPartitions[egoPartsOffset + localI] = std::make_pair(i, directNeighborPartition[localI]);
 			});
 
+			std::sort(egoNetPartitions.begin() + egoPartsOffset, egoNetPartitions.begin() + egoPartsOffset + originalEgoNetSize);
+
 			assert(G.degree(egoNode) >= originalEgoNetSize);
-			assert(egoNetPartitions[egoNode].size() == originalEgoNetSize);
 			assert(egoGraph.numberOfNodes() == originalEgoNetSize);
 			//addTime(timer, "19    Store EgoNet Partition");
 
@@ -617,55 +645,52 @@ void EgoSplitting::splitIntoPersonas() {
 }
 
 void EgoSplitting::connectPersonas() {
-	auto getPersona = [&](node u, index i) {
+	auto getPersona = [&](node u, index i) -> node {
 		assert(i < egoNetPartitionCounts[u]);
 		return personaOffsets[u] + i;
 	};
 
-	// Connect personas of each node
-	// Connect personas of different nodes
-	count twiceNumberOfEdges = 0;
-	#pragma omp parallel
-	{
-		count localTwiceNumberOfEdges = 0;
+	for (node u = 0; u < G.upperNodeIdBound(); ++u) {
+		if (G.hasNode(u)) {
+			if (G.degree(u) >= 2) {
+				// Connect personas of each node
+				for (const WeightedEdge& edge : personaEdges[u]) {
+					node pu = getPersona(u, edge.u);
+					node pv = getPersona(u, edge.v);
+					assert(pu != pv);
+					personaGraph.addEdge(pu, pv, edge.weight);
+				}
 
-		#pragma omp for schedule (dynamic, 1000) nowait
-		for (node u = 0; u < G.upperNodeIdBound(); ++u) {
-			if (G.hasNode(u)) {
-				if (G.degree(u) >= 2) {
-					for (const WeightedEdge& edge : personaEdges[u]) {
-						node pu = getPersona(u, edge.u);
-						node pv = getPersona(u, edge.v);
-						assert(pu != pv);
-						personaGraph.addHalfEdge(pu, pv, edge.weight);
-						personaGraph.addHalfEdge(pv, pu, edge.weight);
-						localTwiceNumberOfEdges += 2;
-					}
+				const index egoBeginU = egoNetPartitionsOffset[u];
+				const index nextEgoBegin = egoNetPartitionsOffset[u + 1];
+				const index personaOffsetU = getPersona(u, 0);
 
-					G.forEdgesOf(u, [&](node , node v, edgeweight weight) {
-						if (G.degree(v) >= 2) {
-							auto idx_u = egoNetPartitions[u].find(v);
-							auto idx_v = egoNetPartitions[v].find(u);
-							assert(idx_u != egoNetPartitions[u].end() && idx_v != egoNetPartitions[v].end());
-							const node pu = getPersona(u, idx_u->second);
-							const node pv = getPersona(v, idx_v->second);
-							assert(pu != pv);
-							personaGraph.addHalfEdge(pu, pv, weight);
-							++localTwiceNumberOfEdges;
-						}
-					});
+				// Connect personas of different nodes
+				for (index i = egoBeginU; i < nextEgoBegin; ++i) {
+					const std::pair<node, index> &neighborPersona = egoNetPartitions[i];
+					node neighbor = neighborPersona.first;
+
+					// Are we already at the end of the current ego node
+					if (neighbor <= u || neighbor == none) break;
+
+					index neighborPos = egoNetPartitionsOffset[neighbor];
+					assert(neighborPos < egoNetPartitions.size());
+					assert(egoNetPartitions[neighborPos].first == u);
+
+					const node pu = personaOffsetU + neighborPersona.second;
+					assert(pu == getPersona(u, neighborPersona.second));
+					const node pv = getPersona(neighbor, egoNetPartitions[neighborPos].second);
+					assert(pu != none);
+					assert(pv != none);
+					personaGraph.addEdge(pu, pv);
+
+					++egoNetPartitionsOffset[neighbor];
+					++egoNetPartitionsOffset[u];
 				}
 			}
 		}
-		
-		#pragma omp atomic update
-		twiceNumberOfEdges += localTwiceNumberOfEdges;
 	}
-	
-	if (twiceNumberOfEdges % 2 != 0)
-		throw std::runtime_error("edge count accumulation failed");
-	personaGraph.setNumberOfEdges(twiceNumberOfEdges / 2);
-	
+
 #ifndef NDEBUG
 	count internalPersonaEdges = 0;
 	for (const auto &edges : personaEdges)
