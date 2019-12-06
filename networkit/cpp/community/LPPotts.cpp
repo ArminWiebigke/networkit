@@ -18,7 +18,7 @@
 namespace NetworKit {
 
 LPPotts::LPPotts(const Graph &G, double alpha, count theta, count maxIterations,
-				 bool parallelPropagation)
+                 bool parallelPropagation)
 		: CommunityDetectionAlgorithm(G), alpha(alpha), updateThreshold(theta),
 		  maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
 }
@@ -51,25 +51,29 @@ void LPPotts::run() {
 	count nUpdated; // number of nodes which have been updated in last iteration
 	nUpdated = n; // all nodes have new labels -> first loop iteration runs
 	nIterations = 0; // number of iterations
-	std::vector<bool> activeNodes(z, true); // record if node must be processed
 
-	Partition secondPartition = result;
 	Partition *nextResult = &result;
-	if (parallelPropagation)
+	Partition secondPartition;
+	if (parallelPropagation) {
+		secondPartition = result;
 		nextResult = &secondPartition;
+	}
 
-	std::vector<count> globalLabelCounts(z, 1), glc_2(z,
-													  1); // record the number of nodes for each label
+	std::vector<count> globalLabelCounts(z, 1), globalLabelCounts2; // record the number of nodes for each label
 	std::vector<count> *nextGlobalLabelCounts = &globalLabelCounts;
-	if (parallelPropagation)
-		nextGlobalLabelCounts = &glc_2;
+	if (parallelPropagation) {
+		globalLabelCounts2 = globalLabelCounts;
+		nextGlobalLabelCounts = &globalLabelCounts2;
+	}
+	std::vector<count> activeNodes(z, true); // record if node must be processed
+	std::vector<count> nextActiveNodes(z, false);
 
 	Aux::UniformRandomSelector selector;
 	Aux::Timer runtime;
 
 	// propagate labels
-	while ((nUpdated > this->updateThreshold) && (nIterations <
-												  maxIterations)) { // as long as a label has changed... or maximum iterations reached
+	while ((nUpdated > this->updateThreshold) && (nIterations < maxIterations)) {
+		// as long as a label has changed... or maximum iterations reached
 		runtime.start();
 		nIterations += 1;
 		DEBUG("[BEGIN] LabelPropagation: iteration #", nIterations);
@@ -77,7 +81,7 @@ void LPPotts::run() {
 		// reset updated
 		nUpdated = 0;
 
-		G.forNodesInRandomOrder([&](node u) {
+		auto updateNode = [&](node u) {
 			if ((activeNodes[u]) && (G.degree(u) > 0)) {
 				using label = index; // a label is the same as a cluster id
 				std::map<label, count> neighborLabelCounts; // neighborLabelCounts maps label -> frequency in the neighbors
@@ -93,7 +97,9 @@ void LPPotts::run() {
 				for (const auto &labelCount : neighborLabelCounts) {
 					label l = labelCount.first;
 					count local = labelCount.second;
-					labelWeights[l] = local - alpha * (globalLabelCounts[l] - local);
+					labelWeights[l] = local;
+					if (alpha > 0.0)
+						labelWeights[l] -= alpha * (globalLabelCounts[l] - local);
 				}
 
 				// Get best label
@@ -114,34 +120,39 @@ void LPPotts::run() {
 
 				label curLabel = result.subsetOf(u);
 				if (curLabel != bestLabel) { // UPDATE
-					--(*nextGlobalLabelCounts)[curLabel];
-					++(*nextGlobalLabelCounts)[bestLabel];
 					nextResult->moveToSubset(bestLabel, u);
-					++nUpdated;
-					G.forNeighborsOf(u, [&](node w) {
-						activeNodes[w] = true;
-					});
-				} else {
-					activeNodes[u] = false;
+#pragma omp critical
+					{
+						--(*nextGlobalLabelCounts)[curLabel];
+						++(*nextGlobalLabelCounts)[bestLabel];
+						++nUpdated;
+						G.forNeighborsOf(u, [&](node w) {
+							nextActiveNodes[w] = true;
+						});
+						nextActiveNodes[u] = true;
+					}
 				}
-
-			} else {
-				// node is isolated
 			}
-		});
+		};
+
+		if (parallelPropagation) {
+			G.parallelForNodes(updateNode);
+		} else {
+			G.forNodesInRandomOrder(updateNode);
+		}
 
 		if (parallelPropagation) {
 			result = *nextResult;
 			globalLabelCounts = *nextGlobalLabelCounts;
 		}
-
-		// for each while loop iteration...
+		activeNodes = nextActiveNodes;
+		for (count &i : nextActiveNodes)
+			i = false;
 
 		runtime.stop();
 		this->timing.push_back(runtime.elapsedMilliseconds());
-		DEBUG("[DONE] LabelPropagation: iteration #", nIterations,
-			  " - updated ", nUpdated, " labels, time spent: ",
-			  runtime.elapsedTag());
+		DEBUG("[DONE] LabelPropagation: iteration #", nIterations, " - updated ", nUpdated, " labels, time spent: ",
+		      runtime.elapsedTag());
 	} // end while
 	hasRun = true;
 }
