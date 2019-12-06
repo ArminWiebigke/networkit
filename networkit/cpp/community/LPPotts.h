@@ -10,6 +10,7 @@
 
 #include "CommunityDetectionAlgorithm.h"
 #include "../structures/Partition.h"
+#include "ClusteringFunctionFactory.h"
 
 namespace NetworKit {
 
@@ -84,8 +85,20 @@ public:
 	* @return The list of running times in milliseconds
 	*/
 	virtual std::vector<count> getTiming();
+};
 
+class LPPottsFactory : public ClusteringFunctionFactory {
+public:
+	explicit LPPottsFactory(double alpha = 0.3, count theta = none,
+	                        count maxIterations = 20, bool parallelPropagation = false);
 
+	ClusteringFunction getFunction() const override;
+
+private:
+	double alpha;
+	count theta;
+	count maxIterations;
+	bool parallelPropagation;
 };
 
 } /* namespace NetworKit */

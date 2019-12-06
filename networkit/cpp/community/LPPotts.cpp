@@ -168,4 +168,20 @@ std::vector<count> LPPotts::getTiming() {
 }
 
 
+LPPottsFactory::LPPottsFactory(double alpha, count theta, count maxIterations, bool parallelPropagation)
+		: alpha(alpha), theta(theta), maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
+}
+
+ClusteringFunction LPPottsFactory::getFunction() const {
+	const double alphaCopy = alpha;
+	const count thetaCopy = theta;
+	const count maxIterationsCopy = maxIterations;
+	const bool parallelPropagationCopy = parallelPropagation;
+	return [alphaCopy, thetaCopy, maxIterationsCopy, parallelPropagationCopy](const Graph &G) {
+		LPPotts lpPotts(G, alphaCopy, thetaCopy, maxIterationsCopy, parallelPropagationCopy);
+		lpPotts.run();
+		return lpPotts.getPartition();
+	};
+}
+
 } /* namespace NetworKit */

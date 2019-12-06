@@ -4954,6 +4954,16 @@ cdef class LouvainMapEquationFactory(ClusteringFunctionFactory):
 		self._this = new _LouvainMapEquationFactory(hierarchical, maxIterations)
 
 
+cdef extern from "cpp/community/LPPotts.h":
+	cdef cppclass _LPPottsFactory "NetworKit::LPPottsFactory"(_ClusteringFunctionFactory):
+		_LPPottsFactory(double alpha, count theta, count maxIterations, bool_t parallelPropagation)
+
+
+cdef class LPPottsFactory(ClusteringFunctionFactory):
+	def __cinit__(self, double alpha, count theta, count maxIterations, bool_t parallelPropagation):
+		self._this = new _LPPottsFactory(alpha, theta, maxIterations, parallelPropagation)
+
+
 cdef cppclass _PythonClusteringFunction(_ClusteringFunction):
 	object callback
 
