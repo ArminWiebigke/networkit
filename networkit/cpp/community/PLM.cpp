@@ -383,7 +383,7 @@ std::map<std::string, std::vector<count> > PLM::getTiming() {
 	return timing;
 }
 
-PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refine), gamma(gamma), par(par) {
+PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refine), gamma(gamma), par(std::move(par)) {
 }
 
 ClusteringFunction PLMFactory::getFunction() const {

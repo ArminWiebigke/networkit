@@ -5,8 +5,6 @@
  * Author: Armin Wiebigke
  */
 
-#include <omp.h>
-#include <iostream>
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
@@ -23,7 +21,6 @@
 #include "EgoNetExtensionAndPartition.h"
 #include "../LouvainMapEquation.h"
 #include "../cleanup/SignificanceCommunityCleanUp.h"
-#include "../../auxiliary/Parallelism.h"
 #include "../../auxiliary/ParseString.h"
 
 namespace NetworKit {
@@ -58,12 +55,15 @@ void EgoSplitting::init() {
 	personaOffsets.resize(G.upperNodeIdBound() + 1, 0);
 	directedG = LowToHighDirectedGraph(G);
 
+	// Debug/Analysis
 	parameters["storeEgoNet"] = "No";
-	parameters["partitionFromGroundTruth"] = "No";
 	parameters["numEgoNetsStored"] = "2000";
+	parameters["partitionFromGroundTruth"] = "No";
+	parameters["maxEgoNetsPartitioned"] = "-1";
+
+	// Cleanup
 	parameters["Cleanup"] = "Yes";
 	parameters["CleanupMerge"] = "Yes";
-	parameters["maxEgoNetsPartitioned"] = "-1";
 	parameters["CleanupMinOverlap"] = "0.5";
 
 	// Connect Personas
@@ -80,7 +80,8 @@ void EgoSplitting::init() {
 	parameters["minNeighbors"] = "3";
 	parameters["limitExtensionByConductance"] = "Yes";
 	parameters["Extend and Partition Iterations"] = "1";
-	// Simple extension only supports "Edges" as strategy with "Edges pow 2 div Degreee" weighting and uses the extended ego net to construct the spanning tree
+	// Simple extension only supports "Edges" as strategy with "Edges pow 2 div Degree" weighting
+	// and uses the extended ego net to construct the spanning tree
 	parameters["SimpleExtension"] = "Yes";
 
 	// Parameters for Edges
@@ -179,6 +180,8 @@ void EgoSplitting::createEgoNetsSimple() {
 	const bool connectPersonas = parameters.at("connectPersonas") == "Yes";
 	const count minNeighbors = std::stoi(parameters.at("minNeighbors"));
 	const bool conductanceCutOff = parameters.at("limitExtensionByConductance") == "Yes";
+	assert(parameters.at("Extend EgoNet Strategy") == "Edges");
+	assert(parameters.at("Edges Score Strategy") == "Edges pow 2 div Degree");
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{
 		Aux::SignalHandler signalHandler;
@@ -798,7 +801,8 @@ void EgoSplitting::cleanUpCommunities(std::vector<std::vector<node>> &communitie
 	INFO("Got ", communities.size(), " communities after cleanup");
 }
 
-void EgoSplitting::discardSmallCommunities(std::vector<std::vector<node>> &communities) {// Discard communities of size 4 or less
+// Discard communities of size 4 or less
+void EgoSplitting::discardSmallCommunities(std::vector<std::vector<node>> &communities) {
 	count min_size = 5;
 
 	auto new_end = std::remove_if(communities.begin(), communities.end(),
