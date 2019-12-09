@@ -14,7 +14,7 @@ class EgoSplitClusteringAlgorithmsConfig:
 
 		if ego_part_algos == 'local' or ego_part_algos == 'global':
 			partition_algos['PLP'] = [PLPFactory(1, 20)]
-			partition_algos['PLM'] = [PLMFactory(True, 1.0, 'none')]
+			partition_algos['PLM'] = [PLMFactory(True, 1.0, 'none randomized')]
 			partition_algos['Potts'] = [lambda g: LPPotts(g, 0.1, 1, 20).run().getPartition()]
 			partition_algos['Infomap'] = [lambda g: partitionInfomap(g)]
 			partition_algos['Surprise'] = [lambda g: partitionLeiden(g, 'surprise')]
@@ -27,19 +27,15 @@ class EgoSplitClusteringAlgorithmsConfig:
 					new_p_algos[name + ' + LM-Map'] = [p_algos[0],
 					                                   LouvainMapEquationFactory(True)]
 				if ego_part_algos == 'global':
-					new_p_algos['Leiden + ' + name] = [lambda g: partitionLeiden(g, 'modularity'),
-					                                   p_algos[0]]
+					new_p_algos['PLM + ' + name] = [PLMFactory(True, 1.0, 'none randomized'),
+					                                p_algos[0]]
 			partition_algos = new_p_algos
 
-		if ego_part_algos == 'standard':
+		if ego_part_algos == 'best':
 			partition_algos['standard'] = []
-			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
-			                                      LouvainMapEquationFactory(True)]
+		if ego_part_algos == 'PLM_LM-Map':
 			partition_algos['PLM + LM-Map'] = [PLMFactory(True, 1.0, 'none randomized'),
 			                                   LouvainMapEquationFactory(True)]
-		if ego_part_algos == 'best':
-			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
-			                                      LouvainMapEquationFactory(True)]
 		if ego_part_algos == 'two_best':
 			partition_algos['Leiden + LM-Map'] = [lambda g: partitionLeiden(g, 'modularity'),
 			                                      LouvainMapEquationFactory(True)]
@@ -60,7 +56,6 @@ class EgoSplitClusteringAlgorithmsConfig:
 			partition_algos['PLM + LM-Map'] = [PLMFactory(True, 1.0, 'none'), LouvainMapEquationFactory(True)]
 
 		return partition_algos
-
 
 class EgoSplitParameterConfig:
 	@staticmethod
@@ -98,6 +93,14 @@ class EgoSplitParameterConfig:
 
 		if 'best' in ego_parameter_config:
 			ego_parameters[''] = {}  # Default parameters should be the best
+		if 'CleanupMinOverlap' in ego_parameter_config:
+			for merge in ['Yes', 'No']:
+				for overlap in [0.1, 0.25, 0.5]:
+					name = 'Merge={} Overlap={}'.format(merge, overlap)
+					ego_parameters[name] = {
+						'CleanupMerge': merge,
+						'CleanupMinOverlap': overlap
+					}
 		if 'test' in ego_parameter_config:
 			ego_parameters['NoMerge'] = {
 				**edge_scores_config,
