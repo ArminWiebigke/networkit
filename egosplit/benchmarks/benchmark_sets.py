@@ -282,6 +282,7 @@ class AlgorithmsLFR(BenchmarkSet):
 		],
 		PlotSetConfig: [
 			'metrics',
+			'timings',
 		],
 		PlotAlgoSetConfig: [
 			'all'
@@ -289,6 +290,89 @@ class AlgorithmsLFR(BenchmarkSet):
 		'replace_legend':
 			{'Ego-original': 'Ego', 'Ego-optimized': 'Ego+'},
 	}
+
+
+class EgoSplittingLFR(BenchmarkSet):
+	config = {
+		'name':
+			'egosplitting_lfr',
+		'result_dir':
+			'egosplitting_lfr',
+		'plot_dir':
+			'egosplitting_lfr/',
+		'iterations':
+			10,
+		'time_limit':
+			3600,
+		EgoSplitClusteringAlgorithmsConfig:
+			'plm_lm-map',
+		EgoSplitParameterConfig:
+			['CleanupMinOverlap'],
+		OtherAlgorithms: [
+			'Ego-original',
+		],
+		GraphSetsConfig: [
+			'om',
+                        'overlap',
+                        'mu',
+                        #'test',
+		],
+		PlotGraphSetConfig: [
+			'om',
+			'mu',
+		],
+		PlotSetConfig: [
+			'metrics',
+			'timings',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', 'PLM + LM-Map'],
+	}
+
+
+
+class EgoSplittingSnap(BenchmarkSet):
+	config = {
+		'name':
+			'egosplitting_snap',
+		'result_dir':
+			'egosplitting_snap',
+		'plot_dir':
+			'egosplitting_snap/',
+		'iterations':
+			10,
+		'time_limit':
+			7200,
+		EgoSplitClusteringAlgorithmsConfig:
+			'plm_lm-map',
+		EgoSplitParameterConfig:
+			['CleanupMinOverlap'],
+		OtherAlgorithms: [
+			'Ego-original',
+		],
+		GraphSetsConfig: [
+			'snap',
+                        #'test',
+		],
+		PlotGraphSetConfig: [
+			'snap',
+		],
+		PlotSetConfig: [
+			'metrics',
+			'timings',
+		],
+		PlotAlgoSetConfig: [
+			'all'
+		],
+		'remove_algo_parts':
+			['Ego', ' | ', 'PLM + LM-Map'],
+		'replace_legend':
+			{'Ego-original': 'Ego', 'Ego-optimized': 'Ego+'},
+	}
+
 
 
 class AlgorithmsSnap(BenchmarkSet):
@@ -319,6 +403,7 @@ class AlgorithmsSnap(BenchmarkSet):
 		],
 		PlotSetConfig: [
 			'metrics',
+			'timings',
 		],
 		PlotAlgoSetConfig: [
 			'all'
