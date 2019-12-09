@@ -13,7 +13,6 @@ class GraphSetsConfig:
 	def get_graphs(graph_sets):
 		all_graphs = []
 		for graph_set in graph_sets:
-			graphs = []
 			if graph_set == 'om':
 				graphs = create_om_graphs(1, 7)
 			elif graph_set == 'mu':

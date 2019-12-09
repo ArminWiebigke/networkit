@@ -69,14 +69,8 @@ class EgoSplitAlgorithm(CoverAlgorithm):
 	def __init__(self, name, parameters, local_partition_algorithm=None,
 	             global_partition_algorithm=None):
 		super().__init__(name)
-		# self.output_parameter['Local Clustering Algorithm'], self.local_partition_algorithm = \
-		# 	local_partition_algorithm
-		# self.output_parameter['Global Clustering Algorithm'], self.global_partition_algorithm = \
-		# 	global_partition_algorithm
-		self.local_partition_algorithm = \
-			local_partition_algorithm
-		self.global_partition_algorithm = \
-			global_partition_algorithm
+		self.local_partition_algorithm = local_partition_algorithm
+		self.global_partition_algorithm = global_partition_algorithm
 		self.executionInfo = None
 		self.egoNetPartitions = None
 		self.egoNets = None

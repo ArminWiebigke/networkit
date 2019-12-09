@@ -4,23 +4,6 @@ from egosplit.external import cleanUpOslom
 from egosplit.benchmarks.data_structures.context_timer import ContextTimer
 
 
-class CleanUp:
-	def __init__(self, name):
-		self.name = name
-		self.cover = None
-		self.timer = ContextTimer()
-
-	def run(self, graph, cover, ground_truth):
-		with self.timer:
-			self.cover = clean_up_cover(graph, cover, ground_truth, self.name)
-
-	def get_cover(self):
-		return self.cover
-
-	def get_time(self):
-		return self.timer.elapsed
-
-
 class CleanUpConfig:
 	@staticmethod
 	def get_clean_up_set(clean_up_set):
@@ -65,8 +48,26 @@ class CleanUpConfig:
 			]
 		else:
 			raise RuntimeError('No clean-up set provided!')
-		clean_ups = ['({:03.0f}){}'.format(i, c) for i, c in enumerate(clean_ups)]
+		if len(clean_ups) > 1:
+			clean_ups = ['({:03.0f}){}'.format(i, c) for i, c in enumerate(clean_ups)]
 		return clean_ups
+
+
+class CleanUp:
+	def __init__(self, name):
+		self.name = name
+		self.cover = None
+		self.timer = ContextTimer()
+
+	def run(self, graph, cover, ground_truth):
+		with self.timer:
+			self.cover = clean_up_cover(graph, cover, ground_truth, self.name)
+
+	def get_cover(self):
+		return self.cover
+
+	def get_time(self):
+		return self.timer.elapsed
 
 
 def clean_up_cover(graph, cover, ground_truth, clean_up):

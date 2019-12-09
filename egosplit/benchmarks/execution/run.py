@@ -10,8 +10,9 @@ import egosplit.benchmarks.evaluation.metrics as bm
 from networkit.stopwatch import clockit
 from egosplit.benchmarks.evaluation.metric_output import write_results_to_file, add_compact_results, \
 	print_compact_results
-from egosplit.benchmarks.execution.algo_creation import get_ego_algos, \
-	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig, OtherAlgorithms
+from egosplit.benchmarks.execution.algo_creation import OtherAlgorithms
+from egosplit.benchmarks.execution.egosplit_config import EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig, \
+	get_ego_algos
 from egosplit.benchmarks.evaluation.timings import write_timings
 from egosplit.benchmarks.execution.graph_creation import get_graphs, GraphSetsConfig
 from egosplit.benchmarks.evaluation.ego_net_partition import analyse_ego_net_partitions
@@ -34,7 +35,7 @@ class Evaluation(Enum):
 
 def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	""" Run benchmarks given by a config """
-	# setLogLevel('INFO')
+	setLogLevel('INFO')
 	append_results = False
 	evaluations = [
 		Evaluation.METRICS,

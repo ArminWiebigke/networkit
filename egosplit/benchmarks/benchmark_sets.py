@@ -1,6 +1,6 @@
 from egosplit.benchmarks.data_structures.benchmark_set import BenchmarkSet
-from egosplit.benchmarks.execution.algo_creation import \
-	EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig, OtherAlgorithms
+from egosplit.benchmarks.execution.algo_creation import	OtherAlgorithms
+from egosplit.benchmarks.execution.egosplit_config import EgoSplitClusteringAlgorithmsConfig, EgoSplitParameterConfig
 from egosplit.benchmarks.execution.cleanup import CleanUpConfig
 from egosplit.benchmarks.execution.graph_creation import GraphSetsConfig
 from egosplit.benchmarks.plot_scripts.bench_config import PlotGraphSetConfig, PlotAlgoSetConfig

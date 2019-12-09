@@ -14,6 +14,11 @@ class CoverBenchmark:
 	"""
 
 	def __init__(self, algo, clean_up, graph):
+		if ',' in algo.name:
+			raise RuntimeError("Commas are not allowed in algorithm name: \"{}\"".format(algo.name))
+		if ',' in clean_up.name:
+			raise RuntimeError("Commas are not allowed in cleanup name: \"{}\"".format(clean_up))
+
 		self.algo = algo
 		self.clean_up = clean_up
 		self.graph = graph
