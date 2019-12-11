@@ -95,7 +95,7 @@ def clockit(func):
         t = Timer()
         retval = func(*args, **kw)
         t.stop()
-        print('%s in %s') % (func.__name__, t)
+        print('{} in {}s'.format(func.__name__, t))
         del t
         return retval
     return new

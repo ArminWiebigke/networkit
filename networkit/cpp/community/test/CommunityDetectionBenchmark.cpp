@@ -20,6 +20,10 @@
 
 #include <networkit/graph/Graph.hpp>
 #include <networkit/io/METISGraphReader.hpp>
+#include "../egosplitting/EgoSplitting.h"
+#include "../LPPotts.h"
+#include "../../io/EdgeListReader.h"
+#include "../../generators/ClusteredRandomGraphGenerator.h"
 
 namespace NetworKit {
 
@@ -29,6 +33,7 @@ public:
 
 protected:
     METISGraphReader metisReader;
+    EdgeListReader edgeListReader;
 
 };
 
@@ -91,7 +96,7 @@ TEST_F(CommunityDetectionBenchmark, benchPageRankCentrality) {
     // std::string graph = "../graphs/uk-2002.graph";
     std::string graph = "input/polblogs.graph";
 
-const Graph G = this->metisReader.read(graph);
+    const Graph G = this->metisReader.read(graph);
 
     for (int r = 0; r < runs; r++) {
         PageRank cen(G, 1e-6);
@@ -115,7 +120,7 @@ TEST_F(CommunityDetectionBenchmark, benchBetweennessCentrality) {
     // std::string graph = "../graphs/cond-mat-2005.graph";
     std::string graph = "input/polblogs.graph";
 
-const Graph G = this->metisReader.read(graph);
+    const Graph G = this->metisReader.read(graph);
 
     for (int r = 0; r < runs; r++) {
         Betweenness cen(G);
@@ -132,6 +137,28 @@ const Graph G = this->metisReader.read(graph);
                 ranking[1].first, ": ", ranking[1].second, ") ...]");
 
     }
+}
+
+TEST_F(CommunityDetectionBenchmark, benchEgoSplitting) {
+    ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+    Graph G = gen.generate();
+//	EdgeListReader reader('\t', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+
+	std::function<Partition(const Graph &)> clusterAlgo = [](const Graph &G) {
+//        LPPotts clustAlgo(G, 0.1, 1, 20);
+        PLM clustAlgo(G);
+//		PLP clustAlgo(G, 1, 20);
+		clustAlgo.run();
+		return clustAlgo.getPartition();
+	};
+
+	EgoSplitting algo(G, true, clusterAlgo);
+	algo.run();
+
+	auto timings = algo.getTimings();
+	for (auto x : timings)
+		std::cout << x.first << ": " << x.second / 1000000 << std::endl;
 }
 
 

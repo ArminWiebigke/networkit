@@ -6,7 +6,11 @@ networkit_add_module(auxiliary
     Parallelism.cpp
     Random.cpp
     SignalHandling.cpp
+	ParallelTimings.cpp
+    ParseString.cpp
     Timer.cpp
+    Timings.cpp
+    UniformRandomSelector.cpp
     )
 
 add_subdirectory(test)

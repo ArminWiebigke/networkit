@@ -46,12 +46,12 @@ void UnionFind::merge(index u, index v) {
 }
 
 Partition UnionFind::toPartition() {
-    Partition p(parent.size());
-    p.setUpperBound(parent.size());
-    for (index e = 0; e < parent.size(); ++e) {
-        p.moveToSubset(find(e), e);
-    }	
-    return p;
+	Partition p(parent.size());
+	p.setUpperBound(parent.size());
+	for (index e = 0; e < parent.size(); ++e) {
+		p.addToSubset(find(e), e);
+	}	
+	return p;
 }
 
 

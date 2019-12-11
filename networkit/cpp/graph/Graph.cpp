@@ -480,7 +480,7 @@ edgeweight Graph::computeWeightedDegree(node u, bool inDegree, bool countSelfLoo
         return sum;
     }
 
-    count sum = inDegree ? degreeIn(u) : degreeOut(u);
+    count sum = defaultEdgeWeight * (inDegree ? degreeIn(u) : degreeOut(u));
     auto countSelfLoops = [&](node v) { sum += (u == v); };
 
     if (countSelfLoopsTwice && numberOfSelfLoops()) {

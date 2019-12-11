@@ -19,11 +19,11 @@ CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph& G) : Algor
 CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph& G, const Partition baseClustering) : Algorithm(), G(G), result(baseClustering) {
 }
 
-Partition CommunityDetectionAlgorithm::getPartition() {
-    if(!hasRun) {
-        throw std::runtime_error("Call run()-function first.");
-    }
-    return result;
+const Partition& CommunityDetectionAlgorithm::getPartition() const {
+	if(!hasRun) {
+		throw std::runtime_error("Call run()-function first.");
+	}
+	return result;
 }
 
 std::string CommunityDetectionAlgorithm::toString() const {

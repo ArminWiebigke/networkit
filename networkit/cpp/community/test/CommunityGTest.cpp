@@ -41,6 +41,14 @@
 #include <networkit/community/CoverF1Similarity.hpp>
 
 #include <tlx/unused.hpp>
+#include "../egosplitting/EgoSplitting.h"
+#include "../../structures/Cover.h"
+#include "../Coverage.h"
+#include "../LPPotts.h"
+#include "../../io/EdgeListReader.h"
+#include "../OLP.h"
+#include "../../io/CoverReader.h"
+#include "../SLPA.h"
 
 namespace NetworKit {
 
@@ -721,5 +729,65 @@ TEST_F(CommunityGTest, testCoverF1Similarity) {
     EXPECT_DOUBLE_EQ((1.0 + f1) / 3.0, sim.getUnweightedAverage());
     EXPECT_DOUBLE_EQ((1.0 * 10.0 + f1 * 10.0) / 29.0, sim.getWeightedAverage());
 }
+
+
+TEST_F(CommunityGTest, testSLPA) {
+	ClusteredRandomGraphGenerator gen(100, 4, 0.5, 0.02);
+	Graph G = gen.generate();
+//	EdgeListReader reader('\t', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/com-amazon.ungraph.txt");
+//	Cover C = CoverReader{}.read("/home/armin/Code/graphs/com-amazon.all.dedup.cmty.txt",
+//								 G);
+//	EdgeListReader reader(' ', 0);
+//	Graph G = reader.read("/home/armin/Code/graphs/email-Eu-core.txt");
+
+	SLPA algo(G);
+	algo.run();
+	Cover cover = algo.getCover();
+}
+
+
+TEST_F(CommunityGTest, testOLP) {
+//	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
+//	Graph G = gen.generate();
+
+	METISGraphReader reader{};
+	Graph G = reader.read("input/lfr_small.graph");
+	OLP algo(G);
+
+	algo.run();
+
+	Cover cover = algo.getCover();
+
+	for (const auto &size : cover.subsetSizes()) {
+//		std::cout << size << std::endl;
+	}
+	auto isProperCover = [](const Graph &G, const Cover &cover) {
+		for (auto size : cover.subsetSizes()) {
+			EXPECT_GT(size, 4) << "discard communities with 4 or less nodes";
+		}
+		return true;
+	};
+	EXPECT_TRUE(isProperCover(G, cover));
+}
+
+
+TEST_F(CommunityGTest, testLPPotts) {
+	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
+	Graph G = gen.generate();
+
+	LPPotts algo(G);
+
+	algo.run();
+
+	Partition partition = algo.getPartition();
+
+	for (const auto &size : partition.subsetSizes()) {
+		std::cout << size << std::endl;
+	}
+//	std::cout << partition.subsetSizes() << std::endl;
+//	partition.subsetSizes();
+}
+
 
 } /* namespace NetworKit */
