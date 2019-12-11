@@ -188,10 +188,10 @@ TEST_F(CoarseningGTest, testPartitionCoarseningEdgeWeights) {
 	for (const auto& cluster : random.getSubsets()) {
 		double degreeSum = 0.0;
 		for (node u : cluster) {
-			degreeSum += G.weightedDegree(u);
+			degreeSum += G.weightedDegree(u, true);
 		}
 		node coarseNode = fineToCoarse[*cluster.begin()];
-		ASSERT_EQ(degreeSum, coarseGraph.weightedDegree(coarseNode));
+		ASSERT_EQ(degreeSum, coarseGraph.weightedDegree(coarseNode, true));
 	}
 }
 

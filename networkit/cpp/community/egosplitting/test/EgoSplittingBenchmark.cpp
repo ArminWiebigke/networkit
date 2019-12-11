@@ -7,14 +7,14 @@
 
 #include <gtest/gtest.h>
 
-#include "../../../auxiliary/Random.h"
-#include "../../PLM.h"
-#include "../../Modularity.h"
-#include "../EgoSplitting.h"
-#include "../../../structures/Partition.h"
-#include "../../../io/METISGraphReader.h"
-#include "../../../io/EdgeListReader.h"
-#include "../../../io/SNAPGraphReader.h"
+#include <networkit/auxiliary/Random.hpp>
+#include <networkit/community/PLM.hpp>
+#include <networkit/community/Modularity.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/structures/Partition.hpp>
+#include <networkit/io/METISGraphReader.hpp>
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/io/SNAPGraphReader.hpp>
 
 namespace NetworKit {
 

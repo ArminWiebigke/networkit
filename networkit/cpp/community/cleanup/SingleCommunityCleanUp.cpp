@@ -4,7 +4,7 @@
  * Created: 2019-09-26
  * Author: Armin Wiebigke
  */
-#include "SingleCommunityCleanUp.h"
+#include <networkit/community/cleanup/SingleCommunityCleanUp.hpp>
 
 namespace NetworKit {
 

@@ -47,7 +47,7 @@ INSTANTIATE_TEST_CASE_P(InstantiationName, GraphBuilderDirectSwapGTest, testing:
     std::make_tuple(true, false),
     std::make_tuple(false, true),
     std::make_tuple(false, false)
-), ); // comma required for variadic macro
+) ); // comma required for variadic macro
 
 bool GraphBuilderDirectSwapGTest::isWeighted() const {
     return std::get<0>(GetParam());

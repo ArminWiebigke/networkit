@@ -48,7 +48,7 @@ protected:
 INSTANTIATE_TEST_CASE_P(InstantiationName, GraphGTest, testing::Values(std::make_tuple(false, false),
                         std::make_tuple(true, false),
                         std::make_tuple(false, true),
-                        std::make_tuple(true, true)), ); // comma required for variadic macro
+                        std::make_tuple(true, true)) ); // comma required for variadic macro
 
 bool GraphGTest::isWeighted() const { return std::get<0>(GetParam()); }
 bool GraphGTest::isDirected() const { return std::get<1>(GetParam()); }
@@ -446,7 +446,7 @@ TEST_P(GraphGTest, testWeightedDegree) {
     if (isGraph()) {
         ASSERT_EQ(2 * defaultEdgeWeight, this->Ghouse.weightedDegree(0));
         ASSERT_EQ(4 * defaultEdgeWeight, this->Ghouse.weightedDegree(1));
-        ASSERT_EQ(6 * defaultEdgeWeight, this->Ghouse.weightedDegree(2));
+        ASSERT_EQ(5 * defaultEdgeWeight, this->Ghouse.weightedDegree(2));
         ASSERT_EQ(3 * defaultEdgeWeight, this->Ghouse.weightedDegree(3));
         ASSERT_EQ(3 * defaultEdgeWeight, this->Ghouse.weightedDegree(4));
     }
@@ -454,7 +454,7 @@ TEST_P(GraphGTest, testWeightedDegree) {
     if (isWeightedGraph()) {
         ASSERT_EQ(5.0, this->Ghouse.weightedDegree(0));
         ASSERT_EQ(12.0, this->Ghouse.weightedDegree(1));
-        ASSERT_EQ(23.5, this->Ghouse.weightedDegree(2));
+        ASSERT_EQ(22.75, this->Ghouse.weightedDegree(2));
         ASSERT_EQ(14.0, this->Ghouse.weightedDegree(3));
         ASSERT_EQ(19.0, this->Ghouse.weightedDegree(4));
     }

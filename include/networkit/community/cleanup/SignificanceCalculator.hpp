@@ -5,13 +5,14 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_SIGNIFICANCECALCULATOR_H
-#define NETWORKIT_SIGNIFICANCECALCULATOR_H
+#ifndef NETWORKIT_SIGNIFICANCECALCULATOR_HPP
+#define NETWORKIT_SIGNIFICANCECALCULATOR_HPP
 
 #include <random>
+#include <stdexcept>
 
-#include "StochasticDistribution.h"
-#include "../../Globals.h"
+#include <networkit/community/cleanup/StochasticDistribution.hpp>
+#include <networkit/Globals.hpp>
 
 namespace NetworKit {
 
@@ -59,4 +60,4 @@ private:
 
 } /* namespace NetworKit */
 
-#endif //NETWORKIT_SIGNIFICANCECALCULATOR_H
+#endif //NETWORKIT_SIGNIFICANCECALCULATOR_HPP

@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <tuple>
 #include <numeric>
+#include <algorithm>
 
 #include <networkit/Globals.hpp>
 #include <networkit/auxiliary/Random.hpp>
@@ -122,6 +123,6 @@ INSTANTIATE_TEST_CASE_P(ErdosRenyiEnumeratorGTest, ErdosRenyiEnumeratorGTest,
                          std::make_tuple(false, 100, 0.7),  std::make_tuple(true, 100, 0.7),
                          std::make_tuple(false, 100, 1.0),  std::make_tuple(true, 100, 1.0),
                          std::make_tuple(false, 200, 0.01), std::make_tuple(true, 200, 0.01)
-                        ),);
+                        ));
 
 } // ! namespace NetworKit

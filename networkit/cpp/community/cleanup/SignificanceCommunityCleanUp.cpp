@@ -5,8 +5,8 @@
  * Author: Armin Wiebigke
  */
 
-#include "SignificanceCommunityCleanUp.h"
-#include "MergeCommunities.h"
+#include <networkit/community/cleanup/SignificanceCommunityCleanUp.hpp>
+#include <networkit/community/cleanup/MergeCommunities.hpp>
 
 namespace NetworKit {
 

@@ -11,17 +11,17 @@
 
 #include <tlx/unused.hpp>
 
-#include "EgoSplitting.h"
-#include "../../structures/Partition.h"
-#include "../../components/ConnectedComponents.h"
-#include "../../auxiliary/SignalHandling.h"
-#include "../../coarsening/ParallelPartitionCoarsening.h"
-#include "../../graph/RandomMaximumSpanningForest.h"
-#include "../PLM.h"
-#include "EgoNetExtensionAndPartition.h"
-#include "../LouvainMapEquation.h"
-#include "../cleanup/SignificanceCommunityCleanUp.h"
-#include "../../auxiliary/ParseString.h"
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/structures/Partition.hpp>
+#include <networkit/components/ConnectedComponents.hpp>
+#include <networkit/auxiliary/SignalHandling.hpp>
+#include <networkit/coarsening/ParallelPartitionCoarsening.hpp>
+#include <networkit/graph/RandomMaximumSpanningForest.hpp>
+#include <networkit/community/PLM.hpp>
+#include <networkit/community/egosplitting/EgoNetExtensionAndPartition.hpp>
+#include <networkit/community/LouvainMapEquation.hpp>
+#include <networkit/community/cleanup/SignificanceCommunityCleanUp.hpp>
+#include <networkit/auxiliary/ParseString.hpp>
 
 namespace NetworKit {
 
@@ -180,7 +180,7 @@ void EgoSplitting::createEgoNetsSimple() {
 	const bool connectPersonas = parameters.at("connectPersonas") == "Yes";
 	const count minNeighbors = std::stoi(parameters.at("minNeighbors"));
 	const bool conductanceCutOff = parameters.at("limitExtensionByConductance") == "Yes";
-	assert(parameters.at("Extend EgoNet Strategy") == "Edges");
+	assert(parameters.at("Extend EgoNet Strategy") == "Edges" || parameters.at("Extend EgoNet Strategy") == "None");
 	assert(parameters.at("Edges Score Strategy") == "Edges pow 2 div Degree");
 #pragma omp parallel if (parallelEgoNetEvaluation)
 	{

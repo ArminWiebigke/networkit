@@ -7,11 +7,11 @@
 
 #include <set>
 
-#include "ExtendSignificance.h"
-#include "../../auxiliary/ParseString.h"
-#include "../../coarsening/ParallelPartitionCoarsening.h"
-#include "../cleanup/StochasticDistribution.h"
-#include "EgoSplitting.h"
+#include <networkit/community/egosplitting/ExtendSignificance.hpp>
+#include <networkit/auxiliary/ParseString.hpp>
+#include <networkit/coarsening/ParallelPartitionCoarsening.hpp>
+#include <networkit/community/cleanup/StochasticDistribution.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
 
 #define W(x) #x << "=" << x << ", "
 #define true_or_throw(cond, msg) if (!cond) throw std::runtime_error(msg)
@@ -326,7 +326,7 @@ std::vector<GroupProperties> ExtendSignificance::calculateGroupProperties() cons
 	for (index group = 0; group < numGroups; ++group) {
 		if (!coarseGraph.hasNode(group))
 			continue;
-		auto groupDegree = (count) coarseGraph.weightedDegree(group);
+		auto groupDegree = (count) coarseGraph.weightedDegree(group, true);
 		GroupProperties &properties = newGroupProperties[group];
 		properties.groupTotal = groupDegree;
 		properties.groupOutgoing = groupDegree - 2 * (count) coarseGraph.weight(group, group);

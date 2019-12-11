@@ -1102,6 +1102,26 @@ public:
     void addPartialOutEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight,
                            uint64_t index = 0);
 
+    // TODO consolidate when merging
+    void addHalfEdge(node u, node v, edgeweight ew = defaultEdgeWeight) {
+        assert(!isDirected());
+        assert(u < z);
+        assert(exists[u]);
+        assert(v < z);
+        assert(exists[v]);
+
+        outEdges[u].push_back(v);
+        if (weighted) {
+            outEdgeWeights[u].push_back(ew);
+        }
+
+        // if edges indexed, give new id
+        if (edgesIndexed) {
+            edgeid id = omega++;
+            outEdgeIds[u].push_back(id);
+        }
+    }
+
     /**
      * Removes the undirected edge {@a u,@a v}.
      * @param u Endpoint of edge.
@@ -1470,7 +1490,7 @@ public:
      * @param handle Takes parameter <code>(node)</code>.
      */
     template <typename L>
-    void parallelForNodes(L handle) const;
+    void parallelForNodes(L handle, bool parallel = true) const;
 
     /** Iterate over all nodes of the graph and call @a handle (lambda
      * closure) as long as @a condition remains true. This allows for breaking
@@ -1498,8 +1518,7 @@ public:
      *
      * @param handle Takes parameter <code>(node)</code>.
      */
-    template <typename L>
-    void balancedParallelForNodes(L handle) const;
+    template <typename L> void balancedParallelForNodes(L handle, bool parallel = true) const;
 
     /**
      * Iterate over all undirected pairs of nodes and call @a handle (lambda
@@ -1540,8 +1559,7 @@ public:
      * <code>(node, node, edgweight)</code>, <code>(node, node, edgeid)</code>
      * or <code>(node, node, edgeweight, edgeid)</code>.
      */
-    template <typename L>
-    void parallelForEdges(L handle) const;
+    template <typename L> void parallelForEdges(L handle, bool parallel = true) const;
 
     /* NEIGHBORHOOD ITERATORS */
 
@@ -1654,9 +1672,8 @@ void Graph::forNodes(L handle) const {
     }
 }
 
-template <typename L>
-void Graph::parallelForNodes(L handle) const {
-#pragma omp parallel for
+template <typename L> void Graph::parallelForNodes(L handle, bool parallel) const {
+#pragma omp parallel for if (parallel)
     for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
         if (exists[v]) {
             handle(v);
@@ -1687,10 +1704,8 @@ void Graph::forNodesInRandomOrder(L handle) const {
     }
 }
 
-template <typename L>
-void Graph::balancedParallelForNodes(L handle) const {
-// TODO: define min block size (and test it!)
-#pragma omp parallel for schedule(guided)
+template <typename L> void Graph::balancedParallelForNodes(L handle, bool parallel) const {
+#pragma omp parallel for schedule(guided) if (parallel) // TODO: define min block size (and test it!)
     for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
         if (exists[v]) {
             handle(v);
@@ -1899,8 +1914,9 @@ void Graph::forEdges(L handle) const {
     }
 }
 
-template <typename L>
-void Graph::parallelForEdges(L handle) const {
+template <typename L> void Graph::parallelForEdges(L handle, bool parallel) const {
+    if (!parallel)
+        return forEdges(handle);
     switch (weighted + 2 * directed + 4 * edgesIndexed) {
     case 0: // unweighted, undirected, no edgeIds
         parallelForEdgesImpl<false, false, false, L>(handle);

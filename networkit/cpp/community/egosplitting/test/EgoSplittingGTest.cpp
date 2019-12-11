@@ -8,12 +8,10 @@
 #include <gtest/gtest.h>
 #include <functional>
 
-#include "../../../auxiliary/Random.h"
-#include "../../../generators/ClusteredRandomGraphGenerator.h"
-#include "../../../io/EdgeListReader.h"
-#include "../EgoSplitting.h"
-#include "../../PLM.h"
-#include "../../../io/METISGraphReader.h"
+#include <networkit/auxiliary/Random.hpp>
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/io/METISGraphReader.hpp>
 
 namespace NetworKit {
 

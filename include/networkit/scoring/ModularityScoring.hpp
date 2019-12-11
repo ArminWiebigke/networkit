@@ -84,8 +84,8 @@ template<typename T>
 inline T ModularityScoring<T>::edgeScore(node u, node v) const {
     assert(totalEdgeWeight != 0.0);
     double volume = 2.0 * totalEdgeWeight;
-    double nom1 = (this->G->weightedDegree(u) / volume);
-    double nom2 = (this->G->weightedDegree(v) / volume);
+    double nom1 = (this->G->weightedDegree(u, true) / volume);
+    double nom2 = (this->G->weightedDegree(v, true) / volume);
     double deltaMod = (this->G->weight(u, v) / totalEdgeWeight) -
             (nom1 * nom2);
 //	TRACE("volume: ", volume, ", deltaMod: ", deltaMod, ", totalew: ", totalEdgeWeight);

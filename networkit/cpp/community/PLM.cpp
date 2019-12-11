@@ -36,18 +36,6 @@ void PLM::run() {
     zeta.allToSingletons();
     index o = zeta.upperBound();
 
-    // init graph-dependent temporaries
-    std::vector<double> volNode(z, 0.0);
-    // $\omega(E)$
-    edgeweight total = G.totalEdgeWeight();
-    DEBUG("total edge weight: " , total);
-    edgeweight divisor = (2 * total * total); // needed in modularity calculation
-
-    G.parallelForNodes([&](node u) { // calculate and store volume of each node
-        volNode[u] += G.weightedDegree(u);
-        volNode[u] += G.weight(u, u); // consider self-loop twice
-        // TRACE("init volNode[" , u , "] to " , volNode[u]);
-    });
 	// init graph-dependent temporaries
 	std::vector<double> volNode(z, 0.0);
 	// $\omega(E)$
@@ -69,14 +57,14 @@ void PLM::run() {
 				}
 			});
 
-			assert(volNode[u] == G.weightedDegree(u));
+			assert(volNode[u] >= 0.999 * G.weightedDegree(u, true) && volNode[u] <= 1.001 * G.weightedDegree(u, true));
 
 			total += volNode[u];
 		});
 
 		total /= 2;
 
-		assert(total == G.totalEdgeWeight());
+		assert(total >= 0.999 * G.totalEdgeWeight() && total <= 1.001 * G.totalEdgeWeight());
 	}
 
 	const edgeweight divisor = (2 * total * total); // needed in modularity calculation
@@ -88,12 +76,6 @@ void PLM::run() {
 		if (C != none)
 			volCommunity[C] = volNode[u];
 	});
-    // init community-dependent temporaries
-    std::vector<double> volCommunity(o, 0.0);
-    zeta.parallelForEntries([&](node u, index C) { 	// set volume for all communities
-        if (C != none)
-            volCommunity[C] = volNode[u];
-    });
 
     // first move phase
     bool moved = false; // indicates whether any node has been moved in the last pass

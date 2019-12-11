@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../SparseVector.h"
+#include "networkit/auxiliary/SparseVector.hpp"
 
 
 namespace NetworKit {

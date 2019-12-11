@@ -16,10 +16,6 @@
 
 namespace NetworKit {
 
-ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph &G,
-                                                         const Partition &zeta,
-                                                         bool useGraphBuilder)
-    : GraphCoarsening(G), zeta(zeta), useGraphBuilder(useGraphBuilder) {}
 ParallelPartitionCoarsening::ParallelPartitionCoarsening(const Graph& G,
 		const Partition& zeta, bool useGraphBuilder, bool parallel)
 		: GraphCoarsening(G), zeta(zeta), useGraphBuilder(useGraphBuilder),

@@ -37,9 +37,9 @@ struct Options {
         parser.add_bool('d', "debug",      modeDebug,      "Run tests to debug some algorithms");
         parser.add_bool('b', "benchmarks", modeBenchmarks, "Run benchmarks");
 
-        parser.add_unsigned("threads",     numThreads,     "set the maximum number of threads; 0 (=default) uses OMP default");
-        parser.add_string("loglevel",      loglevel,       "set the log level (TRACE|DEBUG|INFO|WARN|ERROR|FATAL)");
-        parser.add_bool("srcloc",          sourceLocation, "print source location of log messages");
+        parser.add_unsigned('p', "threads",     numThreads,     "set the maximum number of threads; 0 (=default) uses OMP default");
+        parser.add_string('l', "loglevel",      loglevel,       "set the log level (TRACE|DEBUG|INFO|WARN|ERROR|FATAL)");
+        parser.add_bool('s', "srcloc",          sourceLocation, "print source location of log messages");
 
         if (!parser.process(argc, argv, std::cerr))
             return false;

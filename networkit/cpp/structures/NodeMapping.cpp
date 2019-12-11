@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#include "NodeMapping.h"
+#include "networkit/auxiliary/NodeMapping.hpp"
 
 
 namespace NetworKit {

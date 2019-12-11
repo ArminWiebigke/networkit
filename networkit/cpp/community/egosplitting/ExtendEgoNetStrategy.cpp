@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#include "ExtendEgoNetStrategy.h"
+#include <networkit/community/egosplitting/ExtendEgoNetStrategy.hpp>
 
 namespace NetworKit {
 

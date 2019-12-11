@@ -12,19 +12,19 @@
 #include <functional>
 #include <ostream>
 
-#include "../../Globals.h"
-#include "../../base/Algorithm.h"
-#include "../../structures/Cover.h"
-#include "../../structures/LowToHighDirectedGraph.h"
-#include "../../structures/NodeMapping.h"
-#include "../../auxiliary/Timer.h"
-#include "../../auxiliary/Timings.h"
-#include "../../structures/MemoizationTable.h"
-#include "../cleanup/StochasticDistribution.h"
-#include "../cleanup/SignificanceCalculator.h"
-#include "../../structures/SparseVector.h"
-#include "../../auxiliary/ParallelTimings.h"
-#include "../ClusteringFunctionFactory.h"
+#include <networkit/Globals.hpp>
+#include <networkit/base/Algorithm.hpp>
+#include <networkit/structures/Cover.hpp>
+#include <networkit/auxiliary/LowToHighDirectedGraph.hpp>
+#include <networkit/auxiliary/NodeMapping.hpp>
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/auxiliary/Timings.hpp>
+#include <networkit/auxiliary/MemoizationTable.hpp>
+#include <networkit/community/cleanup/StochasticDistribution.hpp>
+#include <networkit/community/cleanup/SignificanceCalculator.hpp>
+#include <networkit/auxiliary/SparseVector.hpp>
+#include <networkit/auxiliary/ParallelTimings.hpp>
+#include <networkit/community/ClusteringFunctionFactory.hpp>
 
 namespace NetworKit {
 

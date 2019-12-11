@@ -27,7 +27,7 @@ INSTANTIATE_TEST_CASE_P(
     InstantiationName, GraphToolsGTest,
     testing::Values(std::make_pair(false, false), std::make_pair(true, false),
                     std::make_pair(false, true),
-                    std::make_pair(true, true)), ); // comma required for variadic macro
+                    std::make_pair(true, true)) ); // comma required for variadic macro
 
 Graph GraphToolsGTest::generateRandomWeights(const Graph &G) const {
     Graph Gw(G, true, G.isDirected());

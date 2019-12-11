@@ -12,9 +12,9 @@
 #include <memory>
 #include <numeric>
 
-#include "Partition.h"
-#include "../auxiliary/Parallel.h"
-#include "../../../extlibs/tlx/tlx/define/likely.hpp"
+#include <networkit/structures/Partition.hpp>
+#include <networkit/auxiliary/Parallel.hpp>
+#include <tlx/define/likely.hpp>
 
 namespace NetworKit {
 
@@ -38,8 +38,8 @@ Partition::Partition(index z, index defaultValue) : z(z), omega(0), data(z, defa
 }
 
 void Partition::allToSingletons() {
-	setUpperBound(numberOfElements());
-	std::iota(data.begin(), data.end(), 0);
+    setUpperBound(numberOfElements());
+    std::iota(data.begin(), data.end(), 0);
 }
 
 index Partition::mergeSubsets(index s, index t) {
@@ -74,18 +74,18 @@ bool Partition::isOnePartition(Graph& G) { //FIXME what for is elements needed? 
 */
 
 count Partition::numberOfSubsets() const {
-	auto n = upperBound();
-	std::vector<bool> exists(n);
-	count k = 0; // number of actually existing clusters
-	this->forEntries([&](index, index s) {
-		if (s != none) {
-			if (!exists[s]) {
-				++k;
-				exists[s] = true;
-			}
-		}
-	});
-	return k;
+    auto n = upperBound();
+    std::vector<bool> exists(n);
+    count k = 0; // number of actually existing clusters
+    this->forEntries([&](index, index s) {
+        if (s != none) {
+            if (!exists[s]) {
+                ++k;
+                exists[s] = true;
+            }
+        }
+    });
+    return k;
 }
 
 void Partition::compact(bool useTurbo) {
@@ -97,24 +97,24 @@ void Partition::compact(bool useTurbo) {
         usedIds.erase(last, usedIds.end());
         i = usedIds.size();
 
-		this->forEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
-			if (s != none) {
-				data[e] = std::distance(usedIds.begin(), std::lower_bound(usedIds.begin(), usedIds.end(), s));
-			}
-		});
-	} else {
-		std::vector<index> compactingMap(this->upperBound(), none);
-		for (index e = 0; e < z; ++e) {
-			const index cid = data[e];
-			if (TLX_LIKELY(cid != none)) {
-				if (compactingMap[cid] == none) {
-					compactingMap[cid] = i++;
-				}
-				data[e] = compactingMap[cid];
-			}
-		}
-	}
-	this->setUpperBound(i);
+        this->forEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
+            if (s != none) {
+                data[e] = std::distance(usedIds.begin(), std::lower_bound(usedIds.begin(), usedIds.end(), s));
+            }
+        });
+    } else {
+        std::vector<index> compactingMap(this->upperBound(), none);
+        for (index e = 0; e < z; ++e) {
+            const index cid = data[e];
+            if (TLX_LIKELY(cid != none)) {
+                if (compactingMap[cid] == none) {
+                    compactingMap[cid] = i++;
+                }
+                data[e] = compactingMap[cid];
+            }
+        }
+    }
+    this->setUpperBound(i);
 }
 
 std::vector<count> Partition::subsetSizes() const {
@@ -154,7 +154,7 @@ std::vector<index> Partition::getVector() const {
 }
 
 std::vector<index> Partition::moveVector() {
-	return std::move(this->data);
+    return std::move(this->data);
 }
 
 
@@ -165,15 +165,8 @@ std::set<std::set<index> > Partition::getSubsets() const {
         table[s].insert(e);
     });
 
-	std::set<std::set<index> > subsets;
-	for (auto const &set : table) {
-		if (set.size() > 0) {
-			subsets.insert(set);
-		}
-	}
-	return subsets;
     std::set<std::set<index> > subsets;
-    for (auto set : table) {
+    for (auto const &set : table) {
         if (set.size() > 0) {
             subsets.insert(set);
         }

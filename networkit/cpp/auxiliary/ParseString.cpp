@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <cassert>
 
-#include "ParseString.h"
+#include <networkit/auxiliary/ParseString.hpp>
 
 namespace Aux {
 

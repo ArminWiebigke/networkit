@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <string>
 
-#include "../auxiliary/Timer.h"
+#include <networkit/auxiliary/Timer.hpp>
 
 namespace NetworKit {
 

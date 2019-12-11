@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <tlx/unused.hpp>
 #include <networkit/community/PLP.hpp>
 #include <networkit/community/PLM.hpp>
 #include <networkit/community/ParallelAgglomerativeClusterer.hpp>
@@ -39,16 +40,14 @@
 #include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
 #include <networkit/generators/ErdosRenyiGenerator.hpp>
 #include <networkit/community/CoverF1Similarity.hpp>
-
-#include <tlx/unused.hpp>
-#include "../egosplitting/EgoSplitting.h"
-#include "../../structures/Cover.h"
-#include "../Coverage.h"
-#include "../LPPotts.h"
-#include "../../io/EdgeListReader.h"
-#include "../OLP.h"
-#include "../../io/CoverReader.h"
-#include "../SLPA.h"
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/structures/Cover.hpp>
+#include <networkit/community/Coverage.hpp>
+#include <networkit/community/LPPotts.hpp>
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/community/OLP.hpp>
+#include <networkit/io/CoverReader.hpp>
+#include <networkit/community/SLPA.hpp>
 
 namespace NetworKit {
 

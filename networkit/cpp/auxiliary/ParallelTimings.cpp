@@ -6,7 +6,8 @@
   */
 
 #include <map>
-#include "ParallelTimings.h"
+
+#include <networkit/auxiliary/ParallelTimings.hpp>
 
 namespace NetworKit {
 

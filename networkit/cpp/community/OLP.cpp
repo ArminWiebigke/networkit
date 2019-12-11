@@ -5,16 +5,13 @@
  * Author: Armin Wiebigke
  */
 
-
-#include "OLP.h"
-
-#include <omp.h>
-#include "../Globals.h"
-#include "../auxiliary/Log.h"
-#include "../auxiliary/Timer.h"
-#include "../auxiliary/Random.h"
-#include "../auxiliary/UniformRandomSelector.h"
-#include "../auxiliary/SignalHandling.h"
+#include <networkit/Globals.hpp>
+#include <networkit/auxiliary/Log.hpp>
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/auxiliary/Random.hpp>
+#include "networkit/auxiliary/UniformRandomSelector.hpp"
+#include <networkit/auxiliary/SignalHandling.hpp>
+#include <networkit/community/OLP.hpp>
 
 namespace NetworKit {
 

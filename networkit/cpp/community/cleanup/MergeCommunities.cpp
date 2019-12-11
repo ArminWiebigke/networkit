@@ -6,9 +6,10 @@
  */
 
 #include <unordered_map>
-#include "../../auxiliary/Timer.h"
-#include "MergeCommunities.h"
-#include "../../graph/GraphBuilder.h"
+
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/graph/GraphBuilder.hpp>
+#include <networkit/community/cleanup/MergeCommunities.hpp>
 
 namespace NetworKit {
 

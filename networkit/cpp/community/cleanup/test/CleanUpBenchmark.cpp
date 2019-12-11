@@ -7,12 +7,12 @@
 
 #include <gtest/gtest.h>
 
-#include "../../../auxiliary/Timer.h"
-#include "../../../graph/Graph.h"
-#include "../../../io/EdgeListReader.h"
-#include "../../egosplitting/EgoSplitting.h"
-#include "../SignificanceCommunityCleanUp.h"
-#include "../../../io/CoverReader.h"
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/graph/Graph.hpp>
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/community/cleanup/SignificanceCommunityCleanUp.hpp>
+#include <networkit/io/CoverReader.hpp>
 
 namespace NetworKit {
 

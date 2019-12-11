@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#include "ExtendByScore.h"
+#include <networkit/community/egosplitting/ExtendByScore.hpp>
 
 namespace NetworKit {
 

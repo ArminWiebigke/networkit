@@ -10,16 +10,16 @@
 
 #include <vector>
 
-#include "../../graph/Graph.h"
-#include "../../structures/NodeMapping.h"
-#include "../../auxiliary/Timings.h"
-#include "../../structures/LowToHighDirectedGraph.h"
-#include "../../structures/Partition.h"
-#include "../../base/Algorithm.h"
-#include "EgoSplitting.h"
-#include "ExtendEgoNetStrategy.h"
-#include "../../structures/MemoizationTable.h"
-#include "../cleanup/SignificanceCalculator.h"
+#include <networkit/graph/Graph.hpp>
+#include "networkit/auxiliary/NodeMapping.hpp"
+#include "networkit/auxiliary/Timings.hpp"
+#include "networkit/auxiliary/LowToHighDirectedGraph.hpp"
+#include <networkit/structures/Partition.hpp>
+#include <networkit/base/Algorithm.hpp>
+#include <networkit/auxiliary/MemoizationTable.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/community/egosplitting/ExtendEgoNetStrategy.hpp>
+#include <networkit/community/cleanup/SignificanceCalculator.hpp>
 
 namespace NetworKit {
 

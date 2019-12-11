@@ -7,10 +7,10 @@
 
 #include <gtest/gtest.h>
 
-#include "../LouvainMapEquation.h"
-#include "../../io/METISGraphReader.h"
-#include "../../generators/ClusteredRandomGraphGenerator.h"
-#include "../egosplitting/EgoSplitting.h"
+#include <networkit/community/LouvainMapEquation.hpp>
+#include <networkit/io/METISGraphReader.hpp>
+#include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
 
 namespace NetworKit {
 

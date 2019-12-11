@@ -7,8 +7,8 @@
 
 #include <unordered_map>
 
-#include "SLPA.h"
-#include "../auxiliary/Random.h"
+#include <networkit/community/SLPA.hpp>
+#include <networkit/auxiliary/Random.hpp>
 
 namespace NetworKit {
 

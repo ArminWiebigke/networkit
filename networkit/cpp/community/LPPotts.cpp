@@ -8,12 +8,12 @@
 #include <omp.h>
 #include <algorithm>
 
-#include "LPPotts.h"
-#include "../Globals.h"
-#include "../auxiliary/Log.h"
-#include "../auxiliary/Timer.h"
-#include "../auxiliary/Random.h"
-#include "../auxiliary/UniformRandomSelector.h"
+#include <networkit/community/LPPotts.hpp>
+#include <networkit/Globals.hpp>
+#include <networkit/auxiliary/Log.hpp>
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/auxiliary/Random.hpp>
+#include "networkit/auxiliary/UniformRandomSelector.hpp"
 
 namespace NetworKit {
 

@@ -8,11 +8,11 @@
 #ifndef NETWORKIT_CLEAN_UP_H
 #define NETWORKIT_CLEAN_UP_H
 
-#include "../../base/Algorithm.h"
-#include "../../graph/Graph.h"
-#include "../../structures/Cover.h"
-#include "SignificanceCalculator.h"
-#include "SingleCommunityCleanUp.h"
+#include <networkit/base/Algorithm.hpp>
+#include <networkit/graph/Graph.hpp>
+#include <networkit/structures/Cover.hpp>
+#include <networkit/community/cleanup/SignificanceCalculator.hpp>
+#include <networkit/community/cleanup/SingleCommunityCleanUp.hpp>
 
 namespace NetworKit {
 

@@ -6,8 +6,9 @@
  */
 
 #include <cassert>
+#include <cmath>
 
-#include "StochasticDistribution.h"
+#include <networkit/community/cleanup/StochasticDistribution.hpp>
 
 namespace NetworKit {
 

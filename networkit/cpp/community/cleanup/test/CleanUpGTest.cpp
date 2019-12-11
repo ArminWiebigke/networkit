@@ -8,11 +8,11 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include "../../egosplitting/EgoSplitting.h"
-#include "../../../io/EdgeListReader.h"
-#include "../SignificanceCommunityCleanUp.h"
-#include "../../../io/METISGraphReader.h"
-#include "../MergeCommunities.h"
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/community/cleanup/SignificanceCommunityCleanUp.hpp>
+#include <networkit/io/METISGraphReader.hpp>
+#include <networkit/community/cleanup/MergeCommunities.hpp>
 
 namespace NetworKit {
 
@@ -59,7 +59,7 @@ TEST_F(CleanupGTest, testCleanUp) {
 	for (const auto& c : communities) {
 		notEmptyComms += (c.size() > 1);
 	}
-	EXPECT_GE(notEmptyComms, 9);
+	EXPECT_GE(notEmptyComms, 8);
 	std::vector<index> badComm = {2, isolatedNode};
 	for (auto &comm : communities) {
 		std::sort(comm.begin(), comm.end());

@@ -1,16 +1,17 @@
 /*
- * PLP.h
+ * OLP.h
  *
- *  Created on: 07.12.2012
- *      Author: Christian Staudt (christian.staudt@kit.edu)
+ * Created on: 2019-01-28
+ * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_COMMUNITY_PLP_HPP_
-#define NETWORKIT_COMMUNITY_PLP_HPP_
+#ifndef OLP_H_
+#define OLP_H_
 
 #include <networkit/community/CommunityDetectionAlgorithm.hpp>
 #include <networkit/structures/Partition.hpp>
-#include <networkit/community/ClusteringFunctionFactory.hpp>
+#include <networkit/structures/Cover.hpp>
+#include <networkit/graph/Graph.hpp>
 
 namespace NetworKit {
 
@@ -24,14 +25,17 @@ namespace NetworKit {
  * has the label that at least half of its neighbors have.
  *
  */
-class PLP: public CommunityDetectionAlgorithm {
+class OLP : public Algorithm {
 
 protected:
 
+    Graph G;
+    count maxLabels;
     count updateThreshold = 0;
     count maxIterations;
     count nIterations = 0; //!< number of iterations in last run
-    std::vector<count> timing;	//!< running times for each iteration
+    std::vector<count> timing;    //!< running times for each iteration
+    Cover result;
 
 
 public:
@@ -40,32 +44,19 @@ public:
      * Constructor to the label propagation community detection algorithm.
      *
      * @param[in]	G	input graph
-     * @param[in]	theta	optional; updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
-     * @param[in]   maxIterations	optional; the maximum number of iterations
+     * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
      */
-    PLP(const Graph& G, count theta = none, count maxIterations=none);
-
-    /**
-     * Constructor to the label propagation community detection algorithm, starting from a given
-     * clustering.
-     *
-     * @param[in]	G	input graph
-     * @param[in]	baseClustering	optional; the algorithm will start from the given clustering.
-     * @param[in]	theta	optional; updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
-     * @param[in]   maxIterations	optional; the maximum number of iterations
-     */
-    PLP(const Graph& G, const Partition& baseClustering, count theta = none,
-            count maxIterations=none);
+    OLP(const Graph &G, count k = 3, count theta = none, count maxIterations = 20);
 
     /**
      * Run the label propagation clustering algorithm.
      */
-    virtual void run();
+    void run() override;
 
     /**
      * @return String representation of algorithm and parameters.
      */
-    virtual std::string toString() const;
+    std::string toString() const override;
 
 
     /**
@@ -91,19 +82,10 @@ public:
     */
     virtual std::vector<count> getTiming();
 
+    Cover getCover();
 
-};
 
-class PLPFactory : public ClusteringFunctionFactory {
-public:
-    explicit PLPFactory(count theta = none, count maxIterations=none);
-
-    ClusteringFunction getFunction() const override;
-
-private:
-    count theta;
-    count maxIterations;
 };
 
 } /* namespace NetworKit */
-#endif // NETWORKIT_COMMUNITY_PLP_HPP_
+#endif /* OLP_H_ */

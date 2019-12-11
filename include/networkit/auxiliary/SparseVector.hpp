@@ -5,13 +5,13 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_SPARSEVECTOR_H
-#define NETWORKIT_SPARSEVECTOR_H
+#ifndef NETWORKIT_SPARSEVECTOR_HPP
+#define NETWORKIT_SPARSEVECTOR_HPP
 
 #include <vector>
 #include <algorithm>
 
-#include "../Globals.h"
+#include <networkit/Globals.hpp>
 
 namespace NetworKit {
 
@@ -221,4 +221,4 @@ std::vector<T>& NetworKit::SparseVector<T>::getVector() {
 
 } /* namespace NetworKit */
 
-#endif //NETWORKIT_SPARSEVECTOR_H
+#endif //NETWORKIT_SPARSEVECTOR_HPP

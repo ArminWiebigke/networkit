@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#include "LowToHighDirectedGraph.h"
+#include "networkit/auxiliary/LowToHighDirectedGraph.hpp"
 
 namespace NetworKit {
 

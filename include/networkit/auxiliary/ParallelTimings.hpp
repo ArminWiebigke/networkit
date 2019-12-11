@@ -5,14 +5,14 @@
  * Author: Armin Wiebigke
   */
 
-#ifndef NETWORKIT_PARALLELTIMINGS_H
-#define NETWORKIT_PARALLELTIMINGS_H
+#ifndef NETWORKIT_PARALLELTIMINGS_HPP
+#define NETWORKIT_PARALLELTIMINGS_HPP
 
 #include <unordered_map>
 #include <vector>
 #include <omp.h>
 
-#include "Timer.h"
+#include <networkit/auxiliary/Timer.hpp>
 
 namespace NetworKit {
 
@@ -46,4 +46,4 @@ private:
 } /* namespace NetworKit */
 
 
-#endif //NETWORKIT_PARALLELTIMINGS_H
+#endif //NETWORKIT_PARALLELTIMINGS_HPP

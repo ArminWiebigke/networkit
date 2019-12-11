@@ -5,13 +5,13 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_MERGECOMMUNITIES_H
-#define NETWORKIT_MERGECOMMUNITIES_H
+#ifndef NETWORKIT_MERGECOMMUNITIES_HPP
+#define NETWORKIT_MERGECOMMUNITIES_HPP
 
-#include "../../graph/Graph.h"
-#include "SingleCommunityCleanUp.h"
-#include "../../structures/Partition.h"
-#include "../../base/Algorithm.h"
+#include <networkit/graph/Graph.hpp>
+#include <networkit/community/cleanup/SingleCommunityCleanUp.hpp>
+#include <networkit/structures/Partition.hpp>
+#include <networkit/base/Algorithm.hpp>
 
 namespace NetworKit {
 
@@ -66,4 +66,4 @@ private:
 } /* namespace NetworKit */
 
 
-#endif //NETWORKIT_MERGECOMMUNITIES_H
+#endif //NETWORKIT_MERGECOMMUNITIES_HPP

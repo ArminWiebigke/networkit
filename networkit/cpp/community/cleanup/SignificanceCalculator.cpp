@@ -6,9 +6,10 @@
  */
 
 #include <algorithm>
+#include <tuple>
 
-#include "SignificanceCalculator.h"
-#include "../../auxiliary/Random.h"
+#include <networkit/community/cleanup/SignificanceCalculator.hpp>
+#include <networkit/auxiliary/Random.hpp>
 
 namespace NetworKit {
 

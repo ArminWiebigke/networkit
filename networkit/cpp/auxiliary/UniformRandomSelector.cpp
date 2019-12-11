@@ -6,10 +6,9 @@
  */
 
 #include <random>
-#include <ctime>
 
-#include "UniformRandomSelector.h"
-#include "Random.h"
+#include <networkit/auxiliary/UniformRandomSelector.hpp>
+#include <networkit/auxiliary/Random.hpp>
 
 namespace Aux {
 

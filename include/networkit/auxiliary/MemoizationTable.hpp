@@ -5,13 +5,13 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_MEMOIZATIONTABLE_H
-#define NETWORKIT_MEMOIZATIONTABLE_H
+#ifndef NETWORKIT_MEMOIZATIONTABLE_HPP
+#define NETWORKIT_MEMOIZATIONTABLE_HPP
 
 #include <vector>
 #include <functional>
 
-#include "../Globals.h"
+#include <networkit/Globals.hpp>
 
 namespace NetworKit {
 
@@ -88,4 +88,4 @@ bool MemoizationTable<T>::valueFunctionIsSet() {
 
 } // namespace NetworKit
 
-#endif //NETWORKIT_MEMOIZATIONTABLE_H
+#endif // NETWORKIT_MEMOIZATIONTABLE_HPP

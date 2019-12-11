@@ -5,12 +5,12 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_SINGLECOMMUNITYCLEANUP_H
-#define NETWORKIT_SINGLECOMMUNITYCLEANUP_H
+#ifndef NETWORKIT_SINGLECOMMUNITYCLEANUP_HPP
+#define NETWORKIT_SINGLECOMMUNITYCLEANUP_HPP
 
-#include "../../graph/Graph.h"
-#include "SignificanceCalculator.h"
-#include "../../structures/SparseVector.h"
+#include <networkit/graph/Graph.hpp>
+#include <networkit/community/cleanup/SignificanceCalculator.hpp>
+#include <networkit/auxiliary/SparseVector.hpp>
 
 namespace NetworKit {
 
@@ -87,4 +87,4 @@ private:
 
 } /* namespace NetworKit */
 
-#endif //NETWORKIT_SINGLECOMMUNITYCLEANUP_H
+#endif //NETWORKIT_SINGLECOMMUNITYCLEANUP_HPP

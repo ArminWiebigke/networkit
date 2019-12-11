@@ -20,10 +20,10 @@
 
 #include <networkit/graph/Graph.hpp>
 #include <networkit/io/METISGraphReader.hpp>
-#include "../egosplitting/EgoSplitting.h"
-#include "../LPPotts.h"
-#include "../../io/EdgeListReader.h"
-#include "../../generators/ClusteredRandomGraphGenerator.h"
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include "networkit/community/LPPotts.hpp"
+#include <networkit/io/EdgeListReader.hpp>
+#include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
 
 namespace NetworKit {
 

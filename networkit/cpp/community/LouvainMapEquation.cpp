@@ -15,14 +15,14 @@
 #include <atomic>
 #include <omp.h>
 
-#include "LouvainMapEquation.h"
-#include "../auxiliary/SignalHandling.h"
-#include "../graph/Graph.h"
-#include "../structures/Partition.h"
-#include "../coarsening/ParallelPartitionCoarsening.h"
-#include "../auxiliary/Parallelism.h"
-#include "../auxiliary/Parallel.h"
-#include "../auxiliary/Timer.h"
+#include <networkit/community/LouvainMapEquation.hpp>
+#include <networkit/auxiliary/SignalHandling.hpp>
+#include <networkit/graph/Graph.hpp>
+#include <networkit/structures/Partition.hpp>
+#include <networkit/coarsening/ParallelPartitionCoarsening.hpp>
+#include <networkit/auxiliary/Parallelism.hpp>
+#include <networkit/auxiliary/Parallel.hpp>
+#include <networkit/auxiliary/Timer.hpp>
 
 namespace NetworKit {
 
@@ -337,7 +337,7 @@ bool LouvainMapEquation::tryLocalMove(node u, SparseVector<double>& neighborClus
 		}
 	});
 	
-	assert(vol == graph.weightedDegree(u));
+	assert(vol == graph.weightedDegree(u, true));
 
 	if (neighborClusterWeights.size() > 0) {
 		// Calculate best cluster

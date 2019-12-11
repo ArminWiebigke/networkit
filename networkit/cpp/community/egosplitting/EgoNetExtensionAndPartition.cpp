@@ -8,11 +8,11 @@
 #include <memory>
 #include <utility>
 
-#include "EgoNetExtensionAndPartition.h"
-#include "../../coarsening/ParallelPartitionCoarsening.h"
-#include "../../structures/NodeMapping.h"
-#include "ExtendSignificance.h"
-#include "ExtendByScore.h"
+#include <networkit/community/egosplitting/EgoNetExtensionAndPartition.hpp>
+#include <networkit/coarsening/ParallelPartitionCoarsening.hpp>
+#include <networkit/auxiliary/NodeMapping.hpp>
+#include <networkit/community/egosplitting/ExtendSignificance.hpp>
+#include <networkit/community/egosplitting/ExtendByScore.hpp>
 
 namespace NetworKit {
 

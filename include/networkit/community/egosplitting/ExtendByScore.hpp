@@ -8,10 +8,10 @@
 #ifndef EXTENDEDGES_H
 #define EXTENDEDGES_H
 
-#include "ExtendEgoNetStrategy.h"
-#include "EgoSplitting.h"
-#include "../../auxiliary/Timings.h"
-#include "../../structures/SparseVector.h"
+#include <networkit/community/egosplitting/ExtendEgoNetStrategy.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/auxiliary/Timings.hpp>
+#include <networkit/auxiliary/SparseVector.hpp>
 
 namespace NetworKit {
 

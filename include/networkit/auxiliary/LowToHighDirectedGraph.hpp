@@ -5,10 +5,10 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef LOW_TO_HIGH_DIRECTED_GRAPH_H
-#define LOW_TO_HIGH_DIRECTED_GRAPH_H
+#ifndef NETWORKIT_LOW_TO_HIGH_DIRECTED_GRAPH_HPP
+#define NETWORKIT_LOW_TO_HIGH_DIRECTED_GRAPH_HPP
 
-#include "../graph/Graph.h"
+#include <networkit/graph/Graph.hpp>
 
 namespace NetworKit {
 
@@ -57,4 +57,4 @@ void LowToHighDirectedGraph::forEdgesOf(node u, L handle) const {
 
 } /* namespace NetworKit */
 
-#endif //LOW_TO_HIGH_DIRECTED_GRAPH_H
+#endif // NETWORKIT_LOW_TO_HIGH_DIRECTED_GRAPH_HPP

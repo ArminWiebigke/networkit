@@ -11,15 +11,15 @@
 #include <unordered_map>
 #include <string>
 
-#include "../CommunityDetectionAlgorithm.h"
-#include "../../graph/Graph.h"
-#include "../../auxiliary/Timer.h"
-#include "../../structures/NodeMapping.h"
-#include "../../structures/Cover.h"
-#include "../../structures/LowToHighDirectedGraph.h"
-#include "../../auxiliary/Timings.h"
-#include "EgoSplitting.h"
-#include "../../auxiliary/ParallelTimings.h"
+#include <networkit/community/CommunityDetectionAlgorithm.hpp>
+#include <networkit/graph/Graph.hpp>
+#include <networkit/auxiliary/Timer.hpp>
+#include <networkit/auxiliary/NodeMapping.hpp>
+#include <networkit/structures/Cover.hpp>
+#include <networkit/auxiliary/LowToHighDirectedGraph.hpp>
+#include <networkit/auxiliary/Timings.hpp>
+#include <networkit/community/egosplitting/EgoSplitting.hpp>
+#include <networkit/auxiliary/ParallelTimings.hpp>
 
 namespace NetworKit {
 

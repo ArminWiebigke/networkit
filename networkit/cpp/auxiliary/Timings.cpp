@@ -5,7 +5,7 @@
  * Author: Armin Wiebigke
  */
 
-#include "Timings.h"
+#include <networkit/auxiliary/Timings.hpp>
 
 namespace NetworKit {
 

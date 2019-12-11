@@ -5,12 +5,12 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_UNIFORMRANDOMSELECTOR_H
-#define NETWORKIT_UNIFORMRANDOMSELECTOR_H
+#ifndef NETWORKIT_UNIFORMRANDOMSELECTOR_HPP
+#define NETWORKIT_UNIFORMRANDOMSELECTOR_HPP
 
 #include <random>
 
-#include "../Globals.h"
+#include <networkit/Globals.hpp>
 
 namespace Aux {
 
@@ -28,4 +28,4 @@ private:
 
 }
 
-#endif //NETWORKIT_UNIFORMRANDOMSELECTOR_H
+#endif //NETWORKIT_UNIFORMRANDOMSELECTOR_HPP

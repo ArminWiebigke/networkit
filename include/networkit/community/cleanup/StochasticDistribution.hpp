@@ -5,13 +5,13 @@
  * Author: Armin Wiebigke
  */
 
-#ifndef NETWORKIT_STOCHASTICDISTRIBUTION_H
-#define NETWORKIT_STOCHASTICDISTRIBUTION_H
+#ifndef NETWORKIT_STOCHASTICDISTRIBUTION_HPP
+#define NETWORKIT_STOCHASTICDISTRIBUTION_HPP
 
 #include <vector>
 #include <cassert>
 
-#include "../../Globals.h"
+#include <networkit/Globals.hpp>
 
 namespace NetworKit {
 
@@ -148,4 +148,4 @@ private:
 
 } /* namespace NetworKit */
 
-#endif //NETWORKIT_STOCHASTICDISTRIBUTION_H
+#endif //NETWORKIT_STOCHASTICDISTRIBUTION_HPP
