@@ -26,6 +26,14 @@ EnsembleClustering-O
 *.eps
 doxygen
 dist/
+.idea/
+cmake-build*
+venv/
+egosplit/plots
+time_seed.dat
+tp
+.nsf*
+bad_groups.txt
 
 ### NetworKit specific
 include/NetworKit
