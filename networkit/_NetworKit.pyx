@@ -5823,8 +5823,7 @@ cdef extern from "<networkit/community/PLM.hpp>":
 		map[string, vector[count]] getTiming() except +
 
 cdef extern from "<networkit/community/PLM.hpp>" namespace "NetworKit::PLM":
-
-	pair[_Graph, vector[node]] PLM_coarsen "NetworKit::PLM::coarsen" (const _Graph& G, const _Partition& zeta) except +
+	pair[_Graph, vector[node]] PLM_coarsen "NetworKit::PLM::coarsen" (const _Graph& G, const _Partition& zeta, bool_t parallel) except +
 	_Partition PLM_prolong "NetworKit::PLM::prolong"(const _Graph& Gcoarse, const _Partition& zetaCoarse, const _Graph& Gfine, vector[node] nodeToMetaNode) except +
 
 
@@ -5929,7 +5928,7 @@ cdef class CutClustering(CommunityDetector):
 		return pyResult
 
 
-cdef extern from "cpp/community/LPPotts.h":
+cdef extern from "<networkit/community/LPPotts.hpp>":
 	cdef cppclass _LPPotts "NetworKit::LPPotts"(_CommunityDetectionAlgorithm):
 		_LPPotts(_Graph G, double alpha, count theta, count maxIterations, bool_t para) except +
 		_LPPotts(_Graph G, _Partition baseClustering, double alpha, count theta, count maxIterations, bool_t para) except +
@@ -5947,7 +5946,7 @@ cdef class LPPotts(CommunityDetector):
 			self._this = new _LPPotts(G._this, alpha, theta, maxIterations, para)
 
 
-cdef extern from "cpp/community/OLP.h":
+cdef extern from "<networkit/community/OLP.hpp>":
 	cdef cppclass _OLP "NetworKit::OLP"(_Algorithm):
 		_OLP(_Graph G, count k, count theta, count maxIterations) except +
 		_Cover getCover() except +
@@ -5970,14 +5969,14 @@ cdef class OLP(Algorithm):
 		return Cover().setThis((<_OLP*>(self._this)).getCover())
 
 
-cdef extern from "cpp/graph/Graph.h":
+cdef extern from "<networkit/graph/Graph.hpp>":
 	cdef struct _WeightedEdge "NetworKit::WeightedEdge":
 		node u
 		node v
 		edgeweight weight
 
 
-cdef extern from "cpp/community/ClusteringFunctionFactory.h":
+cdef extern from "<networkit/community/ClusteringFunctionFactory.hpp>":
 	cdef cppclass _ClusteringFunction "NetworKit::ClusteringFunction":
 		pass
 
@@ -6003,7 +6002,7 @@ cdef class ClusteringFunctionFactory:
 		return True
 
 
-cdef extern from "cpp/community/PLM.h":
+cdef extern from "<networkit/community/PLM.hpp>":
 	cdef cppclass _PLMFactory "NetworKit::PLMFactory"(_ClusteringFunctionFactory):
 		_PLMFactory(bool_t refine, double gamma, string par)
 
@@ -6013,7 +6012,7 @@ cdef class PLMFactory(ClusteringFunctionFactory):
 		self._this = new _PLMFactory(refine, gamma, stdstring(par))
 
 
-cdef extern from "cpp/community/PLP.h":
+cdef extern from "<networkit/community/PLP.hpp>":
 	cdef cppclass _PLPFactory "NetworKit::PLPFactory"(_ClusteringFunctionFactory):
 		_PLPFactory(count theta, count maxIterations)
 
@@ -6023,7 +6022,7 @@ cdef class PLPFactory(ClusteringFunctionFactory):
 		self._this = new _PLPFactory(theta, maxIterations)
 
 
-cdef extern from "cpp/community/LouvainMapEquation.h":
+cdef extern from "<networkit/community/LouvainMapEquation.hpp>":
 	cdef cppclass _LouvainMapEquationFactory "NetworKit::LouvainMapEquationFactory"(_ClusteringFunctionFactory):
 		_LouvainMapEquationFactory(bool_t hierarchical, count maxIterations)
 
@@ -6033,7 +6032,7 @@ cdef class LouvainMapEquationFactory(ClusteringFunctionFactory):
 		self._this = new _LouvainMapEquationFactory(hierarchical, maxIterations)
 
 
-cdef extern from "cpp/community/LPPotts.h":
+cdef extern from "<networkit/community/LPPotts.hpp>":
 	cdef cppclass _LPPottsFactory "NetworKit::LPPottsFactory"(_ClusteringFunctionFactory):
 		_LPPottsFactory(double alpha, count theta, count maxIterations, bool_t parallelPropagation)
 
@@ -6068,7 +6067,7 @@ cdef cppclass _PythonClusteringFunction(_ClusteringFunction):
 			return move((<Partition>(pyP))._this)
 
 
-cdef extern from "cpp/community/egosplitting/EgoSplitting.h":
+cdef extern from "<networkit/community/egosplitting/EgoSplitting.hpp>":
 	cdef cppclass _EgoSplitting "NetworKit::EgoSplitting"(_Algorithm):
 		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation) except +
 		_EgoSplitting(_Graph G, bool_t parallelEgoNetEvaluation, _ClusteringFunction) except +
@@ -6173,7 +6172,7 @@ cdef class EgoSplitting(Algorithm):
 		(<_EgoSplitting*>(self._this)).setGroundTruth(groundTruth._this)
 
 
-#cdef extern from "cpp/community/cleanup/SignificanceCommunityCleanUp.h":
+#cdef extern from "<networkit/community/cleanup/SignificanceCommunityCleanUp.hpp>":
 #	cdef cppclass _SignificanceCommunityCleanUp "NetworKit::SignificanceCommunityCleanUp"(_Algorithm):
 #		_SignificanceCommunityCleanUp(_Graph G, _Cover C, double significanceThreshold,
 #			double scoreThreshold, double minOverlapRatio) except +
@@ -6208,7 +6207,7 @@ cdef class EgoSplitting(Algorithm):
 #		return Cover().setThis((<_SignificanceCommunityCleanUp*>(self._this)).getCover())
 
 
-cdef extern from "cpp/community/SLPA.h":
+cdef extern from "<networkit/community/SLPA.hpp>":
 	cdef cppclass _SLPA "NetworKit::SLPA"(_Algorithm):
 		_SLPA(_Graph _G, double threshold, count numIterations) except +
 		_SLPA(_Graph _G, _Partition basePartition, double threshold, count numIterations) except +
@@ -6258,9 +6257,9 @@ cdef class SLPA(Algorithm):
 		return Partition().setThis((<_SLPA*>(self._this)).getPartition())
 
 
-cdef extern from "cpp/community/LouvainMapEquation.h":
+cdef extern from "<networkit/community/LouvainMapEquation.hpp>":
 	cdef cppclass _LouvainMapEquation "NetworKit::LouvainMapEquation"(_Algorithm):
-		_LouvainMapEquation(_Graph, bool, count, string parallelization) except +
+		_LouvainMapEquation(_Graph, bool, count, bool_t parallel) except +
 		_Partition getPartition() except +
 
 cdef class LouvainMapEquation(Algorithm):
@@ -6279,9 +6278,9 @@ cdef class LouvainMapEquation(Algorithm):
 
 	cdef Graph _G
 
-	def __cinit__(self, Graph G not None, hierarchical = False, maxIterations = 256, string parallelization = ""):
+	def __cinit__(self, Graph G not None, hierarchical = False, maxIterations = 256, parallel = False):
 		self._G = G
-		self._this = new _LouvainMapEquation(G._this, hierarchical, maxIterations)
+		self._this = new _LouvainMapEquation(G._this, hierarchical, maxIterations, parallel)
 
 	"""
 	Get the result of the algorithm.

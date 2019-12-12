@@ -2,6 +2,13 @@ seaborn
 sklearn
 matplotlib
 pandas
-networkx
+networkx==2.3
 tabulate
 ipython
+Cython
+python-igraph
+leidenalg
+infomap==1.0.0b50
+demon==2.0.4
+tqdm==4.35.0
+wheel
