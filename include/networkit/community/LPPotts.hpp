@@ -11,6 +11,9 @@
 #include <networkit/community/CommunityDetectionAlgorithm.hpp>
 #include <networkit/structures/Partition.hpp>
 #include <networkit/community/ClusteringFunctionFactory.hpp>
+#include <networkit/auxiliary/SparseVector.hpp>
+#include <networkit/community/LouvainMapEquation.hpp>
+#include <networkit/auxiliary/UniformRandomSelector.hpp>
 
 namespace NetworKit {
 
@@ -20,16 +23,18 @@ namespace NetworKit {
  *
  */
 class LPPotts : public CommunityDetectionAlgorithm {
+	using label = index;
 
 protected:
-
     double alpha;
     count updateThreshold = 0;
     count maxIterations;
-    count nIterations = 0; //!< number of iterations in last run
+    count iteration = 0; //!< number of iterations in last run
     std::vector<count> timing;    //!< running times for each iteration
-    bool parallelPropagation;
-
+    bool parallel;
+    std::vector<SparseVector<count>> neighborLabelCountsPerThread;
+    std::vector<SparseVector<double>> labelWeightsPerThread;
+	std::vector<count> globalLabelCounts;
 
 public:
 
@@ -50,7 +55,7 @@ public:
      * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
      */
     LPPotts(const Graph& G, const Partition &baseClustering, double alpha = 0.3, count theta = none,
-            count maxIterations = 20, bool parallelPropagation = false);
+            count maxIterations = 20, bool parallel = false);
 
     /**
      * Run the label propagation clustering algorithm.
@@ -85,6 +90,8 @@ public:
     * @return The list of running times in milliseconds
     */
     virtual std::vector<count> getTiming();
+
+	label calculateBestLabel(node u);
 };
 
 class LPPottsFactory : public ClusteringFunctionFactory {

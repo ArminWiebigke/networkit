@@ -62,17 +62,17 @@ public:
 	/**
 	 * Access operator. Before accessing an element, insert it by using the insert() method.
 	 */
-	T& operator[](index i);
+	T &operator[](index i);
 
 	/**
 	 * Const access operator. Before accessing an element, insert it by using the insert() method.
 	 */
-	const T& operator[](index i) const;
+	const T &operator[](index i) const;
 
 	/**
 	 * Get all indexes into which elements were inserted.
 	 */
-	const std::vector<index>& insertedIndexes() const;
+	const std::vector<index> &insertedIndexes() const;
 
 	/**
 	 * Returns true iff an element was previously inserted at the given index.
@@ -80,14 +80,16 @@ public:
 	 */
 	bool indexIsUsed(index idx);
 
+	void insertOrSet(index i, T value);
+
 	/**
 	 * Remove all indexes for which the value is set to the emptyValue.
 	 */
 	void removeUnusedIndexes() {
 		auto new_end = std::remove_if(usedIndexes.begin(), usedIndexes.end(),
-					      [&](index i) {
-						      return data[i] == emptyValue;
-					      });
+		                              [&](index i) {
+			                              return data[i] == emptyValue;
+		                              });
 		usedIndexes.erase(new_end, usedIndexes.end());
 	}
 
@@ -100,7 +102,7 @@ public:
 	 * Clear the vector, setting the upper bound of usable indexes to 0.
 	 */
 	void clear();
-	
+
 	/**
 	 * Reallocate the datastructure if size exceeds current upper bound
 	 * This is different from setUpperBound() since we want to make sure both usedIndexes and data are allocated on the socket of the calling thread
@@ -108,22 +110,24 @@ public:
 	 * @param emptyValue new emptyValue
 	 */
 	void resize(size_t size, T emptyValue);
-	
+
 	/**
 	 * Expose internal vector
 	 */
-	std::vector<T>& getVector();
-	
+	std::vector<T> &getVector();
+
 	void clearIndexes() {
 		usedIndexes.clear();
 	}
-	
+
 	void resetEntry(index i) {
 		data[i] = emptyValue;
 	}
-	
+
 	bool isClean() {
-		return usedIndexes.empty() && std::all_of(data.begin(), data.end(), [&](const T& x) { return x == emptyValue; });
+		return usedIndexes.empty()
+		       &&
+		       std::all_of(data.begin(), data.end(), [&](const T &x) { return x == emptyValue; });
 	}
 
 private:
@@ -131,7 +135,6 @@ private:
 	std::vector<index> usedIndexes;
 	T emptyValue;
 };
-
 
 template<typename T>
 SparseVector<T>::SparseVector() : emptyValue(T{}) {
@@ -143,7 +146,7 @@ SparseVector<T>::SparseVector(count size) : SparseVector(size, T{}) {
 
 template<typename T>
 SparseVector<T>::SparseVector(count size, T emptyValue) : data(size, emptyValue),
-                                                            emptyValue(emptyValue) {
+                                                          emptyValue(emptyValue) {
 }
 
 template<typename T>
@@ -157,12 +160,15 @@ void SparseVector<T>::reset() {
 template<typename T>
 void SparseVector<T>::insert(index i, T value) {
 	assert(data[i] == emptyValue);
-	usedIndexes.push_back(i);
-	data[i] = std::move(value);
+	usedIndexes.
+	push_back(i);
+	data[i] =
+	std::move(value);
+	assert(data[i] == value);
 }
 
 template<typename T>
-T& SparseVector<T>::operator[](index i) {
+T &SparseVector<T>::operator[](index i) {
 	return data[i];
 }
 
@@ -183,12 +189,12 @@ index SparseVector<T>::upperBound() const {
 }
 
 template<typename T>
-count SparseVector<T>::size() const{
+count SparseVector<T>::size() const {
 	return usedIndexes.size();
 }
 
 template<typename T>
-const std::vector<index>& NetworKit::SparseVector<T>::insertedIndexes() const {
+const std::vector<index> &NetworKit::SparseVector<T>::insertedIndexes() const {
 	return usedIndexes;
 }
 
@@ -211,12 +217,21 @@ void NetworKit::SparseVector<T>::resize(size_t size, T emptyValue) {
 
 template<typename T>
 bool NetworKit::SparseVector<T>::indexIsUsed(index idx) {
-	return data[idx] != emptyValue;
+	return data[idx] !=	emptyValue;
 }
 
 template<typename T>
-std::vector<T>& NetworKit::SparseVector<T>::getVector() {
+std::vector<T> &NetworKit::SparseVector<T>::getVector() {
 	return data;
+}
+
+template<typename T>
+void NetworKit::SparseVector<T>::insertOrSet(NetworKit::index i, T value) {
+	if (!indexIsUsed(i)) {
+		insert(i, value);
+	} else {
+		data[i] = value;
+	}
 }
 
 } /* namespace NetworKit */

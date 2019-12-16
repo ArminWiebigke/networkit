@@ -772,17 +772,16 @@ TEST_F(CommunityGTest, testOLP) {
 
 
 TEST_F(CommunityGTest, testLPPotts) {
-//	ClusteredRandomGraphGenerator gen(100, 4, 0.4, 0.02);
-//	Graph G = gen.generate();
 	count numClusters = 4;
-	ClusteredRandomGraphGenerator gen(100, numClusters, 0.6, 0.03);
+	ClusteredRandomGraphGenerator gen(100, numClusters, 0.7, 0.03);
 	Graph G = gen.generate();
 
 	LPPotts algo(G);
 	algo.run();
 	Partition partition = algo.getPartition();
 
-	EXPECT_EQ(partition.numberOfSubsets(), numClusters);
+	EXPECT_LE(partition.numberOfSubsets(), numClusters + 1);
+	EXPECT_GE(partition.numberOfSubsets(), numClusters);
 	std::cout << "\nCommunity sizes:\n";
 	for (const auto &size : partition.subsetSizes()) {
 		std::cout << size << std::endl;
@@ -792,18 +791,33 @@ TEST_F(CommunityGTest, testLPPotts) {
 
 TEST_F(CommunityGTest, testLPPottsParallel) {
 	count numClusters = 4;
-	ClusteredRandomGraphGenerator gen(100, numClusters, 0.6, 0.03);
+	ClusteredRandomGraphGenerator gen(100, numClusters, 0.7, 0.03);
 	Graph G = gen.generate();
 
 	LPPotts algo(G, 0.3, none, 20, true);
 	algo.run();
 	Partition partition = algo.getPartition();
 
-	EXPECT_EQ(partition.numberOfSubsets(), numClusters);
+	EXPECT_LE(partition.numberOfSubsets(), numClusters + 1);
+	EXPECT_GE(partition.numberOfSubsets(), numClusters);
 	std::cout << "\nCommunity sizes:\n";
 	for (const auto &size : partition.subsetSizes()) {
 		std::cout << size << std::endl;
 	}
+}
+
+
+TEST_F(CommunityGTest, testLPPottsParallelLarge) {
+	count numClusters = 50;
+	ClusteredRandomGraphGenerator gen(1000, numClusters, 0.6, 0.02);
+	Graph G = gen.generate();
+
+	LPPotts algo(G, 0.3, none, 20, true);
+	algo.run();
+	Partition partition = algo.getPartition();
+
+	EXPECT_LE(partition.numberOfSubsets(), numClusters * 1.2);
+	EXPECT_GE(partition.numberOfSubsets(), numClusters);
 }
 
 
