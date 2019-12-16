@@ -21,45 +21,45 @@ namespace NetworKit {
  */
 class MergeCommunities : public Algorithm {
 public:
-	MergeCommunities(const Graph &graph,
-	                 std::vector<std::vector<node>> discardedCommunities,
-	                 StochasticDistribution &stochasticDistribution,
-	                 double significanceThreshold = 0.1,
-	                 double scoreThreshold = 0.1,
-	                 double minOverlapRatio = 0.5,
-	                 count maxCommunitySize = none);
+    MergeCommunities(const Graph &graph,
+                     std::vector<std::vector<node>> discardedCommunities,
+                     StochasticDistribution &stochasticDistribution,
+                     double significanceThreshold = 0.1,
+                     double scoreThreshold = 0.1,
+                     double minOverlapRatio = 0.5,
+                     count maxCommunitySize = none);
 
-	void run() override;
+    void run() override;
 
-	const std::vector<std::vector<node>>& getCleanedCommunities();
+    const std::vector<std::vector<node>>& getCleanedCommunities();
 
-	std::string toString() const override;
+    std::string toString() const override;
 
-	bool isParallel() const override;
+    bool isParallel() const override;
 
 private:
-	const Graph &graph;
-	std::vector<std::vector<node>> discardedCommunities;
-	StochasticDistribution &stochasticDistribution;
-	SignificanceCalculator significanceCalculator;
-	double significanceThreshold;
-	double scoreThreshold;
-	double minOverlapRatio;
-	std::vector<std::vector<node>> cleanedCommunities;
-	Graph discardedCommunitiesGraph;
-	Partition mergedCommunities;
-	std::vector<count> outgoingGroupStubs;
-	std::vector<count> totalGroupStubs;
-	count totalStubs;
-	const count maxCommunitySize;
+    const Graph &graph;
+    std::vector<std::vector<node>> discardedCommunities;
+    StochasticDistribution &stochasticDistribution;
+    SignificanceCalculator significanceCalculator;
+    double significanceThreshold;
+    double scoreThreshold;
+    double minOverlapRatio;
+    std::vector<std::vector<node>> cleanedCommunities;
+    Graph discardedCommunitiesGraph;
+    Partition mergedCommunities;
+    std::vector<count> outgoingGroupStubs;
+    std::vector<count> totalGroupStubs;
+    count totalStubs;
+    const count maxCommunitySize;
 
-	void createDiscardedCommunitiesGraph();
+    void createDiscardedCommunitiesGraph();
 
-	void tryToMergeCommunities();
+    void tryToMergeCommunities();
 
-	void checkMergedCommunities();
+    void checkMergedCommunities();
 
-	bool tryLocalMove(node u, SparseVector<edgeweight> &neighborWeights);
+    bool tryLocalMove(node u, SparseVector<edgeweight> &neighborWeights);
 };
 
 

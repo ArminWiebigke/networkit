@@ -36,46 +36,46 @@ void PLM::run() {
     zeta.allToSingletons();
     index o = zeta.upperBound();
 
-	// init graph-dependent temporaries
-	std::vector<double> volNode(z, 0.0);
-	// $\omega(E)$
+    // init graph-dependent temporaries
+    std::vector<double> volNode(z, 0.0);
+    // $\omega(E)$
 
-	edgeweight total = 0.0;
+    edgeweight total = 0.0;
 
-	// calculate and store volume of each node
-	if (!G.isWeighted() && G.numberOfSelfLoops() == 0) { // The simple case
-		total = G.totalEdgeWeight();
-		G.forNodes([&](node u) {
-			volNode[u] = G.degree(u);
-		});
-	} else { // Otherwise, we need to iterate over all edges
-		G.forNodes([&](node u) {
-			G.forNeighborsOf(u, [&](node, node v, edgeweight w) {
-				volNode[u] += w;
-				if (u == v) {
-					volNode[u] += w; // consider self-loop twice
-				}
-			});
+    // calculate and store volume of each node
+    if (!G.isWeighted() && G.numberOfSelfLoops() == 0) { // The simple case
+        total = G.totalEdgeWeight();
+        G.forNodes([&](node u) {
+            volNode[u] = G.degree(u);
+        });
+    } else { // Otherwise, we need to iterate over all edges
+        G.forNodes([&](node u) {
+            G.forNeighborsOf(u, [&](node, node v, edgeweight w) {
+                volNode[u] += w;
+                if (u == v) {
+                    volNode[u] += w; // consider self-loop twice
+                }
+            });
 
-			assert(volNode[u] >= 0.999 * G.weightedDegree(u, true) && volNode[u] <= 1.001 * G.weightedDegree(u, true));
+            assert(volNode[u] >= 0.999 * G.weightedDegree(u, true) && volNode[u] <= 1.001 * G.weightedDegree(u, true));
 
-			total += volNode[u];
-		});
+            total += volNode[u];
+        });
 
-		total /= 2;
+        total /= 2;
 
-		assert(total >= 0.999 * G.totalEdgeWeight() && total <= 1.001 * G.totalEdgeWeight());
-	}
+        assert(total >= 0.999 * G.totalEdgeWeight() && total <= 1.001 * G.totalEdgeWeight());
+    }
 
-	const edgeweight divisor = (2 * total * total); // needed in modularity calculation
-	DEBUG("total edge weight: " , total);
+    const edgeweight divisor = (2 * total * total); // needed in modularity calculation
+    DEBUG("total edge weight: " , total);
 
-	// init community-dependent temporaries
-	std::vector<double> volCommunity(o, 0.0);
-	zeta.forEntries([&](node u, index C) { 	// set volume for all communities
-		if (C != none)
-			volCommunity[C] = volNode[u];
-	});
+    // init community-dependent temporaries
+    std::vector<double> volCommunity(o, 0.0);
+    zeta.forEntries([&](node u, index C) { 	// set volume for all communities
+        if (C != none)
+            volCommunity[C] = volNode[u];
+    });
 
     // first move phase
     bool moved = false; // indicates whether any node has been moved in the last pass
@@ -86,27 +86,27 @@ void PLM::run() {
     // stores the list of neighboring communities, one vector per thread
     std::vector<std::vector<index> > neigh_comm;
 
-	bool parallel = parallelism != "none" && parallelism != "none randomized";
-	if (turbo) {
-		if (parallel) { // initialize arrays for all threads only when actually needed
-			turboAffinity.resize(omp_get_max_threads());
-			neigh_comm.resize(omp_get_max_threads());
-			for (auto &it : turboAffinity) {
-				// resize to maximum community id
-				it.resize(zeta.upperBound());
-			}
-		} else { // initialize array only for first thread
-			turboAffinity.emplace_back(zeta.upperBound());
-			neigh_comm.emplace_back();
-		}
-	}
+    bool parallel = parallelism != "none" && parallelism != "none randomized";
+    if (turbo) {
+        if (parallel) { // initialize arrays for all threads only when actually needed
+            turboAffinity.resize(omp_get_max_threads());
+            neigh_comm.resize(omp_get_max_threads());
+            for (auto &it : turboAffinity) {
+                // resize to maximum community id
+                it.resize(zeta.upperBound());
+            }
+        } else { // initialize array only for first thread
+            turboAffinity.emplace_back(zeta.upperBound());
+            neigh_comm.emplace_back();
+        }
+    }
 
-	// try to improve modularity by moving a node to neighboring clusters
-	auto tryMove = [&](node u) {
-		// TRACE("trying to move node " , u);
-		index tid = 0;
-		if (parallel)
-			tid = omp_get_thread_num();
+    // try to improve modularity by moving a node to neighboring clusters
+    auto tryMove = [&](node u) {
+        // TRACE("trying to move node " , u);
+        index tid = 0;
+        if (parallel)
+            tid = omp_get_thread_num();
 
         // collect edge weight to neighbor clusters
         std::map<index, edgeweight> affinity;
@@ -246,90 +246,90 @@ void PLM::run() {
             }
             if (moved) change = true;
 
-			if (iter == maxIter) {
-				WARN("move phase aborted after ", maxIter, " iterations");
-			}
-			iter += 1;
-		} while (moved && (iter <= maxIter) && handler.isRunning());
-		DEBUG("iterations in move phase: ", iter);
-	};
-	handler.assureRunning();
-	// first move phase
-	Aux::Timer timer;
-	if (measure_time) timer.start();
-	//
-	movePhase();
-	//
-	if (measure_time) {
-		timer.stop();
-		timing["move"].push_back(timer.elapsedMilliseconds());
-	}
-	handler.assureRunning();
-	if (recurse && change) {
-		DEBUG("nodes moved, so begin coarsening and recursive call");
+            if (iter == maxIter) {
+                WARN("move phase aborted after ", maxIter, " iterations");
+            }
+            iter += 1;
+        } while (moved && (iter <= maxIter) && handler.isRunning());
+        DEBUG("iterations in move phase: ", iter);
+    };
+    handler.assureRunning();
+    // first move phase
+    Aux::Timer timer;
+    if (measure_time) timer.start();
+    //
+    movePhase();
+    //
+    if (measure_time) {
+        timer.stop();
+        timing["move"].push_back(timer.elapsedMilliseconds());
+    }
+    handler.assureRunning();
+    if (recurse && change) {
+        DEBUG("nodes moved, so begin coarsening and recursive call");
 
-		if (measure_time) timer.start();
-		//
-		ParallelPartitionCoarsening coarsening(G, zeta, false, parallel);
-		coarsening.run();
-		//
-		if (measure_time) {
-			timer.stop();
-			timing["coarsen"].push_back(timer.elapsedMilliseconds());
-		}
+        if (measure_time) timer.start();
+        //
+        ParallelPartitionCoarsening coarsening(G, zeta, false, parallel);
+        coarsening.run();
+        //
+        if (measure_time) {
+            timer.stop();
+            timing["coarsen"].push_back(timer.elapsedMilliseconds());
+        }
 
-		PLM onCoarsened(coarsening.getCoarseGraph(), this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
-		onCoarsened.run();
-		const Partition& zetaCoarse = onCoarsened.getPartition();
+        PLM onCoarsened(coarsening.getCoarseGraph(), this->refine, this->gamma, this->parallelism, this->maxIter, this->turbo, this->recurse, this->measure_time);
+        onCoarsened.run();
+        const Partition& zetaCoarse = onCoarsened.getPartition();
 
-		// get timings
-		if (measure_time) {
-			auto tim = onCoarsened.getTiming();
-			for (count t : tim["move"]) {
-				timing["move"].push_back(t);
-			}
-			for (count t : tim["coarsen"]) {
-				timing["coarsen"].push_back(t);
-			}
-			for (count t : tim["refine"]) {
-				timing["refine"].push_back(t);
-			}
-		}
+        // get timings
+        if (measure_time) {
+            auto tim = onCoarsened.getTiming();
+            for (count t : tim["move"]) {
+                timing["move"].push_back(t);
+            }
+            for (count t : tim["coarsen"]) {
+                timing["coarsen"].push_back(t);
+            }
+            for (count t : tim["refine"]) {
+                timing["refine"].push_back(t);
+            }
+        }
 
 
-		DEBUG("coarse graph has ", coarsening.getCoarseGraph().numberOfNodes(), " nodes and ", coarsening.getCoarseGraph().numberOfEdges(), " edges");
+        DEBUG("coarse graph has ", coarsening.getCoarseGraph().numberOfNodes(), " nodes and ", coarsening.getCoarseGraph().numberOfEdges(), " edges");
 
-		// unpack communities in coarse graph onto fine graph
-		const std::vector<node>& nodeToMetaNode(coarsening.getFineToCoarseNodeMapping());
+        // unpack communities in coarse graph onto fine graph
+        const std::vector<node>& nodeToMetaNode(coarsening.getFineToCoarseNodeMapping());
 
-		G.forNodes([&](node v) {
-			zeta[v] = zetaCoarse[nodeToMetaNode[v]];
-		});
-		zeta.setUpperBound(zetaCoarse.upperBound());
+        G.forNodes([&](node v) {
+            zeta[v] = zetaCoarse[nodeToMetaNode[v]];
+        });
+        zeta.setUpperBound(zetaCoarse.upperBound());
 
-		// refinement phase
-		if (refine) {
-			DEBUG("refinement phase");
-			// reinit community-dependent temporaries
-			o = zeta.upperBound();
-			volCommunity.clear();
-			volCommunity.resize(o, 0.0);
-			zeta.forEntries([&](node u, index C) { 	// set volume for all communities
-				if (C != none) {
-					edgeweight volN = volNode[u];
-					//#pragma omp atomic
-					volCommunity[C] += volN;
-				}
-			});
-			// second move phase
-			if (measure_time) timer.start();
-			//
-			movePhase();
-			//
-			if (measure_time) {
-				timer.stop();
-				timing["refine"].push_back(timer.elapsedMilliseconds());
-			}
+        // refinement phase
+        if (refine) {
+            DEBUG("refinement phase");
+            // reinit community-dependent temporaries
+            o = zeta.upperBound();
+            volCommunity.clear();
+            volCommunity.resize(o, 0.0);
+            zeta.forEntries([&](node u, index C) { 	// set volume for all communities
+                if (C != none) {
+                    edgeweight volN = volNode[u];
+                    //#pragma omp atomic
+                    volCommunity[C] += volN;
+                }
+            });
+            // second move phase
+            if (measure_time) timer.start();
+            //
+            movePhase();
+            //
+            if (measure_time) {
+                timer.stop();
+                timing["refine"].push_back(timer.elapsedMilliseconds());
+            }
 
         }
     }
@@ -357,9 +357,9 @@ std::string PLM::toString() const {
 }
 
 std::pair<Graph, std::vector<node>> PLM::coarsen(const Graph &G, const Partition &zeta, bool parallel) {
-	ParallelPartitionCoarsening parCoarsening(G, zeta, false, parallel);
-	parCoarsening.run();
-	return {parCoarsening.getCoarseGraph(),parCoarsening.getFineToCoarseNodeMapping()};
+    ParallelPartitionCoarsening parCoarsening(G, zeta, false, parallel);
+    parCoarsening.run();
+    return {parCoarsening.getCoarseGraph(),parCoarsening.getFineToCoarseNodeMapping()};
 }
 
 Partition PLM::prolong(const Graph &, const Partition& zetaCoarse, const Graph& Gfine, std::vector<node> nodeToMetaNode) {
@@ -384,14 +384,14 @@ PLMFactory::PLMFactory(bool refine, double gamma, std::string par) : refine(refi
 }
 
 ClusteringFunction PLMFactory::getFunction() const {
-	const bool &refine_cpy = refine;
-	const double &gamma_cpy = gamma;
-	const std::string &par_cpy = par;
-	return [refine_cpy, gamma_cpy, par_cpy](const Graph &G) {
-		PLM plm(G, refine_cpy, gamma_cpy, par_cpy);
-		plm.run();
-		return plm.getPartition();
-	};
+    const bool &refine_cpy = refine;
+    const double &gamma_cpy = gamma;
+    const std::string &par_cpy = par;
+    return [refine_cpy, gamma_cpy, par_cpy](const Graph &G) {
+        PLM plm(G, refine_cpy, gamma_cpy, par_cpy);
+        plm.run();
+        return plm.getPartition();
+    };
 }
 
 } /* namespace NetworKit */

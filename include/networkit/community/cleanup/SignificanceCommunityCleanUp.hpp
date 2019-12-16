@@ -24,42 +24,42 @@ namespace NetworKit {
  */
 class SignificanceCommunityCleanUp : public Algorithm {
 public:
-	/**
-	 * Constructor of the algorithm.
-	 * @param	graph	input graph
-	 * @param	cover	input cover
-	 * @param       distribution The stochastic distribution object to use for stochastic calculations
-	 */
-	SignificanceCommunityCleanUp(const Graph &graph,
-	                             std::vector<std::vector<node>> &communities,
-	                             StochasticDistribution &distribution,
-	                             double significanceThreshold = 0.1,
-	                             double scoreThreshold = 0.1,
-	                             double minOverlapRatio = 0.5,
-	                             bool mergeDiscarded = true);
+    /**
+     * Constructor of the algorithm.
+     * @param	graph	input graph
+     * @param	cover	input cover
+     * @param       distribution The stochastic distribution object to use for stochastic calculations
+     */
+    SignificanceCommunityCleanUp(const Graph &graph,
+                                 std::vector<std::vector<node>> &communities,
+                                 StochasticDistribution &distribution,
+                                 double significanceThreshold = 0.1,
+                                 double scoreThreshold = 0.1,
+                                 double minOverlapRatio = 0.5,
+                                 bool mergeDiscarded = true);
 
-	void run() override;
+    void run() override;
 
-	std::string toString() const override;
+    std::string toString() const override;
 
-	bool isParallel() const override;
+    bool isParallel() const override;
 
 private:
 
-	const Graph &graph;
-	std::vector<std::vector<node>> &communities;
-	std::vector<std::vector<node>> discardedCommunities;
-	double significanceThreshold;
-	double scoreThreshold;
-	double minOverlapRatio;
-	const bool mergeDiscarded;
-	count maxCommunitySize;
+    const Graph &graph;
+    std::vector<std::vector<node>> &communities;
+    std::vector<std::vector<node>> discardedCommunities;
+    double significanceThreshold;
+    double scoreThreshold;
+    double minOverlapRatio;
+    const bool mergeDiscarded;
+    count maxCommunitySize;
 
-	StochasticDistribution &stochasticDistribution;
+    StochasticDistribution &stochasticDistribution;
 
-	void cleanAllCommunities();
+    void cleanAllCommunities();
 
-	void mergeDiscardedCommunities();
+    void mergeDiscardedCommunities();
 
 };
 } /* namespace NetworKit */

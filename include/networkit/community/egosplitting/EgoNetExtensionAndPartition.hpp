@@ -28,50 +28,50 @@ namespace NetworKit {
  * Optionally, the ego-net is extended before the partitioning.
  */
 class EgoNetExtensionAndPartition : public CommunityDetectionAlgorithm, public ParallelTimings {
-	using PartitionFunction = std::function<Partition(const Graph &)>;
+    using PartitionFunction = std::function<Partition(const Graph &)>;
 
 public:
-	EgoNetExtensionAndPartition(EgoNetData &egoNetData, node egoNode, Graph egoGraph,
-	                            PartitionFunction partitionFunction,
-				    double addNodesFactor, double addNodesExponent,
-				    count minDegree);
+    EgoNetExtensionAndPartition(EgoNetData &egoNetData, node egoNode, Graph egoGraph,
+                                PartitionFunction partitionFunction,
+                    double addNodesFactor, double addNodesExponent,
+                    count minDegree);
 
-	void run() override;
+    void run() override;
 
-	bool isParallel() const override;
+    bool isParallel() const override;
 
-	std::string toString() const override;
+    std::string toString() const override;
 
-	/**
-	 * Get the extended ego-net.
-	 * @return extended ego-net graph
-	 */
-	Graph getExtendedEgoGraph() const;
+    /**
+     * Get the extended ego-net.
+     * @return extended ego-net graph
+     */
+    Graph getExtendedEgoGraph() const;
 
 private:
-	const LowToHighDirectedGraph &directedG;
-	Graph egoGraph;
-	NodeMapping &egoMapping;
-	node egoNode;
-	const PartitionFunction partitionFunction;
-	const std::unordered_map<std::string, std::string> &parameters;
-	const Cover &groundTruth;
-	EgoNetData &egoNetData;
-	double addNodesFactor;
-	double addNodesExponent;
-	count minDegree;
+    const LowToHighDirectedGraph &directedG;
+    Graph egoGraph;
+    NodeMapping &egoMapping;
+    node egoNode;
+    const PartitionFunction partitionFunction;
+    const std::unordered_map<std::string, std::string> &parameters;
+    const Cover &groundTruth;
+    EgoNetData &egoNetData;
+    double addNodesFactor;
+    double addNodesExponent;
+    count minDegree;
 
-	void extendAndPartition();
+    void extendAndPartition();
 
-	void partitionEgoNet();
+    void partitionEgoNet();
 
-	void extendEgoNet(const std::string &extendStrategy);
+    void extendEgoNet(const std::string &extendStrategy);
 
-	void removeLowDegreeNodes(count minDegree, count directNeighborsBound);
+    void removeLowDegreeNodes(count minDegree, count directNeighborsBound);
 
-	Partition createGroundTruthPartition() const;
+    Partition createGroundTruthPartition() const;
 
-	count extendIterationsCount() const;
+    count extendIterationsCount() const;
 };
 
 } /* namespace NetworKit */

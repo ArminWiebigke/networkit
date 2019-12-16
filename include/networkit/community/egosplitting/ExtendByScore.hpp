@@ -17,31 +17,31 @@ namespace NetworKit {
 
 class ExtendByScore : public ExtendEgoNetStrategy {
 public:
-	explicit ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
-	                       const Graph &egoGraph, node egoNode);
+    explicit ExtendByScore(EgoNetData &egoNetData, count maxCandidates,
+                           const Graph &egoGraph, node egoNode);
 
-	void run() override;
+    void run() override;
 
-	bool isParallel() const override;
+    bool isParallel() const override;
 
-	std::string toString() const override;
+    std::string toString() const override;
 
 private:
-	using NodeAndScore = std::pair<node, double>;
-	SparseVector<double> &nodeScores;
-	std::string scoreStrategy;
-	SignificanceCalculator &significanceCalculator;
-	count outgoingStubs;
-	count externalStubs;
+    using NodeAndScore = std::pair<node, double>;
+    SparseVector<double> &nodeScores;
+    std::string scoreStrategy;
+    SignificanceCalculator &significanceCalculator;
+    count outgoingStubs;
+    count externalStubs;
 
-	template<typename F>
-	std::vector<NodeAndScore> calculateScoresImpl(F calculateScore) const;
+    template<typename F>
+    std::vector<NodeAndScore> calculateScoresImpl(F calculateScore) const;
 
-	std::vector<NodeAndScore> calculateScores() const;
+    std::vector<NodeAndScore> calculateScores() const;
 
-	void searchForCandidates();
+    void searchForCandidates();
 
-	void takeBestCandidates(std::vector<NodeAndScore> &candidatesAndScores);
+    void takeBestCandidates(std::vector<NodeAndScore> &candidatesAndScores);
 };
 
 } /* namespace NetworKit */

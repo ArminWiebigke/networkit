@@ -11,21 +11,21 @@ namespace NetworKit {
 
 ExtendEgoNetStrategy::ExtendEgoNetStrategy(const EgoNetData &egoNetData, count maxExtendedNodes,
                                            const Graph &egoGraph, node egoNode)
-		: G(egoNetData.G),
-		  directedG(egoNetData.directedG),
-		  egoGraph(egoGraph),
-		  egoMapping(egoNetData.egoMapping),
-		  egoNode(egoNode),
-		  parameters(egoNetData.parameters),
-		  maxExtendedNodes(maxExtendedNodes) {
+        : G(egoNetData.G),
+          directedG(egoNetData.directedG),
+          egoGraph(egoGraph),
+          egoMapping(egoNetData.egoMapping),
+          egoNode(egoNode),
+          parameters(egoNetData.parameters),
+          maxExtendedNodes(maxExtendedNodes) {
 
 }
 
 std::vector<node> ExtendEgoNetStrategy::getNodes() {
-	if (!hasRun)
-		throw std::runtime_error("Run the algorithm first!");
-	hasRun = false;
-	return std::move(significantCandidates);
+    if (!hasRun)
+        throw std::runtime_error("Run the algorithm first!");
+    hasRun = false;
+    return std::move(significantCandidates);
 }
 
 } /* namespace NetworKit */

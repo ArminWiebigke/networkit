@@ -23,7 +23,7 @@ namespace NetworKit {
  *
  */
 class LPPotts : public CommunityDetectionAlgorithm {
-	using label = index;
+    using label = index;
 
 protected:
     double alpha;
@@ -34,7 +34,7 @@ protected:
     bool parallel;
     std::vector<SparseVector<count>> neighborLabelCountsPerThread;
     std::vector<SparseVector<double>> labelWeightsPerThread;
-	std::vector<count> globalLabelCounts;
+    std::vector<count> globalLabelCounts;
 
 public:
 
@@ -91,7 +91,7 @@ public:
     */
     virtual std::vector<count> getTiming();
 
-	label calculateBestLabel(node u);
+    label calculateBestLabel(node u);
 };
 
 class LPPottsFactory : public ClusteringFunctionFactory {

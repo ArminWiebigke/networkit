@@ -20,8 +20,8 @@ PLP::PLP(const Graph& G, count theta, count maxIterations) : CommunityDetectionA
 
 
 PLP::PLP(const Graph &G, const Partition& baseClustering, count theta, count maxIterations)
-		: CommunityDetectionAlgorithm(G, baseClustering), updateThreshold(theta),
-		  maxIterations(maxIterations) {
+        : CommunityDetectionAlgorithm(G, baseClustering), updateThreshold(theta),
+          maxIterations(maxIterations) {
 }
 
 void PLP::run() {
@@ -103,10 +103,10 @@ void PLP::run() {
                     activeNodes[v] = false;
                 }
 
-			} else {
-				// node is isolated
-			}
-		}, n > (1 << 20));
+            } else {
+                // node is isolated
+            }
+        }, n > (1 << 20));
 
         // for each while loop iteration...
 
@@ -144,13 +144,13 @@ PLPFactory::PLPFactory(count theta, count maxIterations) : theta(theta), maxIter
 }
 
 ClusteringFunction PLPFactory::getFunction() const {
-	count thetaCopy = theta;
-	count maxIterationsCopy = maxIterations;
-	return [thetaCopy, maxIterationsCopy](const Graph &graph) {
-		PLP algo(graph, thetaCopy, maxIterationsCopy);
-		algo.run();
-		return algo.getPartition();
-	};
+    count thetaCopy = theta;
+    count maxIterationsCopy = maxIterations;
+    return [thetaCopy, maxIterationsCopy](const Graph &graph) {
+        PLP algo(graph, thetaCopy, maxIterationsCopy);
+        algo.run();
+        return algo.getPartition();
+    };
 }
 
 } /* namespace NetworKit */

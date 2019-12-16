@@ -19,20 +19,20 @@ namespace NetworKit {
 
 class ExtendEgoNetStrategy : public Algorithm, public ParallelTimings {
 public:
-	ExtendEgoNetStrategy(const EgoNetData &egoNetData, count maxExtendedNodes,
-	                     const Graph &egoGraph, node egoNode);
+    ExtendEgoNetStrategy(const EgoNetData &egoNetData, count maxExtendedNodes,
+                         const Graph &egoGraph, node egoNode);
 
-	virtual std::vector<node> getNodes();
+    virtual std::vector<node> getNodes();
 
 protected:
-	const Graph &G;
-	const LowToHighDirectedGraph &directedG;
-	const Graph &egoGraph;
-	const NodeMapping &egoMapping;
-	node egoNode;
-	const std::unordered_map<std::string, std::string> &parameters;
-	std::vector<node> significantCandidates;
-	count maxExtendedNodes;
+    const Graph &G;
+    const LowToHighDirectedGraph &directedG;
+    const Graph &egoGraph;
+    const NodeMapping &egoMapping;
+    node egoNode;
+    const std::unordered_map<std::string, std::string> &parameters;
+    std::vector<node> significantCandidates;
+    count maxExtendedNodes;
 };
 
 } /* namespace NetworKit */
