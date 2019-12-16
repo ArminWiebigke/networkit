@@ -7,27 +7,39 @@
 
 #include <omp.h>
 #include <algorithm>
+#include <cmath>
 
 #include <networkit/community/LPPotts.hpp>
 #include <networkit/Globals.hpp>
 #include <networkit/auxiliary/Log.hpp>
 #include <networkit/auxiliary/Timer.hpp>
 #include <networkit/auxiliary/Random.hpp>
-#include "networkit/auxiliary/UniformRandomSelector.hpp"
+#include <networkit/auxiliary/UniformRandomSelector.hpp>
+#include <networkit/auxiliary/SparseVector.hpp>
+#include <networkit/auxiliary/Parallelism.hpp>
 
 namespace NetworKit {
 
 LPPotts::LPPotts(const Graph &G, double alpha, count theta, count maxIterations,
                  bool parallelPropagation)
-		: CommunityDetectionAlgorithm(G), alpha(alpha), updateThreshold(theta),
-		  maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
+		: LPPotts(G, Partition(), alpha, theta, maxIterations, parallelPropagation) {
 }
 
 LPPotts::LPPotts(const Graph &G, const Partition &baseClustering, double alpha, count theta,
                  count maxIterations, bool parallelPropagation)
 		: CommunityDetectionAlgorithm(G, baseClustering), alpha(alpha), updateThreshold(theta),
-		  maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
+		  maxIterations(maxIterations), parallel(parallelPropagation) {
+	count numThreads = 1;
 
+	if (parallelPropagation) {
+		numThreads = Aux::getMaxNumberOfThreads();
+	}
+	index upperNodeIdBound = G.upperNodeIdBound();
+	neighborLabelCountsPerThread.resize(numThreads,
+	                                    SparseVector<count>(upperNodeIdBound, none));
+	labelWeightsPerThread.resize(numThreads,
+	                             SparseVector<double>(upperNodeIdBound,
+	                                                  -std::numeric_limits<double>::max()));
 }
 
 void LPPotts::run() {
@@ -46,6 +58,7 @@ void LPPotts::run() {
 	// update threshold heuristic
 	if (updateThreshold == none) {
 		updateThreshold = (count) (n / 1e5);
+		updateThreshold = std::max(updateThreshold, (count) 1);
 	}
 
 	count nUpdated; // number of nodes which have been updated in last iteration
@@ -54,14 +67,15 @@ void LPPotts::run() {
 
 	Partition *nextResult = &result;
 	Partition secondPartition;
-	if (parallelPropagation) {
+	if (parallel) {
 		secondPartition = result;
 		nextResult = &secondPartition;
 	}
 
-	std::vector<count> globalLabelCounts(z, 1), globalLabelCounts2; // record the number of nodes for each label
+	std::vector<count> globalLabelCounts(z,
+	                                     1), globalLabelCounts2; // record the number of nodes for each label
 	std::vector<count> *nextGlobalLabelCounts = &globalLabelCounts;
-	if (parallelPropagation) {
+	if (parallel) {
 		globalLabelCounts2 = globalLabelCounts;
 		nextGlobalLabelCounts = &globalLabelCounts2;
 	}
@@ -70,6 +84,7 @@ void LPPotts::run() {
 
 	Aux::UniformRandomSelector selector;
 	Aux::Timer runtime;
+
 
 	// propagate labels
 	while ((nUpdated > this->updateThreshold) && (nIterations < maxIterations)) {
@@ -81,77 +96,93 @@ void LPPotts::run() {
 		// reset updated
 		nUpdated = 0;
 
+#pragma omp parallel
+		{
+
+		}
+
 		auto updateNode = [&](node u) {
-			if ((activeNodes[u]) && (G.degree(u) > 0)) {
-				using label = index; // a label is the same as a cluster id
-				std::map<label, count> neighborLabelCounts; // neighborLabelCounts maps label -> frequency in the neighbors
+			if (!activeNodes[u] || (G.degree(u) == 0)) {
+				return;
+			}
+			index tid = parallel ? omp_get_thread_num() : 0;
+			using label = index; // a label is the same as a cluster id
+			// neighborLabelCounts maps label -> frequency in the neighbors
+			SparseVector<count> &neighborLabelCounts = neighborLabelCountsPerThread[tid];
+			assert(result.upperBound() <= z);
 
-				// Count the labels of the neighbors
-				G.forNeighborsOf(u, [&](node w) {
-					label lw = result.subsetOf(w);
-					++neighborLabelCounts[lw];
-				});
-
-				// Evaluate each label
-				std::map<label, double> labelWeights;
-				for (const auto &labelCount : neighborLabelCounts) {
-					label l = labelCount.first;
-					count local = labelCount.second;
-					labelWeights[l] = local;
-					if (alpha > 0.0)
-						labelWeights[l] -= alpha * (globalLabelCounts[l] - local);
+			// Count the labels of the neighbors
+			G.forNeighborsOf(u, [&](node w) {
+				label wLabel = result.subsetOf(w);
+				if (!neighborLabelCounts.indexIsUsed(wLabel)) {
+					neighborLabelCounts.insert(wLabel, 0);
 				}
+				++neighborLabelCounts[wLabel];
+			});
 
-				// Get best label
-				selector.reset();
-				label bestLabel = none;
-				double bestWeight = -std::numeric_limits<double>::max();
-				for (auto current : labelWeights) {
-					if (current.second > bestWeight) {
-						bestWeight = current.second;
-						bestLabel = current.first;
-						selector.reset();
-					} else if (current.second == bestWeight) {
-						if (selector.addElement())
-							bestLabel = current.first;
-					}
+			// Evaluate each label
+			SparseVector<double> &labelWeights = labelWeightsPerThread[tid];
+			for (label candidateLabel : neighborLabelCounts.insertedIndexes()) {
+				count localCount = neighborLabelCounts[candidateLabel];
+				double weight = localCount;
+				if (alpha > 0.0) {
+					weight -= alpha * (globalLabelCounts[candidateLabel] - localCount);
 				}
-				assert(bestLabel != none);
+				labelWeights.insert(candidateLabel, weight);
+			}
+			neighborLabelCounts.reset();
 
-				label curLabel = result.subsetOf(u);
-				if (curLabel != bestLabel) { // UPDATE
-					nextResult->moveToSubset(bestLabel, u);
+			// Get best label
+			selector.reset();
+			label bestLabel = none;
+			double bestWeight = -std::numeric_limits<double>::max();
+			for (auto neighborLabel : labelWeights.insertedIndexes()) {
+				double weight = labelWeights[neighborLabel];
+				if (weight > bestWeight) {
+					bestWeight = weight;
+					bestLabel = neighborLabel;
+					selector.reset();
+				} else if (weight == bestWeight) {
+					if (selector.addElement())
+						bestLabel = neighborLabel;
+				}
+			}
+			assert(bestLabel != none);
+			labelWeights.reset();
+
+			// Update labels
+			label curLabel = result.subsetOf(u);
+			if (curLabel != bestLabel) {
+				nextResult->moveToSubset(bestLabel, u);
 #pragma omp critical
-					{
-						--(*nextGlobalLabelCounts)[curLabel];
-						++(*nextGlobalLabelCounts)[bestLabel];
-						++nUpdated;
-						G.forNeighborsOf(u, [&](node w) {
-							nextActiveNodes[w] = true;
-						});
-						nextActiveNodes[u] = true;
-					}
+				{
+					--(*nextGlobalLabelCounts)[curLabel];
+					++(*nextGlobalLabelCounts)[bestLabel];
+					++nUpdated;
+					G.forNeighborsOf(u, [&](node w) {
+						nextActiveNodes[w] = true;
+					});
+					nextActiveNodes[u] = true;
 				}
 			}
 		};
 
-		if (parallelPropagation) {
+		if (parallel) {
 			G.parallelForNodes(updateNode);
+			result = *nextResult;
+			globalLabelCounts = *nextGlobalLabelCounts;
 		} else {
 			G.forNodesInRandomOrder(updateNode);
 		}
 
-		if (parallelPropagation) {
-			result = *nextResult;
-			globalLabelCounts = *nextGlobalLabelCounts;
-		}
 		activeNodes = nextActiveNodes;
 		for (count &i : nextActiveNodes)
 			i = false;
 
 		runtime.stop();
 		this->timing.push_back(runtime.elapsedMilliseconds());
-		DEBUG("[DONE] LabelPropagation: iteration #", nIterations, " - updated ", nUpdated, " labels, time spent: ",
+		DEBUG("[DONE] LabelPropagation: iteration #", nIterations, " - updated ", nUpdated,
+		      " labels, time spent: ",
 		      runtime.elapsedTag());
 	} // end while
 	hasRun = true;
@@ -163,24 +194,22 @@ std::string LPPotts::toString() const {
 	return strm.str();
 }
 
-
 void LPPotts::setUpdateThreshold(count th) {
 	this->updateThreshold = th;
 }
-
 
 count LPPotts::numberOfIterations() {
 	return this->nIterations;
 }
 
-
 std::vector<count> LPPotts::getTiming() {
 	return this->timing;
 }
 
-
-LPPottsFactory::LPPottsFactory(double alpha, count theta, count maxIterations, bool parallelPropagation)
-		: alpha(alpha), theta(theta), maxIterations(maxIterations), parallelPropagation(parallelPropagation) {
+LPPottsFactory::LPPottsFactory(double alpha, count theta, count maxIterations,
+                               bool parallelPropagation)
+		: alpha(alpha), theta(theta), maxIterations(maxIterations),
+		  parallelPropagation(parallelPropagation) {
 }
 
 ClusteringFunction LPPottsFactory::getFunction() const {
@@ -194,5 +223,4 @@ ClusteringFunction LPPottsFactory::getFunction() const {
 		return lpPotts.getPartition();
 	};
 }
-
 } /* namespace NetworKit */
