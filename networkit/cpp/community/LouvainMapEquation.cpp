@@ -23,6 +23,7 @@
 #include <networkit/auxiliary/Parallelism.hpp>
 #include <networkit/auxiliary/Parallel.hpp>
 #include <networkit/auxiliary/Timer.hpp>
+#include <networkit/graph/GraphTools.hpp>
 
 namespace NetworKit {
 
@@ -90,7 +91,7 @@ void LouvainMapEquation::run() {
 #endif
 
     bool clusteringChanged = false;
-    std::vector<node> nodes = graph.nodes();
+    std::vector<node> nodes = GraphTools::nodeSet(graph);
 
     count numberOfNodesMoved = 1;
     for (count iteration = 0; iteration < maxIterations && numberOfNodesMoved > 0; ++iteration) {

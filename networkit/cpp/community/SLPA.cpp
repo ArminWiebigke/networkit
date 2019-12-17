@@ -9,6 +9,7 @@
 
 #include <networkit/community/SLPA.hpp>
 #include <networkit/auxiliary/Random.hpp>
+#include <networkit/graph/GraphTools.hpp>
 
 namespace NetworKit {
 
@@ -17,7 +18,7 @@ SLPA::SLPA(const Graph &graph, double threshold, count numIterations)
         : Algorithm(), graph(graph), numIterations(numIterations), threshold(threshold),
           cover(graph.upperNodeIdBound()), partition(graph.upperNodeIdBound()),
           nodesMemory(graph.upperNodeIdBound()) {
-    for (node u : graph.nodes())
+    for (node u : GraphTools::nodeSet(graph))
         addLabelTo(u, u);
 }
 
@@ -26,7 +27,7 @@ SLPA::SLPA(const Graph &graph, const Partition &basePartition, double threshold,
         : Algorithm(), graph(graph), numIterations(numIterations), threshold(threshold),
           cover(graph.upperNodeIdBound()), partition(graph.upperNodeIdBound()),
           nodesMemory(graph.upperNodeIdBound()) {
-    for (node u : graph.nodes())
+    for (node u : GraphTools::nodeSet(graph))
         addLabelTo(u, basePartition.subsetOf(u));
 }
 
