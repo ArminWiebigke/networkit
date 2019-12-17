@@ -11,7 +11,7 @@ from networkit.stopwatch import clockit
 from egosplit.benchmarks.evaluation.metric_output import write_results_to_file, \
 	add_compact_results, print_compact_results
 from egosplit.benchmarks.execution.algo_creation import OtherAlgorithms
-from egosplit.benchmarks.execution.egosplit_config import EgoSplitClusteringAlgorithmsConfig,\
+from egosplit.benchmarks.execution.egosplit_config import EgoSplitClusteringAlgorithmsConfig, \
 	EgoSplitParameterConfig, get_ego_algos
 from egosplit.benchmarks.evaluation.timings import write_timings
 from egosplit.benchmarks.execution.graph_creation import get_graphs, GraphSetsConfig
@@ -33,7 +33,7 @@ class Evaluation(Enum):
 	CLEANUP = 6
 
 
-def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
+def run_benchmark(benchmark_config: BenchmarkSet, time_stamp):
 	""" Run benchmarks given by a config """
 	setLogLevel('INFO')
 	append_results = False
@@ -43,6 +43,7 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 		Evaluation.COVER,
 	]
 	stream_to_gephi = benchmark_config.stream_to_gephi
+	iterations = benchmark_config.iterations
 
 	store_ego_nets = benchmark_config.store_ego_nets
 	if stream_to_gephi:
@@ -54,15 +55,9 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	time_limit = benchmark_config.time_limit
 
 	result_subfolder = time_stamp
-	result_dir = '{}/{}-{}/{}/'.format(get_result_dir(), result_subfolder,
-	                                   benchmark_config.result_dir, iteration)
-	os.makedirs(result_dir)
 
 	result_summary = Manager().dict()
 	# result_summary = OrderedDict()
-
-	print('Creating Graphs...')
-	graphs = get_graphs(benchmark_config[GraphSetsConfig])
 
 	ego_algos = get_ego_algos(benchmark_config[EgoSplitClusteringAlgorithmsConfig],
 	                          benchmark_config[EgoSplitParameterConfig],
@@ -71,32 +66,40 @@ def run_benchmark(benchmark_config: BenchmarkSet, iteration, time_stamp):
 	other_algos = OtherAlgorithms.get(benchmark_config[OtherAlgorithms])
 	algos = other_algos + ego_algos
 
-	if stream_to_gephi and len(graphs) * len(algos) > 8:
-		raise RuntimeError('Too many runs to stream!')
+	for iteration in range(iterations):
+		result_dir = '{}/{}-{}/{}/'.format(get_result_dir(), result_subfolder,
+		                                   benchmark_config.result_dir, iteration)
+		os.makedirs(result_dir)
+		print('Creating Graphs...')
+		graphs = get_graphs(benchmark_config[GraphSetsConfig])
 
-	print('Starting benchmarks...')
-	if stream_to_gephi:
-		benchmarks = create_benchmarks(graphs, algos)
-		run_benchmarks(benchmarks)
-		stream_partition(graphs, benchmarks)
-	else:
-		for graph in graphs:
-			graph.set_graph_and_gt()  # Create graph now so it can be copied to the processes
-			benchmarks = create_benchmarks([graph], algos)
+		if stream_to_gephi and len(graphs) * len(algos) > 8:
+			raise RuntimeError('Too many runs to stream!')
 
-			for benchmark in benchmarks:
-				def run_and_evaluate():
-					run_benchmarks([benchmark])
-					evaluate_result([benchmark], evaluations, append_results,
-					                result_summary, result_dir, write_scores_per_egonet, calc_f1_per_comm)
+		print('Starting benchmarks...')
+		if stream_to_gephi:
+			benchmarks = create_benchmarks(graphs, algos)
+			run_benchmarks(benchmarks)
+			stream_partition(graphs, benchmarks)
+		else:
+			for graph in graphs:
+				graph.set_graph_and_gt()  # Create graph now so it can be copied to the processes
+				benchmarks = create_benchmarks([graph], algos)
 
-				finished = run_with_limited_time(run_and_evaluate, (), {}, time_limit)
-				if finished:
-					append_results = True
-				else:
-					benchmark_did_not_finish(result_summary, benchmark, result_dir)
-				benchmark.clear()
-			graph.clear()
+				for benchmark in benchmarks:
+					def run_and_evaluate():
+						run_benchmarks([benchmark])
+						evaluate_result([benchmark], evaluations, append_results,
+						                result_summary, result_dir, write_scores_per_egonet,
+						                calc_f1_per_comm)
+
+					finished = run_with_limited_time(run_and_evaluate, (), {}, time_limit)
+					if finished:
+						append_results = True
+					else:
+						benchmark_did_not_finish(result_summary, benchmark, result_dir)
+					benchmark.clear()
+				graph.clear()
 
 	print_result_summary(result_summary, get_result_dir())
 
