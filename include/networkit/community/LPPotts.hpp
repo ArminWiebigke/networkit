@@ -23,19 +23,6 @@ namespace NetworKit {
  *
  */
 class LPPotts : public CommunityDetectionAlgorithm {
-    using label = index;
-
-protected:
-    double alpha;
-    count updateThreshold = 0;
-    count maxIterations;
-    count iteration = 0; //!< number of iterations in last run
-    std::vector<count> timing;    //!< running times for each iteration
-    bool parallel;
-    std::vector<SparseVector<count>> neighborLabelCountsPerThread;
-    std::vector<SparseVector<double>> labelWeightsPerThread;
-    std::vector<count> globalLabelCounts;
-
 public:
 
     /**
@@ -54,7 +41,7 @@ public:
      * @param[in]	baseClustering optional; the algorithm will start from the given clustering.
      * @param[in]	theta	updateThreshold: number of nodes that have to be changed in each iteration so that a new iteration starts.
      */
-    LPPotts(const Graph& G, const Partition &baseClustering, double alpha = 0.3, count theta = none,
+    LPPotts(const Graph &G, const Partition &baseClustering, double alpha = 0.3, count theta = none,
             count maxIterations = 20, bool parallel = false);
 
     /**
@@ -66,7 +53,6 @@ public:
      * @return String representation of algorithm and parameters.
      */
     std::string toString() const override;
-
 
     /**
      * The algorithm runs until a number of nodes less than
@@ -83,7 +69,6 @@ public:
     */
     virtual count numberOfIterations();
 
-
     /**
     * Get list of running times for each iteration.
     *
@@ -91,7 +76,23 @@ public:
     */
     virtual std::vector<count> getTiming();
 
+protected:
+    using label = index;
+    double alpha;
+    count updateThreshold = 0;
+    count maxIterations;
+    count iteration = 0; //!< number of iterations in last run
+    std::vector<count> timing;    //!< running times for each iteration
+    bool parallel;
+    std::vector<SparseVector<count>> neighborLabelCountsPerThread;
+    std::vector<SparseVector<double>> labelWeightsPerThread;
+    std::vector<int64_t> globalLabelCounts;
+
     label calculateBestLabel(node u);
+
+    index getThreadId() const;
+
+    void runAlgorithm();
 };
 
 class LPPottsFactory : public ClusteringFunctionFactory {
@@ -107,6 +108,5 @@ private:
     count maxIterations;
     bool parallelPropagation;
 };
-
 } /* namespace NetworKit */
 #endif /* LPPOTTS_H_ */

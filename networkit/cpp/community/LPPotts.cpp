@@ -18,6 +18,7 @@
 #include <networkit/auxiliary/SparseVector.hpp>
 #include <networkit/auxiliary/Parallelism.hpp>
 #include <networkit/community/LPDegreeOrdered.hpp>
+#include <networkit/auxiliary/Parallel.hpp>
 
 namespace NetworKit {
 
@@ -46,6 +47,7 @@ LPPotts::LPPotts(const Graph &G, const Partition &baseClustering, double alpha, 
         updateThreshold = (count) (G.numberOfNodes() / 1e5);
         updateThreshold = std::max(updateThreshold, (count) 1);
     }
+    globalLabelCounts.resize(G.upperNodeIdBound(), 1);
 }
 
 void LPPotts::run() {
@@ -53,45 +55,49 @@ void LPPotts::run() {
         throw std::runtime_error("The algorithm has already run on the graph.");
     }
 
-    index nodeIdBound = G.upperNodeIdBound();
+    runAlgorithm();
+
+    hasRun = true;
+}
+
+void LPPotts::runAlgorithm() {
+    const index nodeIdBound = G.upperNodeIdBound();
     count updatedNodesCount = G.numberOfNodes();
     iteration = 0;
-    Partition nextPartition;
+
+    // Create data structure for parallel execution
+    Partition secondPartition;
     if (parallel) {
-        nextPartition = result;
+        secondPartition = result;
     }
-    // record the number of nodes for each label
-    assert(globalLabelCounts.empty());
-    globalLabelCounts.resize(nodeIdBound, 1);
-    std::vector<std::atomic<count>> nextGlobalLabelCountsAtomic(parallel ? nodeIdBound : 0);
-    for (auto &it : nextGlobalLabelCountsAtomic) {
-        std::atomic_init(&it, (count) 1);
-    }
-    // record if node must be processed
+    Partition &nextPartition = parallel ? secondPartition : result;
+    const count numThreads = Aux::getMaxNumberOfThreads();
+    std::vector<std::vector<int64_t>> globalLabelCountChangePerThread(
+            parallel ? numThreads : 0, std::vector<int64_t>(nodeIdBound, 0));
     std::vector<u_int8_t> activeNodes(nodeIdBound);
     G.forNodes([&](node u) { activeNodes[u] = true; });
-    std::vector<u_int8_t> nextActiveNodes(nodeIdBound);
-    std::vector<std::atomic<u_int8_t>> nextActiveNodesAtomic(parallel ? nodeIdBound : 0);
-    for (auto &it : nextActiveNodesAtomic) {
-        std::atomic_init(&it, (u_int8_t) false);
-    }
+    std::vector<std::vector<u_int8_t>> nextActiveNodesPerThread(
+            parallel ? numThreads : 0, std::vector<u_int8_t>(nodeIdBound, false));
 
-    // propagate labels
+    // Propagate labels
     while ((updatedNodesCount > this->updateThreshold) && (iteration < maxIterations)) {
         // as long as enough labels change or maximum iterations reached
         iteration += 1;
-        DEBUG("[BEGIN] LabelPropagation: iteration #", iteration);
-
-        // reset updated
         updatedNodesCount = 0;
+        DEBUG("[BEGIN] LabelPropagation: iteration #", iteration);
 
 #pragma omp parallel if (parallel)
         {
             count localUpdatedNodes = 0;
-
+            index threadId = getThreadId();
+            auto &globalLabelCountChange = parallel ? globalLabelCountChangePerThread[threadId]
+                                                    : globalLabelCounts;
+            auto &nextActiveNodesThisThread = parallel ? nextActiveNodesPerThread[threadId]
+                                                       : activeNodes;
             auto evaluateNode = [&](node u) {
                 if (!activeNodes[u] || G.degree(u) == 0)
                     return;
+                activeNodes[u] = false;
 
                 label bestLabel = calculateBestLabel(u);
 
@@ -99,28 +105,18 @@ void LPPotts::run() {
                 label currentLabel = result.subsetOf(u);
                 if (currentLabel != bestLabel) {
                     ++localUpdatedNodes;
-                    if (parallel) {
-                        nextPartition.moveToSubset(bestLabel, u);
-                        nextGlobalLabelCountsAtomic[currentLabel].fetch_sub(1);
-                        nextGlobalLabelCountsAtomic[bestLabel].fetch_add(1);
-                        nextActiveNodesAtomic[u].store(true);
-                        G.forNeighborsOf(u, [&](node w) {
-                            nextActiveNodesAtomic[w].store(true);
-                        });
-                    } else {
-                        result.moveToSubset(bestLabel, u);
-                        --globalLabelCounts[currentLabel];
-                        ++globalLabelCounts[bestLabel];
-                        nextActiveNodes[u] = true;
-                        G.forNeighborsOf(u, [&](node w) {
-                            nextActiveNodes[w] = true;
-                        });
-                    }
+                    nextPartition.moveToSubset(bestLabel, u);
+                    --globalLabelCountChange[currentLabel];
+                    ++globalLabelCountChange[bestLabel];
+                    nextActiveNodesThisThread[u] = true;
+                    G.forNeighborsOf(u, [&](node w) {
+                        nextActiveNodesThisThread[w] = true;
+                    });
                 }
             };
 
             if (parallel) {
-#pragma omp for nowait schedule(guided)
+#pragma omp for nowait
                 for (node u = 0; u < nodeIdBound; ++u) {
                     evaluateNode(u);
                 }
@@ -134,15 +130,24 @@ void LPPotts::run() {
 
         if (parallel) {
             result = nextPartition;
-            for (index i = 0; i < nodeIdBound; ++i) {
-                activeNodes[i] = nextActiveNodesAtomic[i].load();
-                nextActiveNodesAtomic[i].store(false);
-                globalLabelCounts[i] = nextGlobalLabelCountsAtomic[i].load();
-            }
-        } else {
-            for (index i = 0; i < nodeIdBound; ++i) {
-                activeNodes[i] = nextActiveNodes[i];
-                nextActiveNodes[i] = false;
+            count chunkSize = (nodeIdBound - 1) / numThreads + 1;
+            chunkSize = std::max(chunkSize, (count) 128);
+            const count numberOfChunks = 1 + (nodeIdBound - 1) / chunkSize;
+            assert(chunkSize == 128 || numberOfChunks == numThreads);
+            std::vector<index> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(
+                    nodeIdBound, numberOfChunks);
+#pragma omp parallel for schedule(static, 1)
+            for (index chunk = 0; chunk < numberOfChunks; ++chunk) {
+                for (index tid = 0; tid < numThreads; ++tid) {
+                    for (index u = chunkBorders[chunk]; u < chunkBorders[chunk + 1]; ++u) {
+                        // for label u
+                        globalLabelCounts[u] += globalLabelCountChangePerThread[tid][u];
+                        globalLabelCountChangePerThread[tid][u] = 0;
+                        // for node u
+                        activeNodes[u] |= nextActiveNodesPerThread[tid][u];
+                        nextActiveNodesPerThread[tid][u] = false;
+                    }
+                }
             }
         }
 
@@ -151,15 +156,13 @@ void LPPotts::run() {
 //		      " labels, time spent: ",
 //		      runtime.elapsedTag());
     } // end while
-
-    hasRun = true;
 }
 
 label LPPotts::calculateBestLabel(node u) {
-    index tid = parallel ? omp_get_thread_num() : 0;
+    index threadId = getThreadId();
 
     // Count the labels of the neighbors
-    SparseVector<count> &neighborLabelCounts = neighborLabelCountsPerThread[tid];
+    SparseVector<count> &neighborLabelCounts = neighborLabelCountsPerThread[threadId];
     assert(neighborLabelCounts.isClean());
     G.forNeighborsOf(u, [&](node w) {
         label neighborLabel = result.subsetOf(w);
@@ -170,7 +173,7 @@ label LPPotts::calculateBestLabel(node u) {
     });
 
     // Evaluate each label
-    SparseVector<double> &labelWeights = labelWeightsPerThread[tid];
+    SparseVector<double> &labelWeights = labelWeightsPerThread[threadId];
     assert(labelWeights.isClean());
     for (label candidateLabel : neighborLabelCounts.insertedIndexes()) {
         count localCount = neighborLabelCounts[candidateLabel];
@@ -199,6 +202,10 @@ label LPPotts::calculateBestLabel(node u) {
     neighborLabelCounts.reset();
     labelWeights.reset();
     return bestLabel;
+}
+
+index LPPotts::getThreadId() const {
+    return parallel ? omp_get_thread_num() : 0;
 }
 
 std::string LPPotts::toString() const {
@@ -236,5 +243,4 @@ ClusteringFunction LPPottsFactory::getFunction() const {
         return lpPotts.getPartition();
     };
 }
-
 } /* namespace NetworKit */

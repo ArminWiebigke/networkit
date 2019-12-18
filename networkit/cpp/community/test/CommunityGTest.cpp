@@ -771,7 +771,7 @@ TEST_F(CommunityGTest, testOLP) {
 }
 
 
-TEST_F(CommunityGTest, testLPPotts) {
+TEST_F(CommunityGTest, testLPPottsSeq) {
     count numClusters = 4;
     ClusteredRandomGraphGenerator gen(100, numClusters, 0.7, 0.03);
     Graph G = gen.generate();
