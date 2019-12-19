@@ -83,14 +83,15 @@ public:
     void insertOrSet(index i, T value);
 
     /**
-     * If the given index was not inserted before, insert the given value
-     */
-    void insertIfEmpty(index i, T value);
-
-    /**
      * Remove all indexes for which the value is set to the emptyValue.
      */
-    void removeUnusedIndexes();
+    void removeUnusedIndexes() {
+        auto new_end = std::remove_if(usedIndexes.begin(), usedIndexes.end(),
+                                      [&](index i) {
+                                          return data[i] == emptyValue;
+                                      });
+        usedIndexes.erase(new_end, usedIndexes.end());
+    }
 
     /**
      * Reset all values to the default value, so it is "empty". The upper bound is not changed.
@@ -231,21 +232,6 @@ void NetworKit::SparseVector<T>::insertOrSet(NetworKit::index i, T value) {
     } else {
         data[i] = value;
     }
-}
-
-template<typename T>
-void NetworKit::SparseVector<T>::removeUnusedIndexes() {
-    auto new_end = std::remove_if(usedIndexes.begin(), usedIndexes.end(),
-                                  [&](index i) {
-                                      return data[i] == emptyValue;
-                                  });
-    usedIndexes.erase(new_end, usedIndexes.end());
-}
-
-template<typename T>
-void NetworKit::SparseVector<T>::insertIfEmpty(NetworKit::index i, T value) {
-    if (!indexIsUsed(i))
-        insert(i, value);
 }
 
 } /* namespace NetworKit */
