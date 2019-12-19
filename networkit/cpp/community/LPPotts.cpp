@@ -18,6 +18,7 @@
 #include <networkit/auxiliary/SparseVector.hpp>
 #include <networkit/auxiliary/Parallelism.hpp>
 #include <networkit/community/LPDegreeOrdered.hpp>
+#include <networkit/graph/GraphTools.hpp>
 #include <networkit/auxiliary/Parallel.hpp>
 
 namespace NetworKit {
@@ -31,32 +32,40 @@ LPPotts::LPPotts(const Graph &G, const Partition &baseClustering, double alpha, 
                  count maxIterations, bool parallel)
         : CommunityDetectionAlgorithm(G, baseClustering), alpha(alpha), updateThreshold(theta),
           maxIterations(maxIterations), parallel(parallel) {
-    count numThreads = parallel ? Aux::getMaxNumberOfThreads() : 1;
-    neighborLabelCountsPerThread.resize(numThreads,
-                                        SparseVector<count>(G.upperNodeIdBound(), none));
-    labelWeightsPerThread.resize(numThreads,
-                                 SparseVector<double>(G.upperNodeIdBound(),
-                                                      -std::numeric_limits<double>::max()));
+}
+
+void LPPotts::init() {
+    numberOfThreads = parallel ? Aux::getMaxNumberOfThreads() : 1;
+    index nodeIdBound = G.upperNodeIdBound();
+
     if (result.numberOfElements() == 0) {
-        result = Partition(G.upperNodeIdBound());
+        result = Partition(nodeIdBound);
         result.allToSingletons();
     }
-    assert(result.numberOfElements() == G.upperNodeIdBound());
+    assert(result.numberOfElements() == nodeIdBound);
 
     if (updateThreshold == none) {
         updateThreshold = (count) (G.numberOfNodes() / 1e5);
         updateThreshold = std::max(updateThreshold, (count) 1);
     }
-    globalLabelCounts.resize(G.upperNodeIdBound(), 1);
+    globalLabelCounts.resize(nodeIdBound, 1);
+    activeNodes.resize(nodeIdBound);
+    G.forNodes([&](node u) { activeNodes[u] = true; });
+
+    neighborLabelCountsPerThread.resize(numberOfThreads, SparseVector<count>(nodeIdBound, none));
+    if (LPPotts::parallel) {
+        globalLabelCountChangePerThread.resize(numberOfThreads,
+                                               std::vector<int64_t>(nodeIdBound, 0));
+        nextActiveNodesPerThread.resize(numberOfThreads, std::vector<u_int8_t>(nodeIdBound, false));
+    }
 }
 
 void LPPotts::run() {
     if (hasRun) {
         throw std::runtime_error("The algorithm has already run on the graph.");
     }
-
+    init();
     runAlgorithm();
-
     hasRun = true;
 }
 
@@ -64,105 +73,101 @@ void LPPotts::runAlgorithm() {
     const index nodeIdBound = G.upperNodeIdBound();
     count updatedNodesCount = G.numberOfNodes();
     iteration = 0;
-
-    // Create data structure for parallel execution
     Partition secondPartition;
+    std::vector<node> nodes;
     if (parallel) {
         secondPartition = result;
+    } else {
+        nodes = GraphTools::nodeSet(G);
     }
-    Partition &nextPartition = parallel ? secondPartition : result;
-    const count numThreads = Aux::getMaxNumberOfThreads();
-    std::vector<std::vector<int64_t>> globalLabelCountChangePerThread(
-            parallel ? numThreads : 0, std::vector<int64_t>(nodeIdBound, 0));
-    std::vector<u_int8_t> activeNodes(nodeIdBound);
-    G.forNodes([&](node u) { activeNodes[u] = true; });
-    std::vector<std::vector<u_int8_t>> nextActiveNodesPerThread(
-            parallel ? numThreads : 0, std::vector<u_int8_t>(nodeIdBound, false));
 
     // Propagate labels
-    while ((updatedNodesCount > this->updateThreshold) && (iteration < maxIterations)) {
-        // as long as enough labels change or maximum iterations reached
+    while ((updatedNodesCount > updateThreshold) && (iteration < maxIterations)) {
         iteration += 1;
         updatedNodesCount = 0;
         DEBUG("[BEGIN] LabelPropagation: iteration #", iteration);
 
-#pragma omp parallel if (parallel)
-        {
-            count localUpdatedNodes = 0;
-            index threadId = getThreadId();
-            auto &globalLabelCountChange = parallel ? globalLabelCountChangePerThread[threadId]
-                                                    : globalLabelCounts;
-            auto &nextActiveNodesThisThread = parallel ? nextActiveNodesPerThread[threadId]
-                                                       : activeNodes;
-            auto evaluateNode = [&](node u) {
-                if (!activeNodes[u] || G.degree(u) == 0)
-                    return;
-                activeNodes[u] = false;
+        if (parallel) {
+            Aux::Timer timer{};
+            timer.start();
 
-                label bestLabel = calculateBestLabel(u);
-
-                // Update labels
-                label currentLabel = result.subsetOf(u);
-                if (currentLabel != bestLabel) {
-                    ++localUpdatedNodes;
-                    nextPartition.moveToSubset(bestLabel, u);
-                    --globalLabelCountChange[currentLabel];
-                    ++globalLabelCountChange[bestLabel];
-                    nextActiveNodesThisThread[u] = true;
-                    G.forNeighborsOf(u, [&](node w) {
-                        nextActiveNodesThisThread[w] = true;
-                    });
-                }
-            };
-
-            if (parallel) {
+#pragma omp parallel
+            {
+                count localUpdatedNodes = 0;
 #pragma omp for nowait
                 for (node u = 0; u < nodeIdBound; ++u) {
-                    evaluateNode(u);
-                }
-            } else {
-                G.forNodesInRandomOrder(evaluateNode);
-            }
-
-#pragma omp atomic update
-            updatedNodesCount += localUpdatedNodes;
-        }
-
-        if (parallel) {
-            result = nextPartition;
-            count chunkSize = (nodeIdBound - 1) / numThreads + 1;
-            chunkSize = std::max(chunkSize, (count) 128);
-            const count numberOfChunks = 1 + (nodeIdBound - 1) / chunkSize;
-            assert(chunkSize == 128 || numberOfChunks == numThreads);
-            std::vector<index> chunkBorders = Aux::Parallel::Chunking::getChunkBorders(
-                    nodeIdBound, numberOfChunks);
-#pragma omp parallel for schedule(static, 1)
-            for (index chunk = 0; chunk < numberOfChunks; ++chunk) {
-                for (index tid = 0; tid < numThreads; ++tid) {
-                    for (index u = chunkBorders[chunk]; u < chunkBorders[chunk + 1]; ++u) {
-                        // for label u
-                        globalLabelCounts[u] += globalLabelCountChangePerThread[tid][u];
-                        globalLabelCountChangePerThread[tid][u] = 0;
-                        // for node u
-                        activeNodes[u] |= nextActiveNodesPerThread[tid][u];
-                        nextActiveNodesPerThread[tid][u] = false;
+                    if (G.hasNode(u)) {
+                        bool updated = evaluateNode(u, secondPartition);
+                        if (updated)
+                            ++localUpdatedNodes;
                     }
                 }
+#pragma omp atomic update
+                updatedNodesCount += localUpdatedNodes;
+            }
+
+            result = secondPartition;
+            for (index tid = 0; tid < numberOfThreads; ++tid) {
+#pragma omp parallel for schedule(static)
+                for (index i = 0; i < nodeIdBound; ++i) {
+                    // for label i
+                    globalLabelCounts[i] += globalLabelCountChangePerThread[tid][i];
+                    globalLabelCountChangePerThread[tid][i] = 0;
+                    // for node i
+                    activeNodes[i] |= nextActiveNodesPerThread[tid][i];
+                    nextActiveNodesPerThread[tid][i] = false;
+                }
+            }
+
+            timer.stop();
+            timing.push_back(timer.elapsedMilliseconds());
+            DEBUG("[DONE] LabelPropagation: iteration #", iteration, " - updated ",
+                  updatedNodesCount, " labels, time spent: ", timer.elapsedTag());
+        } else {
+            std::shuffle(nodes.begin(), nodes.end(), Aux::Random::getURNG());
+            for (node u : nodes) {
+                bool updated = evaluateNode(u, result);
+                if (updated)
+                    ++updatedNodesCount;
             }
         }
-
-//		this->timing.push_back(runtime.elapsedMilliseconds());
-//		DEBUG("[DONE] LabelPropagation: iteration #", iteration, " - updated ", updatedNodesCount,
-//		      " labels, time spent: ",
-//		      runtime.elapsedTag());
     } // end while
 }
 
-label LPPotts::calculateBestLabel(node u) {
-    index threadId = getThreadId();
+// Returns true if the label of the node was changed
+bool LPPotts::evaluateNode(node u, Partition &nextPartition) {
+    if (!activeNodes[u] || G.degree(u) == 0)
+        return false;
+    activeNodes[u] = false;
 
+    label bestLabel = calculateBestLabel(u);
+
+    label currentLabel = result.subsetOf(u);
+    if (currentLabel != bestLabel) {
+        updateLabel(u, nextPartition, currentLabel, bestLabel);
+        return true;
+    }
+    return false;
+}
+
+void LPPotts::updateLabel(node u, Partition &nextPartition, label currentLabel, label newLabel) {
+    index threadId = getThreadId();
+    auto &globalLabelCountChange = parallel ? globalLabelCountChangePerThread[threadId]
+                                            : globalLabelCounts;
+    auto &nextActiveNodesThisThread = parallel ? nextActiveNodesPerThread[threadId]
+                                               : activeNodes;
+    nextPartition.moveToSubset(newLabel, u);
+    --globalLabelCountChange[currentLabel];
+    ++globalLabelCountChange[newLabel];
+    nextActiveNodesThisThread[u] = true;
+    G.forNeighborsOf(u, [&](node w) {
+        nextActiveNodesThisThread[w] = true;
+    });
+}
+
+label LPPotts::calculateBestLabel(node u) {
     // Count the labels of the neighbors
-    SparseVector<count> &neighborLabelCounts = neighborLabelCountsPerThread[threadId];
+    SparseVector<count> &neighborLabelCounts = neighborLabelCountsPerThread[getThreadId()];
     assert(neighborLabelCounts.isClean());
     G.forNeighborsOf(u, [&](node w) {
         label neighborLabel = result.subsetOf(w);
@@ -172,21 +177,13 @@ label LPPotts::calculateBestLabel(node u) {
         ++neighborLabelCounts[neighborLabel];
     });
 
-    // Evaluate each label
-    SparseVector<double> &labelWeights = labelWeightsPerThread[threadId];
-    assert(labelWeights.isClean());
-    for (label candidateLabel : neighborLabelCounts.insertedIndexes()) {
-        count localCount = neighborLabelCounts[candidateLabel];
-        double weight = localCount - alpha * (globalLabelCounts[candidateLabel] - localCount);
-        labelWeights.insert(candidateLabel, weight);
-    }
-
     // Get best label
     Aux::UniformRandomSelector selector{};
     label bestLabel = none;
     double bestWeight = -std::numeric_limits<double>::max();
-    for (auto neighborLabel : labelWeights.insertedIndexes()) {
-        double weight = labelWeights[neighborLabel];
+    for (label neighborLabel : neighborLabelCounts.insertedIndexes()) {
+        count localCount = neighborLabelCounts[neighborLabel];
+        double weight = localCount - alpha * (globalLabelCounts[neighborLabel] - localCount);
         if (weight > bestWeight) {
             bestWeight = weight;
             bestLabel = neighborLabel;
@@ -198,9 +195,7 @@ label LPPotts::calculateBestLabel(node u) {
         }
     }
     assert(bestLabel != none);
-
     neighborLabelCounts.reset();
-    labelWeights.reset();
     return bestLabel;
 }
 

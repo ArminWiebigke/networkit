@@ -211,14 +211,14 @@ Graph copyNodes(const Graph &G) {
 }
 
 std::vector<node> nodeSet(const Graph& G) {
-    std::vector<node> n;
-    n.reserve(G.numberOfNodes());
+    std::vector<node> nodes;
+    nodes.reserve(G.numberOfNodes());
     for (node u = 0; u < G.upperNodeIdBound(); ++u) {
         if (G.hasNode(u)) {
-            n.push_back(u);
+            nodes.push_back(u);
         }
     }
-    return n;
+    return nodes;
 }
 
 Graph subgraphFromNodes(const Graph &G, const std::unordered_set<node> &nodes,
