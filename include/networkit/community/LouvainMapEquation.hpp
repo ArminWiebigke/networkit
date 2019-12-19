@@ -7,6 +7,9 @@
  *         Lars Gottesbüren
  */
 
+#ifndef NETWORKIT_LOUVAIN_MAP_EQUATION_HPP
+#define NETWORKIT_LOUVAIN_MAP_EQUATION_HPP
+
 #include <vector>
 #include <cstddef>
 #include <algorithm>
@@ -192,3 +195,4 @@ private:
 
 }
 
+#endif // NETWORKIT_LOUVAIN_MAP_EQUATION_HPP
