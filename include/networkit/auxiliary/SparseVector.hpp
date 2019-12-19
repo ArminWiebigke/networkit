@@ -160,11 +160,8 @@ void SparseVector<T>::reset() {
 template<typename T>
 void SparseVector<T>::insert(index i, T value) {
     assert(data[i] == emptyValue);
-    usedIndexes.
-    push_back(i);
-    data[i] =
-    std::move(value);
-    assert(data[i] == value);
+    usedIndexes.push_back(i);
+    data[i] = std::move(value);
 }
 
 template<typename T>

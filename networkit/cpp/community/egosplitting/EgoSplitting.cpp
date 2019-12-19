@@ -762,19 +762,19 @@ void EgoSplitting::createPersonaClustering() {
 
 std::vector<std::vector<node>> EgoSplitting::getCommunitiesFromPersonaClustering() {
     personaPartition.compact(personaPartition.upperBound() < 2 * personaGraph.numberOfNodes());
-    std::vector<std::vector<node>> result(personaPartition.upperBound());
+    std::vector<std::vector<node>> communities(personaPartition.upperBound());
     G.forNodes([&](node u) {
         for (index i = personaOffsets[u]; i < personaOffsets[u + 1]; ++i) {
             if (personaGraph.hasNode(i)) {
-                index part = personaPartition.subsetOf(i);
-                if (result[part].empty() || result[part].back() != u) {
-                    result[part].push_back(u);
+                index commId = personaPartition.subsetOf(i);
+                if (communities[commId].empty() || communities[commId].back() != u) {
+                    communities[commId].push_back(u);
                 }
             }
         }
     });
 
-    return result;
+    return communities;
 }
 
 void EgoSplitting::createCover(const std::vector<std::vector<node>> &communities) {
