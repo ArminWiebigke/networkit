@@ -84,15 +84,25 @@ protected:
     count iteration = 0; //!< number of iterations in last run
     std::vector<count> timing;    //!< running times for each iteration
     bool parallel;
+    count numberOfThreads;
     std::vector<SparseVector<count>> neighborLabelCountsPerThread;
-    std::vector<SparseVector<double>> labelWeightsPerThread;
     std::vector<int64_t> globalLabelCounts;
+    std::vector<u_int8_t> activeNodes;
+    std::vector<std::vector<int64_t>> globalLabelCountChangePerThread;
+    std::vector<std::vector<u_int8_t>> nextActiveNodesPerThread;
+
+    bool evaluateNode(node u, Partition &nextPartition);
 
     label calculateBestLabel(node u);
 
     index getThreadId() const;
 
     void runAlgorithm();
+
+    void
+    updateLabel(node u, Partition &nextPartition, label currentLabel, label newLabel);
+
+    void init();
 };
 
 class LPPottsFactory : public ClusteringFunctionFactory {
