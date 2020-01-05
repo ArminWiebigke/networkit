@@ -18,7 +18,10 @@
 
 namespace NetworKit {
 
-PLM::PLM(const Graph& G, bool refine, double gamma, std::string par, count maxIter, bool turbo, bool recurse, bool measure_time) : CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma), maxIter(maxIter), turbo(turbo), recurse(recurse), measure_time(measure_time) {
+PLM::PLM(const Graph &G, bool refine, double gamma, std::string par, count maxIter, bool turbo,
+         bool recurse, bool measure_time)
+		: CommunityDetectionAlgorithm(G), parallelism(par), refine(refine), gamma(gamma),
+		  maxIter(maxIter), turbo(turbo), recurse(recurse), measure_time(measure_time) {
 
 }
 

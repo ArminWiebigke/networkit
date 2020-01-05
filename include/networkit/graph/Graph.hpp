@@ -1102,31 +1102,11 @@ public:
     void addPartialOutEdge(Unsafe, node u, node v, edgeweight ew = defaultEdgeWeight,
                            uint64_t index = 0);
 
-    // TODO consolidate when merging
-    void addHalfEdge(node u, node v, edgeweight ew = defaultEdgeWeight) {
-        assert(!isDirected());
-        assert(u < z);
-        assert(exists[u]);
-        assert(v < z);
-        assert(exists[v]);
-
-        outEdges[u].push_back(v);
-        if (weighted) {
-            outEdgeWeights[u].push_back(ew);
-        }
-
-        // if edges indexed, give new id
-        if (edgesIndexed) {
-            edgeid id = omega++;
-            outEdgeIds[u].push_back(id);
-        }
-    }
-
-    /**
-     * Removes the undirected edge {@a u,@a v}.
-     * @param u Endpoint of edge.
-     * @param v Endpoint of edge.
-     */
+	/**
+	 * Removes the undirected edge {@a u,@a v}.
+	 * @param u Endpoint of edge.
+	 * @param v Endpoint of edge.
+	 */
     void removeEdge(node u, node v);
 
     /**
@@ -1518,7 +1498,7 @@ public:
      *
      * @param handle Takes parameter <code>(node)</code>.
      */
-    template <typename L> void balancedParallelForNodes(L handle, bool parallel = true) const;
+    template <typename L> void balancedParallelForNodes(L handle) const;
 
     /**
      * Iterate over all undirected pairs of nodes and call @a handle (lambda
@@ -1704,8 +1684,8 @@ void Graph::forNodesInRandomOrder(L handle) const {
     }
 }
 
-template <typename L> void Graph::balancedParallelForNodes(L handle, bool parallel) const {
-#pragma omp parallel for schedule(guided) if (parallel) // TODO: define min block size (and test it!)
+template <typename L> void Graph::balancedParallelForNodes(L handle) const {
+#pragma omp parallel for schedule(guided) // TODO: define min block size (and test it!)
     for (omp_index v = 0; v < static_cast<omp_index>(z); ++v) {
         if (exists[v]) {
             handle(v);
