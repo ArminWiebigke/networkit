@@ -1,5 +1,6 @@
 networkit_add_test(structures CoverGTest auxiliary)
 networkit_add_test(structures LowToHighDirectedGraphGTest)
+networkit_add_test(structures NodeMappingGTest)
 networkit_add_test(structures PartitionGTest)
 networkit_add_test(structures UnionFindGTest)
 
