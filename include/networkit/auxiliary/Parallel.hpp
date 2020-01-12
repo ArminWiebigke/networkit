@@ -45,6 +45,40 @@ namespace Aux {
             atomic_set(target, input, std::less<ValueType>());
         }
 
+        class Chunking {
+        public:
+            static std::vector<size_t> getChunkEnds(size_t n, size_t chunks) {
+                std::vector<size_t> chunkEnds;
+                appendChunkEnds(chunkEnds, n, chunks);
+                return chunkEnds;
+            }
+
+            static std::vector<size_t> getChunkBorders(size_t n, size_t chunks) {
+                std::vector<size_t> chunkBorders;
+                chunkBorders.push_back(0);
+                appendChunkEnds(chunkBorders, n, chunks);
+                return chunkBorders;
+            }
+
+            static std::vector<size_t> getChunkStarts(size_t n, size_t chunks) {
+                std::vector<size_t> chunkStarts = getChunkBorders(n, chunks);
+                chunkStarts.pop_back();
+                return chunkStarts;
+            }
+
+            static void appendChunkEnds(std::vector<size_t>& chunkEnds, size_t n, size_t chunks) {
+                size_t chunkSize = n / chunks;
+                size_t numChunksWithAdditionalElement = n % chunks;
+                size_t assigned = 0;
+                for (size_t i = 0; i < chunks; ++i) {
+                    assigned += chunkSize;
+                    if (i < numChunksWithAdditionalElement)
+                        assigned += 1;
+                    chunkEnds.push_back(assigned);
+                }
+            }
+        };
+
     }
 }
 
