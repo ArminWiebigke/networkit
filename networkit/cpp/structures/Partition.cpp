@@ -5,11 +5,12 @@
  *      Author: cls
  */
 
-#include <networkit/structures/Partition.hpp>
-#include <networkit/auxiliary/Parallel.hpp>
 #include <algorithm>
-#include <atomic>
-#include <memory>
+#include <numeric>
+
+#include <networkit/auxiliary/Parallel.hpp>
+#include <networkit/structures/Partition.hpp>
+#include <tlx/define/likely.hpp>
 
 namespace NetworKit {
 
@@ -34,9 +35,7 @@ Partition::Partition(index z, index defaultValue) : z(z), omega(0), data(z, defa
 
 void Partition::allToSingletons() {
     setUpperBound(numberOfElements());
-    parallelForEntries([&](index e, index) {
-        data[e] = e;
-    });
+    std::iota(data.begin(), data.end(), 0);
 }
 
 index Partition::mergeSubsets(index s, index t) {
@@ -72,19 +71,16 @@ bool Partition::isOnePartition(Graph& G) { //FIXME what for is elements needed? 
 
 count Partition::numberOfSubsets() const {
     auto n = upperBound();
-    std::unique_ptr<std::atomic<bool>[]> exists(new std::atomic<bool>[n]{}); // a boolean vector would not be thread-safe
-    this->parallelForEntries([&](index, index s) {
+    std::vector<bool> exists(n);
+    count k = 0; // number of actually existing clusters
+    this->forEntries([&](index, index s) {
         if (s != none) {
-            exists[s] = true;
+            if (!exists[s]) {
+                ++k;
+                exists[s] = true;
+            }
         }
     });
-    count k = 0; // number of actually existing clusters
-    #pragma omp parallel for reduction(+:k)
-    for (omp_index i = 0; i < static_cast<omp_index>(n); ++i) {
-        if (exists[i]) {
-            k++;
-        }
-    }
     return k;
 }
 
@@ -97,23 +93,22 @@ void Partition::compact(bool useTurbo) {
         usedIds.erase(last, usedIds.end());
         i = usedIds.size();
 
-        this->parallelForEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
+        this->forEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
             if (s != none) {
                 data[e] = std::distance(usedIds.begin(), std::lower_bound(usedIds.begin(), usedIds.end(), s));
             }
         });
     } else {
         std::vector<index> compactingMap(this->upperBound(), none);
-        this->forEntries([&](index, index s){
-            if (s != none && compactingMap[s] == none) {
-                compactingMap[s] = i++;
+        for (index e = 0; e < z; ++e) {
+            const index cid = data[e];
+            if (TLX_LIKELY(cid != none)) {
+                if (compactingMap[cid] == none) {
+                    compactingMap[cid] = i++;
+                }
+                data[e] = compactingMap[cid];
             }
-        });
-        this->parallelForEntries([&](index e, index s){ // replace old SubsetIDs with the new IDs
-            if (s != none) {
-                data[e] = compactingMap[s];
-            }
-        });
+        }
     }
     this->setUpperBound(i);
 }
@@ -154,6 +149,10 @@ std::vector<index> Partition::getVector() const {
     return this->data; //FIXME is this appropriate? - why not?
 }
 
+std::vector<index> Partition::moveVector() {
+    return std::move(this->data);
+}
+
 
 std::set<std::set<index> > Partition::getSubsets() const {
     std::vector<std::set<index> > table(omega+1);
@@ -163,7 +162,7 @@ std::set<std::set<index> > Partition::getSubsets() const {
     });
 
     std::set<std::set<index> > subsets;
-    for (auto set : table) {
+    for (auto const &set : table) {
         if (set.size() > 0) {
             subsets.insert(set);
         }
@@ -175,7 +174,7 @@ void Partition::allToOnePartition() {
     omega = 0;
     this->parallelForEntries([&](index e, index) {
         this->data[e] = 0;
-    });
+    }, upperBound() > (1 << 20));
 }
 
 std::set<index> Partition::getSubsetIds() const {
